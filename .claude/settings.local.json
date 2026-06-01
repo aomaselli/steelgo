@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep -l \"useGeolocation\\\\|driver_positions\")",
+      "Bash(xargs grep -l \"map\\\\|Map\\\\|route\\\\|Route\" -i)",
+      "Bash(xargs grep -l \"Map\\\\|map\\\\|route\")"
+    ]
+  }
+}
