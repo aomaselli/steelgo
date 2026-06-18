@@ -6,7 +6,6 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { Zap, Mail, Lock, Eye, EyeOff, Shield, MapPin, Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
 
@@ -213,7 +212,7 @@ export function LoginPage() {
 
   const onGoogle = async () => {
     setAuthError(null);
-    const r = await lovable.auth.signInWithOAuth("google", {
+    const r = await supabase.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin + "/auth/callback",
     });
     if (r.error) setAuthError(r.error.message);
