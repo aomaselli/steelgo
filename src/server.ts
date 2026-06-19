@@ -37,3 +37,4 @@ export default async function handler(request: Request): Promise<Response> {
           return brandedErrorResponse();
     }
 }
+export { handler as fetch };
