@@ -10,7 +10,7 @@ export default defineConfig({
                               tailwindcss(),
                               tsconfigPaths(),
                               TanStackRouterVite({ autoCodeSplitting: true }),
-                              tanstackStart(),
+                                  tanstackStart({ server: { preset: "vercel" } }),
                               react(),
                             ],
 });
