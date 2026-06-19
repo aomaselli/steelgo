@@ -1,9 +1,4 @@
 {
-        "buildCommand": "bun run build",
-        "installCommand": "bun install",
-        "outputDirectory": "dist/server",
-        "framework": null,
-        "rewrites": [
-                  { "source": "/(.*)", "destination": "/api/server" }
-        ]
+          "buildCommand": "bun run build",
+          "installCommand": "bun install"
 }
