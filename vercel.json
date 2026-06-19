@@ -10,5 +10,6 @@
     "api/server.ts": {
       "runtime": "edge"
     }
-  }
+  },
+    "_note": "migration-trigger-1"
 }
