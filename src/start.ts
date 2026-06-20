@@ -20,4 +20,7 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware],
 }));
-export const fetch = startInstance.fetch;
+
+export async function fetch(request: Request): Promise<Response> {
+  return startInstance.fetch(request);
+}
