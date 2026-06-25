@@ -11,8 +11,8 @@ type Props = {
   eta?: string;
 };
 
-const BROWSER_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY ?? "";
-const TRACKING_ID = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID ?? "";
+const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY ?? "";
+
 
 const DARK_STYLES: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#0d1117" }] },
@@ -40,7 +40,7 @@ function loadGoogleMaps(): Promise<typeof google> {
       callback: cbName,
       libraries: "maps,marker",
     });
-    if (TRACKING_ID) params.set("channel", TRACKING_ID);
+    
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     script.async = true;
@@ -75,7 +75,7 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
   const routeMetaRef = useRef<{ durationSecs: number; totalKm: number } | null>(null);
   const [mapEta, setMapEta] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>(BROWSER_KEY ? "loading" : "no-key");
+  const [status, setStatus] = useState<Status>((() => { if (!BROWSER_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return 'no-key'; } return 'loading'; })();
 
   const recomputeEta = useCallback((driverPos: LatLng, destPos: LatLng) => {
     const meta = routeMetaRef.current;
