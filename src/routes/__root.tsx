@@ -99,11 +99,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         children: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-8WT9JGB5Q5');`,
       },
-      {
-        src: "https://maps.googleapis.com/maps/api/js?key=AIzaSyCgMH4S_LkDbRnubX0KASbITI-abCGUnGM&libraries=maps,marker&loading=async",
-        async: true,
-        defer: true,
-      },
+        ...(import.meta.env.VITE_GOOGLE_MAPS_KEY
+                      ? [{ src: `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=maps,marker&loading=async`, async: true, defer: true }]
+                      : (typeof console !== 'undefined' && console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set — Google Maps will not load'), []))
     ],
   }),
   shellComponent: RootShell,
