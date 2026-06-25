@@ -75,7 +75,7 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
   const routeMetaRef = useRef<{ durationSecs: number; totalKm: number } | null>(null);
   const [mapEta, setMapEta] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>((() => { if (!BROWSER_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return 'no-key'; } return 'loading'; })();
+  const [status, setStatus] = useState<Status>((() => { if (!BROWSER_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return 'no-key'; } return 'loading'; })());
 
   const recomputeEta = useCallback((driverPos: LatLng, destPos: LatLng) => {
     const meta = routeMetaRef.current;
