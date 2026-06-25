@@ -20,8 +20,8 @@ import { steelLabel, formatBRL } from "@/lib/steel";
 import { cn } from "@/lib/utils";
 
 const BR_CENTER = { lat: -15.7801, lng: -47.9292 };
-const MAPS_KEY = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_BROWSER_KEY as string | undefined;
-const MAPS_CHANNEL = import.meta.env.VITE_LOVABLE_CONNECTOR_GOOGLE_MAPS_TRACKING_ID as string | undefined;
+const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
+
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0d1117" }] },
@@ -442,7 +442,7 @@ function LiveMap({ contractIds }: { contractIds: string[] }) {
 
   // Load script
   useEffect(() => {
-    if (!MAPS_KEY) return;
+    if (!MAPS_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return; }
     if (window.google?.maps) { setReady(true); return; }
     if (document.getElementById("steelgo-maps-script")) {
       window.__steelGoMapsInit = () => setReady(true);
@@ -452,7 +452,7 @@ function LiveMap({ contractIds }: { contractIds: string[] }) {
     const s = document.createElement("script");
     s.id = "steelgo-maps-script";
     s.async = true;
-    s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&loading=async&callback=__steelGoMapsInit${MAPS_CHANNEL ? `&channel=${MAPS_CHANNEL}` : ""}`;
+    s.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_KEY}&loading=async&callback=__steelGoMapsInit`;
     document.head.appendChild(s);
   }, []);
 
