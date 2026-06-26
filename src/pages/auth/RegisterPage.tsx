@@ -72,13 +72,12 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
       email: personal.email,
       password: personal.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/onboarding`,
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
           full_name: personal.full_name,
           role,
           phone: personal.phone,
-          cpf: personal.cpf,
-        },
+          },
       },
     });
 
