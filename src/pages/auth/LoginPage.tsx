@@ -10,10 +10,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
 
 type DevRole = "shipper" | "carrier" | "driver";
+// Preview-only test accounts. These addresses are intentionally safe/test-only.
+// If the account is not already present in Supabase Auth for preview, create it manually there before using this helper.
 const DEV_ACCOUNTS: { role: DevRole; emoji: string; label: string; email: string }[] = [
-  { role: "shipper", emoji: "🏭", label: "Embarcador", email: "shipper@dev.steelgo.com" },
-  { role: "carrier", emoji: "🚛", label: "Transportadora", email: "carrier@dev.steelgo.com" },
-  { role: "driver", emoji: "👤", label: "Motorista", email: "driver@dev.steelgo.com" },
+  { role: "shipper", emoji: "🏭", label: "Embarcador", email: "shipper.test@steelgobr.com.br" },
+  { role: "carrier", emoji: "🚛", label: "Transportadora", email: "carrier.test@steelgobr.com.br" },
+  { role: "driver", emoji: "👤", label: "Motorista", email: "driver.test@steelgobr.com.br" },
 ];
 const DEV_PASSWORD = "DevTest123!";
 
@@ -22,123 +24,103 @@ async function ensureDevAccount(role: DevRole, email: string, index: number) {
     console.log(`[devLogin:${role}] ${step}`, extra ?? "");
 
   log("step 1: try signInWithPassword");
-  let { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+  const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
     email,
     password: DEV_PASSWORD,
   });
 
   if (signInErr || !signInData.session) {
-    log("step 2: signIn failed → signUp", signInErr?.message);
-    const { data: signUpData, error: signUpErr } = await supabase.auth.signUp({
-      email,
-      password: DEV_PASSWORD,
-      options: {
-        data: {
-          full_name: `Dev ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-          role,
-        },
-      },
-    });
-    if (signUpErr) {
-      console.error("[devLogin] signUp error:", signUpErr);
-      throw new Error(`signUp falhou: ${signUpErr.message}`);
-    }
-    const userId = signUpData.user?.id;
-    if (!userId) throw new Error("signUp não retornou user.id");
-    log("step 3: signUp ok", userId);
-
-    await new Promise((r) => setTimeout(r, 800));
-
-    log("step 4: upsert profile");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: profileErr } = await (supabase.from("profiles") as any).upsert(
-      {
-        id: userId,
-        full_name: `Dev ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-        email,
-        is_verified: true,
-        is_onboarded: true,
-        language: "pt-BR",
-        is_active: true,
-      },
-      { onConflict: "id" },
+    log("step 2: signIn failed; preview dev accounts must already exist in Supabase Auth", signInErr?.message);
+    throw new Error(
+      `Preview dev login requires a Supabase Auth test account for ${email}. Create it manually in Supabase Auth before using this helper.`,
     );
-    if (profileErr) {
-      console.error("[devLogin] profile upsert error:", profileErr);
-      alert(`Erro ao criar profile:\n${profileErr.message}\n\nDetalhes: ${profileErr.details ?? "—"}\nHint: ${profileErr.hint ?? "—"}\nCode: ${profileErr.code ?? "—"}`);
-      throw new Error(`profile upsert: ${profileErr.message}`);
-    }
+  }
 
-    log("step 5: ensure user_roles");
+  const userId = signInData.user?.id;
+  if (!userId) throw new Error("signIn não retornou user.id");
+  log("step 2: signIn ok", userId);
+
+  await new Promise((r) => setTimeout(r, 800));
+
+  log("step 3: upsert profile");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: profileErr } = await (supabase.from("profiles") as any).upsert(
+    {
+      id: userId,
+      full_name: `Dev ${role.charAt(0).toUpperCase() + role.slice(1)}`,
+      email,
+      is_verified: true,
+      is_onboarded: true,
+      language: "pt-BR",
+      is_active: true,
+    },
+    { onConflict: "id" },
+  );
+  if (profileErr) {
+    console.error("[devLogin] profile upsert error:", profileErr);
+    alert(`Erro ao criar profile:\n${profileErr.message}\n\nDetalhes: ${profileErr.details ?? "—"}\nHint: ${profileErr.hint ?? "—"}\nCode: ${profileErr.code ?? "—"}`);
+    throw new Error(`profile upsert: ${profileErr.message}`);
+  }
+
+  log("step 4: ensure user_roles");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error: roleErr } = await (supabase.from("user_roles") as any).insert({
+    user_id: userId,
+    role,
+  });
+  if (roleErr && !String(roleErr.message).toLowerCase().includes("duplicate")) {
+    console.error("[devLogin] user_roles insert error:", roleErr);
+    // Non-fatal if trigger already created it
+  }
+
+  if (role !== "driver") {
+    const companyType = role === "shipper" ? "steel_company" : "carrier_company";
+    log("step 5: insert company", companyType);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: roleErr } = await (supabase.from("user_roles") as any).insert({
+    const { data: company, error: companyErr } = await (supabase.from("companies") as any)
+      .insert({
+        name: "Empresa Dev",
+        cnpj: `00.000.000/0001-0${index}`,
+        type: companyType,
+        owner_id: userId,
+      })
+      .select("id")
+      .single();
+    if (companyErr) {
+      console.error("[devLogin] company insert error:", companyErr);
+      alert(`Erro ao criar empresa:\n${companyErr.message}\nDetails: ${companyErr.details ?? "—"}`);
+      throw new Error(`company insert: ${companyErr.message}`);
+    }
+    log("step 5b: company ok", company.id);
+
+    log("step 6: insert company_members");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { error: memberErr } = await (supabase.from("company_members") as any).insert({
+      company_id: company.id,
       user_id: userId,
-      role,
+      member_role: "owner",
     });
-    if (roleErr && !String(roleErr.message).toLowerCase().includes("duplicate")) {
-      console.error("[devLogin] user_roles insert error:", roleErr);
-      // Non-fatal if trigger already created it
+    if (memberErr) {
+      console.error("[devLogin] company_members error:", memberErr);
+      alert(`Erro company_members:\n${memberErr.message}`);
+      throw new Error(`company_members: ${memberErr.message}`);
     }
 
-    if (role !== "driver") {
-      const companyType = role === "shipper" ? "steel_company" : "carrier_company";
-      log("step 6: insert company", companyType);
+    if (role === "carrier") {
+      log("step 7: insert carrier");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: company, error: companyErr } = await (supabase.from("companies") as any)
-        .insert({
-          name: "Empresa Dev",
-          cnpj: `00.000.000/0001-0${index}`,
-          type: companyType,
-          owner_id: userId,
-        })
-        .select("id")
-        .single();
-      if (companyErr) {
-        console.error("[devLogin] company insert error:", companyErr);
-        alert(`Erro ao criar empresa:\n${companyErr.message}\nDetails: ${companyErr.details ?? "—"}`);
-        throw new Error(`company insert: ${companyErr.message}`);
-      }
-      log("step 6b: company ok", company.id);
-
-      log("step 7: insert company_members");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: memberErr } = await (supabase.from("company_members") as any).insert({
+      const { error: carrierErr } = await (supabase.from("carriers") as any).insert({
         company_id: company.id,
-        user_id: userId,
-        member_role: "owner",
+        antt_rntrc: "BR-0000001",
+        fleet_size: 1,
+        truck_types: ["carreta"],
       });
-      if (memberErr) {
-        console.error("[devLogin] company_members error:", memberErr);
-        alert(`Erro company_members:\n${memberErr.message}`);
-        throw new Error(`company_members: ${memberErr.message}`);
-      }
-
-      if (role === "carrier") {
-        log("step 8: insert carrier");
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const { error: carrierErr } = await (supabase.from("carriers") as any).insert({
-          company_id: company.id,
-          antt_rntrc: "BR-0000001",
-          fleet_size: 1,
-          truck_types: ["carreta"],
-        });
-        if (carrierErr) {
-          console.error("[devLogin] carrier insert error:", carrierErr);
-          alert(`Erro carrier:\n${carrierErr.message}`);
-          throw new Error(`carrier: ${carrierErr.message}`);
-        }
+      if (carrierErr) {
+        console.error("[devLogin] carrier insert error:", carrierErr);
+        alert(`Erro carrier:\n${carrierErr.message}`);
+        throw new Error(`carrier: ${carrierErr.message}`);
       }
     }
-
-    log("step 9: signIn again");
-    const retry = await supabase.auth.signInWithPassword({ email, password: DEV_PASSWORD });
-    if (retry.error) {
-      console.error("[devLogin] retry signIn error:", retry.error);
-      throw new Error(`retry signIn: ${retry.error.message}`);
-    }
-    signInData = retry.data;
-  } else {
-    log("step 2: signIn ok (account already exists)");
   }
 
   return signInData;
