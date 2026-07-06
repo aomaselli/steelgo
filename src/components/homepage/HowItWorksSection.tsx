@@ -58,16 +58,16 @@ export function HowItWorksSection() {
   const dotColor = tab === "shipper" ? "bg-[#1B6CB8]" : "bg-[#1A9B5E]";
 
   return (
-    <section id="como-funciona" className="bg-[#0D1117]" style={{ padding: "100px 0" }}>
+    <section id="como-funciona" className="bg-[#F7F9FB]" style={{ padding: "100px 0" }}>
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="text-center mb-16">
           <div className="mb-3">
-            <span className="text-[#79B8F8] text-xs uppercase tracking-widest font-medium">{c.eyebrow}</span>
+            <span className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
           </div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">
-            {c.h2a}<span className="text-[#3B89D4]">{c.h2b}</span>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">
+            {c.h2a}<span className="text-[#1B6CB8]">{c.h2b}</span>
           </h2>
-          <p className="text-[#8B949E] text-lg max-w-xl mx-auto">{c.sub}</p>
+          <p className="text-[#475569] text-lg max-w-xl mx-auto">{c.sub}</p>
         </div>
 
         <div className="flex justify-center gap-2 mb-12">
@@ -78,8 +78,8 @@ export function HowItWorksSection() {
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={active
-                  ? "bg-[#1B6CB8] text-white rounded-full px-5 py-2 text-sm font-medium"
-                  : "border border-[#30363D] text-[#8B949E] rounded-full px-5 py-2 text-sm hover:text-[#E6EDF3] hover:border-[#484F58] transition-colors"}
+                  ? "bg-[#1B6CB8] text-white rounded-full px-5 py-2 text-sm font-medium shadow-sm"
+                  : "border border-[#D8E1EA] bg-white text-[#475569] rounded-full px-5 py-2 text-sm hover:text-[#0F172A] hover:border-[#1B6CB8]/30 transition-colors"}
               >
                 {t.label}
               </button>
@@ -87,23 +87,23 @@ export function HowItWorksSection() {
           })}
         </div>
 
-        <div key={tab} className="max-w-2xl mx-auto animate-fade-in">
+        <div key={tab} className="mx-auto max-w-2xl animate-fade-in">
           {steps.map((s, i) => {
             const isLast = i === steps.length - 1;
             return (
               <div key={s.title} className={`flex gap-6 items-start ${isLast ? "mb-0" : "mb-10"}`}>
                 <div className="flex flex-col items-center">
-                  <div className={`w-9 h-9 rounded-full ${dotColor} text-white font-bold text-sm flex items-center justify-center flex-shrink-0`}>
+                  <div className={`w-9 h-9 rounded-full ${dotColor} text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm`}>
                     {i + 1}
                   </div>
-                  {!isLast && <div className="w-px flex-1 bg-[#30363D] mt-2 min-h-[40px]" />}
+                  {!isLast && <div className="mt-2 min-h-[44px] w-px flex-1 bg-[#E2E8F0]" />}
                 </div>
-                <div className={`flex-1 pb-10 ${isLast ? "border-0" : "border-b border-[#30363D]/30"}`}>
-                  <div className="flex items-center gap-2 mb-2">
+                <div className={`flex-1 rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm ${isLast ? "" : "mb-2"}`}>
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="text-xl">{s.emoji}</span>
-                    <h3 className="text-[#E6EDF3] font-semibold text-lg">{s.title}</h3>
+                    <h3 className="text-[#0F172A] font-semibold text-lg">{s.title}</h3>
                   </div>
-                  <p className="text-[#8B949E] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
+                  <p className="text-[#475569] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
                 </div>
               </div>
             );

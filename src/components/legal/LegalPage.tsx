@@ -24,7 +24,7 @@ export function LegalPage({ title, intro, sections, lastUpdated, note, icon, lan
   const Icon = icon === "privacy" ? ShieldCheck : icon === "terms" ? Scale : Cookie;
 
   return (
-    <div className="min-h-screen bg-[#F7F9FC] text-[#0F172A]">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A]">
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10 lg:px-8">
         <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-[#1B6CB8] hover:underline">
           <ArrowLeft size={16} />
@@ -42,7 +42,7 @@ export function LegalPage({ title, intro, sections, lastUpdated, note, icon, lan
                   {language === "pt" ? "Modelo legal preliminar" : language === "es" ? "Plantilla legal preliminar" : "Preliminary legal template"}
                 </p>
                 <h1 className="mt-2 text-3xl font-semibold text-[#0F172A]">{title}</h1>
-                <div className="mt-4 space-y-2 text-sm leading-7 text-[#475569]">
+                <div className="mt-4 space-y-2 text-sm leading-7 text-[#334155]">
                   {intro.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
@@ -65,13 +65,13 @@ export function LegalPage({ title, intro, sections, lastUpdated, note, icon, lan
             {sections.map((section) => (
               <section key={section.title} className="border-t border-[#E2E8F0] pt-6 first:border-t-0 first:pt-0">
                 <h2 className="text-xl font-semibold text-[#0F172A]">{section.title}</h2>
-                <div className="mt-4 space-y-3 text-sm leading-7 text-[#475569]">
+                <div className="mt-4 space-y-3 text-sm leading-7 text-[#334155]">
                   {section.body.map((paragraph) => (
                     <p key={paragraph}>{paragraph}</p>
                   ))}
                 </div>
                 {section.bullets && section.bullets.length > 0 && (
-                  <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-7 text-[#475569]">
+                  <ul className="mt-4 list-disc space-y-2 pl-6 text-sm leading-7 text-[#334155]">
                     {section.bullets.map((bullet) => (
                       <li key={bullet}>{bullet}</li>
                     ))}

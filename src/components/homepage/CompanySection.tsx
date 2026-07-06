@@ -61,23 +61,23 @@ export function CompanySection() {
   const segment = c.segments[active];
 
   return (
-    <section id="empresas" className="bg-[#0D1117] py-[100px]">
+    <section id="empresas" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="mb-12">
-          <div className="text-[#79B8F8] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <div className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#475569] text-lg">{c.sub}</p>
         </div>
 
-        <div className="flex gap-2 mb-10 flex-wrap">
+        <div className="mb-10 flex flex-wrap gap-2">
           {(Object.keys(c.segments) as SegmentKey[]).map((key) => {
             const isActive = key === active;
             return (
               <button
                 key={key}
                 onClick={() => setActive(key)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  isActive ? "bg-[#1B6CB8] text-white" : "border border-[#30363D] text-[#8B949E] hover:text-[#E6EDF3]"
+                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  isActive ? "bg-[#1B6CB8] text-white shadow-sm" : "border border-[#D8E1EA] bg-white text-[#475569] hover:text-[#0F172A]"
                 }`}
               >
                 {c.segments[key].label}
@@ -86,35 +86,35 @@ export function CompanySection() {
           })}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div className="grid grid-cols-1 gap-16 rounded-[24px] border border-[#D8E1EA] bg-white p-8 shadow-sm md:grid-cols-2">
           <div>
-            <h3 className="text-[#E6EDF3] font-bold text-xl mb-3">{segment.title}</h3>
-            <p className="text-sm text-[#8B949E] mb-4" style={{ lineHeight: 1.7 }}>{segment.body}</p>
+            <h3 className="text-[#0F172A] font-bold text-xl mb-3">{segment.title}</h3>
+            <p className="mb-4 text-sm text-[#475569]" style={{ lineHeight: 1.7 }}>{segment.body}</p>
             <div className="flex flex-col gap-2">
               {segment.bullets.map((b) => (
                 <div key={b} className="flex items-start gap-2">
-                  <Check size={16} className="text-[#2ECC8A] flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-[#C9D1D9]">{b}</span>
+                  <Check size={16} className="mt-0.5 flex-shrink-0 text-[#1A9B5E]" />
+                  <span className="text-sm text-[#334155]">{b}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          <div>
+          <div className="rounded-[20px] border border-[#E2E8F0] bg-[#F8FAFC] p-6">
             {c.features.map((f, i) => (
-              <div key={f} className={`flex items-center gap-2 py-2.5 ${i === c.features.length - 1 ? "" : "border-b border-[#30363D]/30"}`}>
-                <Check size={16} className="text-[#2ECC8A]" />
-                <span className="text-sm text-[#C9D1D9]">{f}</span>
+              <div key={f} className={`flex items-center gap-2 py-2.5 ${i === c.features.length - 1 ? "" : "border-b border-[#E2E8F0]"}`}>
+                <Check size={16} className="text-[#1A9B5E]" />
+                <span className="text-sm text-[#334155]">{f}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="bg-[#1B6CB8] hover:bg-[#1758a0] text-white h-12 px-8 text-base">
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#1B6CB8] px-8 text-base text-white hover:bg-[#1758a0]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="text-[#E6EDF3] hover:bg-[#1C2128] h-12 px-8 text-base">{c.ctaSecondary}</Button>
+          <Button size="lg" variant="ghost" className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]">{c.ctaSecondary}</Button>
         </div>
       </div>
     </section>

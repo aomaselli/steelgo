@@ -58,39 +58,39 @@ export function ESGSection() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <section id="esg" className="bg-[#0D1117] py-[100px]">
+    <section id="esg" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="mb-16">
-          <div className="text-[#2ECC8A] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <div className="text-[#1A9B5E] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#475569] text-lg">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div className="grid grid-cols-1 gap-16 md:grid-cols-2">
           <div className="grid grid-cols-2 gap-4">
             {c.metrics.map((m) => (
-              <div key={m.label} className="bg-[#161B22] border border-[#30363D] rounded-[12px] p-4 text-center">
-                <div className="text-2xl mb-2">{m.icon}</div>
-                <div className="font-bold text-2xl tabular-nums" style={{ color: m.valueColor }}>{m.value}</div>
-                <div className="text-xs text-[#8B949E] mt-1">{m.label}</div>
+              <div key={m.label} className="rounded-[14px] border border-[#D8E1EA] bg-white p-4 text-center shadow-sm">
+                <div className="mb-2 text-2xl">{m.icon}</div>
+                <div className="text-2xl font-bold tabular-nums" style={{ color: m.valueColor }}>{m.value}</div>
+                <div className="mt-1 text-xs text-[#475569]">{m.label}</div>
               </div>
             ))}
           </div>
 
-          <div className="bg-[#161B22] border border-[#30363D] rounded-[16px] p-6">
-            <h3 className="text-[#E6EDF3] font-semibold mb-4">{c.reportTitle}</h3>
+          <div className="rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
+            <h3 className="mb-4 text-lg font-semibold text-[#0F172A]">{c.reportTitle}</h3>
             <div className="flex flex-col gap-2">
               {c.reportItems.map((item) => (
                 <div key={item} className="flex items-start gap-2">
-                  <Check size={14} className="text-[#2ECC8A] flex-shrink-0 mt-0.5" />
-                  <span className="text-sm text-[#C9D1D9]">{item}</span>
+                  <Check size={14} className="mt-0.5 flex-shrink-0 text-[#1A9B5E]" />
+                  <span className="text-sm text-[#334155]">{item}</span>
                 </div>
               ))}
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <Button size="lg" className="bg-[#1A9B5E] hover:bg-[#168f55] text-white">{c.ctaPrimary}</Button>
-              <Button size="lg" variant="ghost" className="text-[#E6EDF3] hover:bg-[#1C2128]">{c.ctaSecondary}</Button>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button size="lg" className="bg-[#1A9B5E] text-white hover:bg-[#168f55]">{c.ctaPrimary}</Button>
+              <Button size="lg" variant="ghost" className="border-[#D8E1EA] text-[#334155] hover:bg-[#F8FAFC]">{c.ctaSecondary}</Button>
             </div>
           </div>
         </div>

@@ -71,35 +71,35 @@ export function TraditionalFreightSection() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <section id="frete-tradicional" className="bg-[#161B22] py-[100px]">
+    <section id="frete-tradicional" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="mb-16">
           <div className="mb-4">
-            <span className="text-[#79B8F8] text-xs uppercase tracking-widest font-medium">{c.eyebrow}</span>
+            <span className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
           </div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#475569] text-lg">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
+        <div className="grid grid-cols-1 gap-16 rounded-[24px] border border-[#D8E1EA] bg-white p-8 shadow-sm md:grid-cols-2">
           <div>
-            <h3 className="text-[#8B949E] text-sm mb-3">{c.steelLabel}</h3>
+            <h3 className="mb-3 text-sm text-[#475569]">{c.steelLabel}</h3>
             <div className="grid grid-cols-2 gap-3">
               {c.steelTypes.map((t) => (
                 <div key={t} className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-sm bg-[#1B6CB8]" />
-                  <span className="text-sm text-[#C9D1D9]">{t}</span>
+                  <span className="h-2 w-2 rounded-sm bg-[#1B6CB8]" />
+                  <span className="text-sm text-[#334155]">{t}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-[#8B949E] text-sm mb-3">{c.truckLabel}</h3>
+            <h3 className="mb-3 text-sm text-[#475569]">{c.truckLabel}</h3>
             <div>
               {c.trucks.map((truck, i) => (
-                <div key={truck.name} className={`flex justify-between items-center py-2 ${i === c.trucks.length - 1 ? "" : "border-b border-[#30363D]/40"}`}>
-                  <span className="text-[#C9D1D9] text-sm">{truck.name}</span>
+                <div key={truck.name} className={`flex items-center justify-between py-2 ${i === c.trucks.length - 1 ? "" : "border-b border-[#E2E8F0]"}`}>
+                  <span className="text-sm text-[#334155]">{truck.name}</span>
                   <Badge variant="outline" className={payloadBadgeClass(truck.tone)}>{truck.payload}</Badge>
                 </div>
               ))}
@@ -107,12 +107,12 @@ export function TraditionalFreightSection() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+        <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {c.features.map((f) => (
-            <div key={f.title} className="bg-[#1C2128] border border-[#30363D] rounded-[14px] p-5">
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <div className="text-[#E6EDF3] font-semibold text-sm mb-2">{f.title}</div>
-              <p className="text-[#8B949E] text-xs" style={{ lineHeight: 1.7 }}>{f.desc}</p>
+            <div key={f.title} className="rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm">
+              <div className="mb-3 text-2xl">{f.icon}</div>
+              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{f.title}</div>
+              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
             </div>
           ))}
         </div>

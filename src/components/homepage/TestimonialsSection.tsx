@@ -28,26 +28,26 @@ export function TestimonialsSection() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <section className="bg-[#161B22] py-[100px]">
-      <div className="max-w-[1280px] mx-auto px-6">
-        <div className="text-center mb-12">
-          <div className="text-[#79B8F8] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">{c.h2}</h2>
+    <section className="bg-[#F7F9FB] py-[100px]">
+      <div className="mx-auto max-w-[1280px] px-6">
+        <div className="mb-12 text-center">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#1B6CB8]">{c.eyebrow}</div>
+          <h2 className="mb-4 text-4xl font-bold text-[#0F172A]">{c.h2}</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {c.testimonials.map((t) => (
-            <div key={t.name} className="bg-[#1C2128] border border-[#30363D] rounded-[16px] p-6 relative flex flex-col">
-              <Badge variant="outline" className={`absolute top-5 right-5 ${t.tagClass}`}>{t.tag}</Badge>
-              <div className="flex gap-0.5 mb-4 text-[#F0A500] text-sm">{"★★★★★"}</div>
-              <p className="text-[#C9D1D9] text-sm italic flex-1 mb-6" style={{ lineHeight: 1.8 }}>"{t.quote}"</p>
-              <div className="flex items-center gap-3 border-t border-[#30363D] pt-4">
-                <Avatar className="w-9 h-9">
-                  <AvatarFallback className="bg-[#1B6CB8]/20 text-[#79B8F8] text-xs">{t.initials}</AvatarFallback>
+            <div key={t.name} className="relative flex flex-col rounded-[16px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
+              <Badge variant="outline" className={`absolute right-5 top-5 ${t.tagClass}`}>{t.tag}</Badge>
+              <div className="mb-4 flex gap-0.5 text-sm text-[#F0A500]">{"★★★★★"}</div>
+              <p className="mb-6 flex-1 text-sm italic text-[#334155]" style={{ lineHeight: 1.8 }}>"{t.quote}"</p>
+              <div className="flex items-center gap-3 border-t border-[#E2E8F0] pt-4">
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-[#1B6CB8]/15 text-xs text-[#1B6CB8]">{t.initials}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="text-sm font-semibold text-[#E6EDF3]">{t.name}</div>
-                  <div className="text-xs text-[#8B949E]">{t.title}</div>
+                  <div className="text-sm font-semibold text-[#0F172A]">{t.name}</div>
+                  <div className="text-xs text-[#64748B]">{t.title}</div>
                 </div>
               </div>
             </div>

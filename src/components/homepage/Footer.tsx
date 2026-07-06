@@ -3,9 +3,9 @@ import { useLanguage } from "@/lib/i18n";
 
 const COPY = {
   pt: {
-    tagline: "Marketplace de logística especializado em transporte de aço no Brasil.",
+    tagline: "Plataforma de tecnologia para logística industrial na América Latina, começando pela cadeia do aço.",
     columns: [
-      { title: "Produto", links: ["Como funciona", "Preços", "Segurança", "Logística verde", "API"] },
+      { title: "Produto", links: ["Como funciona", "Segurança", "Logística verde", "API"] },
       { title: "Empresa", links: ["Sobre nós", "Blog", "Carreiras", "Imprensa"] },
       { title: "Suporte", links: ["Central de ajuda", "Status", "Contato", "WhatsApp"] },
       {
@@ -21,9 +21,9 @@ const COPY = {
     badges: ["ANTT Parceiro", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
   en: {
-    tagline: "Logistics marketplace specialized in steel transport across Brazil.",
+    tagline: "Technology platform for industrial logistics in Latin America, starting with the steel supply chain.",
     columns: [
-      { title: "Product", links: ["How it works", "Pricing", "Security", "Green logistics", "API"] },
+      { title: "Product", links: ["How it works", "Security", "Green logistics", "API"] },
       { title: "Company", links: ["About us", "Blog", "Careers", "Press"] },
       { title: "Support", links: ["Help center", "Status", "Contact", "WhatsApp"] },
       {
@@ -39,9 +39,9 @@ const COPY = {
     badges: ["ANTT Partner", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
   es: {
-    tagline: "Marketplace de logística especializado en transporte de acero en Brasil.",
+    tagline: "Plataforma tecnológica para logística industrial en América Latina, comenzando por la cadena del acero.",
     columns: [
-      { title: "Producto", links: ["Cómo funciona", "Precios", "Seguridad", "Logística verde", "API"] },
+      { title: "Producto", links: ["Cómo funciona", "Seguridad", "Logística verde", "API"] },
       { title: "Empresa", links: ["Sobre nosotros", "Blog", "Carreras", "Prensa"] },
       { title: "Soporte", links: ["Centro de ayuda", "Estado", "Contacto", "WhatsApp"] },
       {
@@ -63,7 +63,7 @@ export function Footer() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <footer className="bg-[#161B22] border-t border-[#30363D] pt-[60px] pb-8">
+    <footer className="border-t border-[#D8E1EA] bg-[#F8FAFC] pt-[60px] pb-8 text-[#0F172A]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2">
@@ -71,13 +71,13 @@ export function Footer() {
               <div className="w-8 h-8 bg-[#1B6CB8] rounded-[8px] flex items-center justify-center">
                 <Zap size={18} className="text-white" />
               </div>
-              <span className="text-[#E6EDF3] font-bold text-lg">SteelGo</span>
+              <span className="text-[#0F172A] font-bold text-lg">SteelGo</span>
             </div>
-            <p className="text-sm text-[#8B949E] mt-3 mb-4 max-w-xs">{c.tagline}</p>
+            <p className="text-sm text-[#475569] mt-3 mb-4 max-w-xs">{c.tagline}</p>
             <div className="flex gap-3 mt-4">
               {[Linkedin, Instagram, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-8 h-8 rounded-[8px] bg-[#21262D] flex items-center justify-center hover:bg-[#30363D] transition-colors">
-                  <Icon size={16} className="text-[#8B949E]" />
+                <a key={i} href="#" className="w-8 h-8 rounded-[8px] border border-[#D8E1EA] bg-white flex items-center justify-center text-[#475569] hover:border-[#1A9B5E] hover:text-[#1A9B5E] transition-colors">
+                  <Icon size={16} />
                 </a>
               ))}
             </div>
@@ -85,21 +85,21 @@ export function Footer() {
 
           {c.columns.map((col) => (
             <div key={col.title}>
-              <div className="text-xs uppercase tracking-widest text-[#484F58] font-bold mb-4">{col.title}</div>
+              <div className="text-xs uppercase tracking-widest text-[#334155] font-bold mb-4">{col.title}</div>
               <div className="flex flex-col gap-2">
                 {col.links.map((link) => (
-                  <a key={link.href} href={link.href} className="text-sm text-[#8B949E] hover:text-[#E6EDF3] transition-colors">{link.label}</a>
+                  <a key={link.href} href={link.href} className="text-sm text-[#334155] hover:text-[#1A9B5E] hover:underline transition-colors">{link.label}</a>
                 ))}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="border-t border-[#30363D] pt-6 flex items-center justify-between flex-wrap gap-4">
-          <div className="text-xs text-[#484F58]">{c.copyright}</div>
+        <div className="border-t border-[#E2E8F0] pt-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="text-xs text-[#64748B]">{c.copyright}</div>
           <div className="flex gap-2 flex-wrap">
             {c.badges.map((b) => (
-              <span key={b} className="text-xs text-[#484F58] bg-[#21262D] border border-[#30363D] rounded-full px-3 py-1">{b}</span>
+              <span key={b} className="text-xs text-[#334155] bg-white border border-[#D8E1EA] rounded-full px-3 py-1">{b}</span>
             ))}
           </div>
         </div>

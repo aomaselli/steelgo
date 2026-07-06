@@ -52,64 +52,64 @@ export function CarrierSection() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <section id="transportadoras" className="bg-[#161B22] py-[100px]">
+    <section id="transportadoras" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="mb-12">
-          <div className="text-[#79B8F8] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">
-            {c.h2a}<span className="text-[#2ECC8A]">{c.h2b}</span>
+          <div className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">
+            {c.h2a}<span className="text-[#1A9B5E]">{c.h2b}</span>
           </h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <p className="text-[#475569] text-lg">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {c.benefits.map(({ Icon, bg, color, title, desc }) => (
-            <div key={title} className="flex gap-3 items-start">
-              <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${bg}`}>
+            <div key={title} className="flex items-start gap-3 rounded-[18px] border border-[#D8E1EA] bg-white p-4 shadow-sm">
+              <div className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full ${bg}`}>
                 <Icon size={18} style={{ color }} />
               </div>
               <div>
-                <div className="text-sm font-semibold text-[#E6EDF3] mb-1">{title}</div>
-                <p className="text-xs text-[#8B949E]" style={{ lineHeight: 1.6 }}>{desc}</p>
+                <div className="mb-1 text-sm font-semibold text-[#0F172A]">{title}</div>
+                <p className="text-xs text-[#475569]" style={{ lineHeight: 1.6 }}>{desc}</p>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8 rounded-[24px] border border-[#D8E1EA] bg-white p-8 shadow-sm md:grid-cols-2">
           <div>
-            <h3 className="text-[#E6EDF3] font-semibold mb-3">{c.docsTitle}</h3>
+            <h3 className="mb-3 font-semibold text-[#0F172A]">{c.docsTitle}</h3>
             <div>
               {c.docs.map((doc, i) => (
-                <div key={doc} className={`flex items-center gap-2 py-2 ${i === c.docs.length - 1 ? "" : "border-b border-[#30363D]/40"}`}>
-                  <CheckCircle2 size={16} className="text-[#2ECC8A]" />
-                  <span className="text-sm text-[#C9D1D9]">{doc}</span>
+                <div key={doc} className={`flex items-center gap-2 py-2 ${i === c.docs.length - 1 ? "" : "border-b border-[#E2E8F0]"}`}>
+                  <CheckCircle2 size={16} className="text-[#1A9B5E]" />
+                  <span className="text-sm text-[#334155]">{doc}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-[#E6EDF3] font-semibold mb-3">{c.stepsTitle}</h3>
+            <h3 className="mb-3 font-semibold text-[#0F172A]">{c.stepsTitle}</h3>
             <div className="flex items-center gap-0">
               {c.steps.map((label, i) => (
                 <div key={label} className="contents">
                   <div className="flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-[#1B6CB8] text-white text-xs font-bold flex items-center justify-center">{i + 1}</div>
-                    <div className="text-[10px] text-[#8B949E] text-center mt-1 max-w-[60px]">{label}</div>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1B6CB8] text-xs font-bold text-white">{i + 1}</div>
+                    <div className="mt-1 max-w-[60px] text-center text-[10px] text-[#475569]">{label}</div>
                   </div>
-                  {i < c.steps.length - 1 && <div className="flex-1 h-px bg-[#30363D]" />}
+                  {i < c.steps.length - 1 && <div className="h-px flex-1 bg-[#E2E8F0]" />}
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "carrier" } as never })} className="bg-[#1B6CB8] hover:bg-[#1758a0] text-white">
+        <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "carrier" } as never })} className="bg-[#1B6CB8] text-white hover:bg-[#1758a0]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="text-[#E6EDF3] hover:bg-[#1C2128]">{c.ctaSecondary}</Button>
+          <Button size="lg" variant="ghost" className="border-[#D8E1EA] text-[#334155] hover:bg-[#F8FAFC]">{c.ctaSecondary}</Button>
         </div>
       </div>
     </section>

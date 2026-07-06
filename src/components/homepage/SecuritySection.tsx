@@ -54,41 +54,41 @@ export function SecuritySection() {
   const c = COPY[language] ?? COPY.en;
 
   return (
-    <section id="seguranca" className="bg-[#161B22] py-[100px]">
+    <section id="seguranca" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
-        <div className="bg-[#CC8800]/10 border border-[#CC8800]/30 rounded-[12px] p-4 flex gap-3 items-start mb-12">
-          <AlertTriangle size={20} className="text-[#F0A500] flex-shrink-0 mt-0.5" />
-          <p className="text-[#C9D1D9] text-sm" style={{ lineHeight: 1.6 }}>{c.alert}</p>
+        <div className="mb-12 flex items-start gap-3 rounded-[12px] border border-[#F0C36D]/40 bg-[#FFF8E8] p-4">
+          <AlertTriangle size={20} className="mt-0.5 flex-shrink-0 text-[#D97706]" />
+          <p className="text-sm text-[#7C4A00]" style={{ lineHeight: 1.6 }}>{c.alert}</p>
         </div>
 
         <div className="mb-12">
-          <div className="text-[#F0A500] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <div className="text-[#D97706] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
+          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#475569] text-lg">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-12">
+        <div className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {c.cards.map((card) => (
-            <div key={card.title} className="bg-[#1C2128] rounded-[14px] p-5 relative border-t-4" style={{ borderTopColor: card.borderColor }}>
-              <Badge variant="outline" className={`absolute top-4 right-4 ${card.tagClass}`}>{card.tag}</Badge>
-              <div className="text-2xl mb-3">{card.icon}</div>
-              <div className="text-[#E6EDF3] font-semibold text-sm mb-2">{card.title}</div>
-              <p className="text-[#8B949E] text-xs" style={{ lineHeight: 1.7 }}>{card.body}</p>
+            <div key={card.title} className="relative rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm" style={{ borderTopColor: card.borderColor }}>
+              <Badge variant="outline" className={`absolute right-4 top-4 ${card.tagClass}`}>{card.tag}</Badge>
+              <div className="mb-3 text-2xl">{card.icon}</div>
+              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{card.title}</div>
+              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{card.body}</p>
             </div>
           ))}
         </div>
 
-        <div className="bg-[#1C2128] border border-[#30363D] rounded-[16px] p-6">
-          <h3 className="text-[#E6EDF3] font-semibold text-lg mb-4">{c.legalTitle}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-[#0F172A]">{c.legalTitle}</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {c.legalItems.map(({ Icon, title, desc }) => (
-              <div key={title} className="flex gap-3 items-start">
-                <div className="w-8 h-8 bg-[#1B6CB8]/10 rounded-[8px] flex items-center justify-center flex-shrink-0">
-                  <Icon size={16} className="text-[#79B8F8]" />
+              <div key={title} className="flex items-start gap-3">
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] bg-[#1B6CB8]/10">
+                  <Icon size={16} className="text-[#1B6CB8]" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-[#C9D1D9]">{title}</div>
-                  <div className="text-xs text-[#8B949E] mt-0.5">{desc}</div>
+                  <div className="text-sm font-medium text-[#0F172A]">{title}</div>
+                  <div className="mt-0.5 text-xs text-[#475569]">{desc}</div>
                 </div>
               </div>
             ))}

@@ -91,60 +91,60 @@ export function GreenLogisticsSection() {
   }, [distance, weight, factor]);
 
   return (
-    <section id="logistica-verde" className="relative py-[100px] bg-[#0D1117] overflow-hidden">
+    <section id="logistica-verde" className="relative overflow-hidden bg-[#F7F9FB] py-[100px]">
       <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 0%, rgba(26,155,94,0.08) 0%, transparent 70%)" }} />
 
-      <div className="relative max-w-[1280px] mx-auto px-6">
-        <div className="text-center mb-16">
-          <div className="text-[#2ECC8A] text-xs uppercase tracking-widest font-medium mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#E6EDF3] font-bold text-4xl mb-4">
-            {c.h2a}<span className="text-[#2ECC8A]">{c.h2b}</span>
+      <div className="relative mx-auto max-w-[1280px] px-6">
+        <div className="mb-16 text-center">
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#1A9B5E]">{c.eyebrow}</div>
+          <h2 className="mb-4 text-4xl font-bold text-[#0F172A]">
+            {c.h2a}<span className="text-[#1A9B5E]">{c.h2b}</span>
           </h2>
-          <p className="text-[#8B949E] text-lg">{c.sub}</p>
+          <p className="mx-auto text-lg text-[#475569]">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
-          <div className="border border-[#1A9B5E] bg-[#1A9B5E]/5 rounded-[16px] p-6">
-            <span className="inline-block bg-[#1A9B5E]/20 text-[#2ECC8A] border border-[#1A9B5E]/40 rounded-full px-2.5 py-0.5 text-xs mb-4">🔋 EV</span>
-            <h3 className="text-[#E6EDF3] font-bold text-xl mb-2">{c.evTitle}</h3>
-            <p className="text-[#8B949E] text-sm" style={{ lineHeight: 1.7 }}>{c.evDesc}</p>
-            <div className="flex items-center gap-2 mt-4">
-              <Leaf size={18} className="text-[#2ECC8A]" />
-              <span className="text-[#2ECC8A] font-bold text-lg">{c.evHighlight}</span>
+        <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2">
+          <div className="rounded-[18px] border border-[#1A9B5E]/30 bg-[#F1FBF7] p-6 shadow-sm">
+            <span className="mb-4 inline-block rounded-full border border-[#1A9B5E]/40 bg-[#1A9B5E]/15 px-2.5 py-0.5 text-xs text-[#1A9B5E]">🔋 EV</span>
+            <h3 className="mb-2 text-xl font-bold text-[#0F172A]">{c.evTitle}</h3>
+            <p className="text-sm text-[#475569]" style={{ lineHeight: 1.7 }}>{c.evDesc}</p>
+            <div className="mt-4 flex items-center gap-2">
+              <Leaf size={18} className="text-[#1A9B5E]" />
+              <span className="text-lg font-bold text-[#1A9B5E]">{c.evHighlight}</span>
             </div>
-            <div className="text-[#484F58] text-xs mt-1">{c.evNote}</div>
+            <div className="mt-1 text-xs text-[#64748B]">{c.evNote}</div>
           </div>
 
-          <div className="border border-[#0F6E56] bg-[#0F6E56]/5 rounded-[16px] p-6">
-            <span className="inline-block bg-[#0F6E56]/20 text-[#3DD68C] border border-[#0F6E56]/40 rounded-full px-2.5 py-0.5 text-xs mb-4">⛽ LC</span>
-            <h3 className="text-[#E6EDF3] font-bold text-xl mb-2">{c.lcTitle}</h3>
-            <p className="text-[#8B949E] text-sm" style={{ lineHeight: 1.7 }}>{c.lcDesc}</p>
-            <div className="flex items-center gap-2 mt-4">
-              <ArrowDown size={18} className="text-[#3DD68C]" />
-              <span className="text-[#3DD68C] font-bold text-lg">{c.lcHighlight}</span>
+          <div className="rounded-[18px] border border-[#0F6E56]/30 bg-[#F4FCF8] p-6 shadow-sm">
+            <span className="mb-4 inline-block rounded-full border border-[#0F6E56]/40 bg-[#0F6E56]/15 px-2.5 py-0.5 text-xs text-[#0F6E56]">⛽ LC</span>
+            <h3 className="mb-2 text-xl font-bold text-[#0F172A]">{c.lcTitle}</h3>
+            <p className="text-sm text-[#475569]" style={{ lineHeight: 1.7 }}>{c.lcDesc}</p>
+            <div className="mt-4 flex items-center gap-2">
+              <ArrowDown size={18} className="text-[#0F6E56]" />
+              <span className="text-lg font-bold text-[#0F6E56]">{c.lcHighlight}</span>
             </div>
           </div>
         </div>
 
-        <div className="bg-[#1C2128] border border-[#30363D] rounded-[16px] p-6 mb-16">
-          <h3 className="text-[#E6EDF3] font-semibold mb-6">{c.calcTitle}</h3>
+        <div className="mb-16 rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
+          <h3 className="mb-6 font-semibold text-[#0F172A]">{c.calcTitle}</h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div>
-              <label className="block text-sm text-[#8B949E] mb-2">{c.distance}</label>
+              <label className="mb-2 block text-sm text-[#475569]">{c.distance}</label>
               <input type="range" min={100} max={2000} step={10} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-full" style={{ accentColor: "#1B6CB8" }} />
-              <div className="text-[#E6EDF3] font-bold text-lg mt-2">{distance} km</div>
+              <div className="mt-2 text-lg font-bold text-[#0F172A]">{distance} km</div>
             </div>
 
             <div>
-              <label className="block text-sm text-[#8B949E] mb-2">{c.weight}</label>
+              <label className="mb-2 block text-sm text-[#475569]">{c.weight}</label>
               <input type="range" min={1} max={74} step={1} value={weight} onChange={(e) => setWeight(Number(e.target.value))} className="w-full" style={{ accentColor: "#1B6CB8" }} />
-              <div className="text-[#E6EDF3] font-bold text-lg mt-2">{weight} t</div>
+              <div className="mt-2 text-lg font-bold text-[#0F172A]">{weight} t</div>
             </div>
 
             <div>
-              <label className="block text-sm text-[#8B949E] mb-2">{c.fuel}</label>
-              <select value={factor} onChange={(e) => setFactor(Number(e.target.value))} className="w-full bg-[#0D1117] border border-[#30363D] rounded-md px-3 py-2 text-[#E6EDF3] text-sm">
+              <label className="mb-2 block text-sm text-[#475569]">{c.fuel}</label>
+              <select value={factor} onChange={(e) => setFactor(Number(e.target.value))} className="w-full rounded-md border border-[#D8E1EA] bg-[#F8FAFC] px-3 py-2 text-sm text-[#0F172A]">
                 {c.fuelOptions.map((f) => (
                   <option key={f.label} value={f.value}>{f.label}</option>
                 ))}
@@ -152,41 +152,41 @@ export function GreenLogisticsSection() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-[#30363D]">
+          <div className="mt-6 grid grid-cols-1 gap-4 border-t border-[#E2E8F0] pt-6 md:grid-cols-3">
             <div className="text-center">
-              <div className="text-xs text-[#8B949E] mb-1">{c.emitted}</div>
-              <div className="font-bold text-xl text-[#F0A500]">{emitted} kg</div>
+              <div className="mb-1 text-xs text-[#64748B]">{c.emitted}</div>
+              <div className="text-xl font-bold text-[#D97706]">{emitted} kg</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-[#8B949E] mb-1">{c.baseline}</div>
-              <div className="font-bold text-xl text-[#8B949E]">{baseline} kg</div>
+              <div className="mb-1 text-xs text-[#64748B]">{c.baseline}</div>
+              <div className="text-xl font-bold text-[#64748B]">{baseline} kg</div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-[#8B949E] mb-1">{c.saved}</div>
-              <div className="font-bold text-2xl text-[#2ECC8A]">{saved} kg</div>
+              <div className="mb-1 text-xs text-[#64748B]">{c.saved}</div>
+              <div className="text-2xl font-bold text-[#1A9B5E]">{saved} kg</div>
             </div>
           </div>
 
           {saved > 0 && (
-            <div className="text-center text-sm text-[#2ECC8A] mt-3">{c.trees(trees)}</div>
+            <div className="mt-3 text-center text-sm text-[#1A9B5E]">{c.trees(trees)}</div>
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {c.features.map((f) => (
-            <div key={f.title} className="bg-[#1C2128] border border-[#30363D] rounded-[14px] p-5">
-              <div className="text-2xl mb-3">{f.icon}</div>
-              <div className="text-[#E6EDF3] font-semibold text-sm mb-2">{f.title}</div>
-              <p className="text-[#8B949E] text-xs" style={{ lineHeight: 1.7 }}>{f.desc}</p>
+            <div key={f.title} className="rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm">
+              <div className="mb-3 text-2xl">{f.icon}</div>
+              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{f.title}</div>
+              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
             </div>
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mt-12 justify-center">
-          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="bg-[#1A9B5E] hover:bg-[#168f55] text-white h-12 px-8 text-base">
+        <div className="mt-12 flex flex-col justify-center gap-4 sm:flex-row">
+          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#1A9B5E] px-8 text-base text-white hover:bg-[#168f55]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="h-12 px-8 text-base text-[#E6EDF3] hover:bg-[#1C2128]">
+          <Button size="lg" variant="ghost" className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]">
             {c.ctaSecondary}
           </Button>
         </div>

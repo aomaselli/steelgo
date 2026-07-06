@@ -28,11 +28,11 @@ export function LogosStrip() {
   }, []);
 
   return (
-    <section ref={ref} className="bg-[#161B22] border-y border-[#30363D]" style={{ padding: "32px 0" }}>
-      <div className="max-w-[1280px] mx-auto px-6">
-        <div className="text-[#484F58] text-xs uppercase tracking-widest text-center mb-6">{label}</div>
+    <section ref={ref} className="border-y border-[#D8E1EA] bg-[#F8FAFC]" style={{ padding: "32px 0" }}>
+      <div className="mx-auto max-w-[1280px] px-6">
+        <div className="mb-6 text-center text-xs font-semibold uppercase tracking-widest text-[#64748B]">{label}</div>
         <div
-          className="flex items-center justify-center gap-12 flex-wrap transition-all ease-out"
+          className="flex flex-wrap items-center justify-center gap-12 transition-all ease-out"
           style={{
             transitionDuration: "600ms",
             opacity: visible ? 1 : 0,
@@ -40,8 +40,8 @@ export function LogosStrip() {
           }}
         >
           {LOGOS.map((name) => (
-            <div key={name} className="rounded bg-[#30363D]/40 h-7 flex items-center px-4">
-              <span className="text-[#484F58] text-sm font-medium">{name}</span>
+            <div key={name} className="flex h-7 items-center rounded bg-white px-4 shadow-sm ring-1 ring-[#E2E8F0]">
+              <span className="text-sm font-medium text-[#475569]">{name}</span>
             </div>
           ))}
         </div>
