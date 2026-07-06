@@ -8,7 +8,14 @@ const COPY = {
       { title: "Produto", links: ["Como funciona", "Preços", "Segurança", "Logística verde", "API"] },
       { title: "Empresa", links: ["Sobre nós", "Blog", "Carreiras", "Imprensa"] },
       { title: "Suporte", links: ["Central de ajuda", "Status", "Contato", "WhatsApp"] },
-      { title: "Legal", links: ["Termos de uso", "Privacidade", "LGPD", "Cookies"] },
+      {
+        title: "Legal",
+        links: [
+          { label: "Termos de uso", href: "/terms" },
+          { label: "Privacidade", href: "/privacy" },
+          { label: "Cookies", href: "/cookies" },
+        ],
+      },
     ],
     copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, SP",
     badges: ["ANTT Parceiro", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
@@ -19,10 +26,35 @@ const COPY = {
       { title: "Product", links: ["How it works", "Pricing", "Security", "Green logistics", "API"] },
       { title: "Company", links: ["About us", "Blog", "Careers", "Press"] },
       { title: "Support", links: ["Help center", "Status", "Contact", "WhatsApp"] },
-      { title: "Legal", links: ["Terms of use", "Privacy", "LGPD", "Cookies"] },
+      {
+        title: "Legal",
+        links: [
+          { label: "Terms of use", href: "/terms" },
+          { label: "Privacy", href: "/privacy" },
+          { label: "Cookies", href: "/cookies" },
+        ],
+      },
     ],
     copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, Brazil",
     badges: ["ANTT Partner", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
+  },
+  es: {
+    tagline: "Marketplace de logística especializado en transporte de acero en Brasil.",
+    columns: [
+      { title: "Producto", links: ["Cómo funciona", "Precios", "Seguridad", "Logística verde", "API"] },
+      { title: "Empresa", links: ["Sobre nosotros", "Blog", "Carreras", "Prensa"] },
+      { title: "Soporte", links: ["Centro de ayuda", "Estado", "Contacto", "WhatsApp"] },
+      {
+        title: "Legal",
+        links: [
+          { label: "Términos de uso", href: "/terms" },
+          { label: "Privacidad", href: "/privacy" },
+          { label: "Cookies", href: "/cookies" },
+        ],
+      },
+    ],
+    copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, Brasil",
+    badges: ["Socio ANTT", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
 } as const;
 
@@ -56,7 +88,7 @@ export function Footer() {
               <div className="text-xs uppercase tracking-widest text-[#484F58] font-bold mb-4">{col.title}</div>
               <div className="flex flex-col gap-2">
                 {col.links.map((link) => (
-                  <a key={link} href="#" className="text-sm text-[#8B949E] hover:text-[#E6EDF3] transition-colors">{link}</a>
+                  <a key={link.href} href={link.href} className="text-sm text-[#8B949E] hover:text-[#E6EDF3] transition-colors">{link.label}</a>
                 ))}
               </div>
             </div>

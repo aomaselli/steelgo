@@ -23,6 +23,7 @@ import {
   Factory,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/lib/i18n";
 import { maskCPF, maskCNPJ, maskPhone, onlyDigits, UFS } from "@/lib/masks";
 import type { UserRole } from "@/types/database";
 
@@ -339,6 +340,13 @@ function StepPersonal({
   submitting: boolean;
 }) {
   const [showPwd, setShowPwd] = useState(false);
+  const { language } = useLanguage();
+  const consentText =
+    language === "es"
+      ? "Al continuar, aceptas los Términos de Uso y la Política de Privacidad de SteelGo."
+      : language === "en"
+        ? "By continuing, you agree to SteelGo’s Terms of Use and Privacy Policy."
+        : "Ao continuar, você concorda com os Termos de Uso e a Política de Privacidade da SteelGo.";
   const {
     register,
     handleSubmit,
@@ -459,14 +467,7 @@ function StepPersonal({
           className="w-4 h-4 mt-0.5 accent-[#1B6CB8] flex-shrink-0"
         />
         <span className="text-sm text-[#8B949E]">
-          Li e aceito os{" "}
-          <span className="text-[#3B89D4] cursor-pointer hover:underline">
-            Termos de Uso
-          </span>{" "}
-          e a{" "}
-          <span className="text-[#3B89D4] cursor-pointer hover:underline">
-            Política de Privacidade
-          </span>
+          {consentText}
         </span>
       </label>
       {errors.terms && <p className="text-xs text-red-400">{errors.terms.message}</p>}
