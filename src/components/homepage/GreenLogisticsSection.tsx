@@ -78,7 +78,7 @@ const COPY = {
 export function GreenLogisticsSection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
   const [distance, setDistance] = useState(620);
   const [weight, setWeight] = useState(42);
   const [factor, setFactor] = useState(0.0321);

@@ -68,7 +68,7 @@ function payloadBadgeClass(tone: TruckRow["tone"]) {
 
 export function TraditionalFreightSection() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section id="frete-tradicional" className="bg-[#161B22] py-[100px]">

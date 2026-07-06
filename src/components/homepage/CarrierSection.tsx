@@ -49,7 +49,7 @@ const COPY = {
 export function CarrierSection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section id="transportadoras" className="bg-[#161B22] py-[100px]">

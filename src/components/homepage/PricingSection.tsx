@@ -44,7 +44,7 @@ const COPY = {
 
 export function PricingSection() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section id="precos" className="bg-[#0D1117] py-[100px]">

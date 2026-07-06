@@ -28,7 +28,7 @@ const COPY = {
 
 export function Footer() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <footer className="bg-[#161B22] border-t border-[#30363D] pt-[60px] pb-8">

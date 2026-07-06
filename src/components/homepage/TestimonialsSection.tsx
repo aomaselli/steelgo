@@ -25,7 +25,7 @@ const COPY = {
 
 export function TestimonialsSection() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section className="bg-[#161B22] py-[100px]">

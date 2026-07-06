@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/homepage/Navbar";
 import { HeroSection } from "@/components/homepage/HeroSection";
-import { LogosStrip } from "@/components/homepage/LogosStrip";
 import { HowItWorksSection } from "@/components/homepage/HowItWorksSection";
 import { TraditionalFreightSection } from "@/components/homepage/TraditionalFreightSection";
 import { GreenLogisticsSection } from "@/components/homepage/GreenLogisticsSection";
@@ -9,7 +8,6 @@ import { SecuritySection } from "@/components/homepage/SecuritySection";
 import { ESGSection } from "@/components/homepage/ESGSection";
 import { CarrierSection } from "@/components/homepage/CarrierSection";
 import { CompanySection } from "@/components/homepage/CompanySection";
-import { TestimonialsSection } from "@/components/homepage/TestimonialsSection";
 import { PricingSection } from "@/components/homepage/PricingSection";
 import { FinalCTASection } from "@/components/homepage/FinalCTASection";
 import { Footer } from "@/components/homepage/Footer";
@@ -36,11 +34,10 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="min-h-screen bg-[#0D1117] text-[#E6EDF3]">
+    <div className="homepage-shell min-h-screen text-[#0f172a]">
       <Navbar />
       <main>
         <HeroSection />
-        <LogosStrip />
         <HowItWorksSection />
         <TraditionalFreightSection />
         <GreenLogisticsSection />
@@ -48,7 +45,6 @@ function Home() {
         <ESGSection />
         <CarrierSection />
         <CompanySection />
-        <TestimonialsSection />
         <PricingSection />
         <FinalCTASection />
       </main>

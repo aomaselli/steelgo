@@ -22,7 +22,7 @@ const COPY = {
 export function FinalCTASection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section className="relative bg-[#0D1117] py-[100px] text-center overflow-hidden">

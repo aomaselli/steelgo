@@ -53,7 +53,7 @@ const COPY = {
 export function HowItWorksSection() {
   const [tab, setTab] = useState<TabKey>("shipper");
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
   const steps = tab === "shipper" ? c.shipperSteps : c.carrierSteps;
   const dotColor = tab === "shipper" ? "bg-[#1B6CB8]" : "bg-[#1A9B5E]";
 

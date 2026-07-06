@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Zap, Menu, X } from "lucide-react";
+import { Menu, X, Zap } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useLanguage } from "@/lib/i18n";
 
@@ -12,10 +12,9 @@ const NAV_COPY = {
       { id: "transportadoras", label: "Transportadoras" },
       { id: "logistica-verde", label: "Logística Verde" },
       { id: "seguranca", label: "Segurança" },
-      { id: "precos", label: "Preços" },
     ],
     signIn: "Entrar",
-    cta: "Começar grátis →",
+    cta: "Solicitar acesso →",
     openMenu: "Abrir menu",
     closeMenu: "Fechar menu",
   },
@@ -26,25 +25,34 @@ const NAV_COPY = {
       { id: "transportadoras", label: "Carriers" },
       { id: "logistica-verde", label: "Green logistics" },
       { id: "seguranca", label: "Security" },
-      { id: "precos", label: "Pricing" },
     ],
     signIn: "Sign in",
-    cta: "Get started free →",
+    cta: "Request access →",
     openMenu: "Open menu",
     closeMenu: "Close menu",
+  },
+  es: {
+    links: [
+      { id: "como-funciona", label: "Cómo funciona" },
+      { id: "empresas", label: "Para empresas" },
+      { id: "transportadoras", label: "Transportistas" },
+      { id: "logistica-verde", label: "Logística verde" },
+      { id: "seguranca", label: "Seguridad" },
+    ],
+    signIn: "Iniciar sesión",
+    cta: "Solicitar acceso →",
+    openMenu: "Abrir menú",
+    closeMenu: "Cerrar menú",
   },
 } as const;
 
 function Logo() {
   return (
     <div className="flex items-center gap-2">
-      <div className="w-8 h-8 bg-[#1B6CB8] rounded-[8px] flex items-center justify-center">
+      <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#1A9B5E]">
         <Zap size={18} className="text-white" />
       </div>
-      <span className="text-[#E6EDF3] font-bold text-lg">SteelGo</span>
-      <span className="ml-1 text-[9px] bg-[#1B6CB8]/20 text-[#79B8F8] border border-[#1B6CB8]/30 rounded-full px-2 py-0.5">
-        Beta
-      </span>
+      <span className="text-lg font-semibold text-[#0f172a]">SteelGo</span>
     </div>
   );
 }
@@ -52,17 +60,15 @@ function Logo() {
 function LangToggle() {
   const { language, setLanguage } = useLanguage();
   return (
-    <div className="flex border border-[#30363D] rounded-full overflow-hidden">
-      {(["pt", "en"] as const).map((lng) => {
+    <div className="flex overflow-hidden rounded-full border border-[#dbe8f8] bg-white/80">
+      {(["pt", "en", "es"] as const).map((lng) => {
         const active = language === lng;
         return (
           <button
             key={lng}
             onClick={() => setLanguage(lng)}
-            className={`text-xs px-3 py-1 transition-colors ${
-              active
-                ? "bg-[#1B6CB8] text-white"
-                : "text-[#8B949E] hover:text-[#E6EDF3]"
+            className={`px-3 py-1 text-xs transition-colors ${
+              active ? "bg-[#1A9B5E] text-white" : "text-[#475569] hover:text-[#0f172a]"
             }`}
           >
             {lng.toUpperCase()}
@@ -76,7 +82,7 @@ function LangToggle() {
 export function Navbar() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const c = NAV_COPY[language];
+  const c = NAV_COPY[language] ?? NAV_COPY.en;
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -103,40 +109,42 @@ export function Navbar() {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 w-full h-16 transition-all duration-200 ${
-          scrolled
-            ? "bg-[#161B22]/95 backdrop-blur-sm border-b border-[#30363D]"
-            : "bg-transparent"
+        className={`sticky top-0 z-50 h-16 w-full border-b transition-all duration-200 ${
+          scrolled ? "border-[#dbe8f8] bg-white/90 backdrop-blur" : "border-transparent bg-transparent"
         }`}
       >
-        <div className="max-w-[1280px] mx-auto px-6 flex items-center justify-between h-full">
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 lg:px-8">
           <Logo />
 
-          <nav className="hidden md:flex gap-6">
+          <nav className="hidden gap-6 md:flex">
             {c.links.map((l) => (
               <button
                 key={l.id}
                 onClick={() => scrollTo(l.id)}
-                className="text-[#8B949E] hover:text-[#E6EDF3] text-sm transition-colors cursor-pointer"
+                className="text-sm text-[#475569] transition-colors hover:text-[#0f172a]"
               >
                 {l.label}
               </button>
             ))}
           </nav>
 
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <LangToggle />
             <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
               {c.signIn}
             </Button>
-            <Button variant="primary" size="sm" onClick={() => navigate({ to: "/register" })}>
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })}
+            >
               {c.cta}
             </Button>
           </div>
 
           <button
             onClick={() => setMobileOpen(true)}
-            className="md:hidden text-[#8B949E] hover:text-[#E6EDF3]"
+            className="text-[#475569] hover:text-[#0f172a] md:hidden"
             aria-label={c.openMenu}
           >
             <Menu size={24} />
@@ -145,17 +153,17 @@ export function Navbar() {
       </header>
 
       <div
-        className={`md:hidden fixed inset-0 bg-[#0D1117] z-50 flex flex-col transition-transform duration-250 ${
+        className={`fixed inset-0 z-50 flex flex-col bg-[#f8fbff] transition-transform duration-250 md:hidden ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ transitionDuration: "250ms" }}
         aria-hidden={!mobileOpen}
       >
-        <div className="flex items-center justify-between px-6 h-16 border-b border-[#21262D]">
+        <div className="flex h-16 items-center justify-between border-b border-[#dbe8f8] px-6">
           <Logo />
           <button
             onClick={() => setMobileOpen(false)}
-            className="text-[#8B949E] hover:text-[#E6EDF3]"
+            className="text-[#475569] hover:text-[#0f172a]"
             aria-label={c.closeMenu}
           >
             <X size={24} />
@@ -167,14 +175,14 @@ export function Navbar() {
             <button
               key={l.id}
               onClick={() => scrollTo(l.id)}
-              className="block w-full text-left text-xl py-4 border-b border-[#21262D] text-[#E6EDF3]"
+              className="block w-full border-b border-[#dbe8f8] py-4 text-left text-xl text-[#0f172a]"
             >
               {l.label}
             </button>
           ))}
         </nav>
 
-        <div className="p-6 flex flex-col gap-3 border-t border-[#21262D]">
+        <div className="flex flex-col gap-3 border-t border-[#dbe8f8] p-6">
           <LangToggle />
           <Button
             variant="ghost"
@@ -193,7 +201,7 @@ export function Navbar() {
             fullWidth
             onClick={() => {
               setMobileOpen(false);
-              navigate({ to: "/register" });
+              navigate({ to: "/register", search: { role: "shipper" } as never });
             }}
           >
             {c.cta}

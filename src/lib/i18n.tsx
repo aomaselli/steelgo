@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type Language = "pt" | "en";
+export type Language = "pt" | "en" | "es";
 
 const translations = {
   pt: {
@@ -297,6 +297,7 @@ const translations = {
 } as const;
 
 type Translations = typeof translations;
+type TranslationDict = Translations[keyof Translations];
 
 function getByPath(obj: unknown, path: string): string {
   const parts = path.split(".");
@@ -315,7 +316,7 @@ interface LanguageContextValue {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
-  raw: Translations[Language];
+  raw: TranslationDict;
 }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
@@ -325,11 +326,19 @@ const STORAGE_KEY = "steelgo.language";
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [language, setLanguageState] = useState<Language>("pt");
 
-  // Hydrate from localStorage on client
   useEffect(() => {
     if (typeof window === "undefined") return;
+
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === "pt" || stored === "en") setLanguageState(stored);
+    if (stored === "pt" || stored === "en" || stored === "es") {
+      setLanguageState(stored as Language);
+      return;
+    }
+
+    const isHomePage = window.location.pathname === "/" || window.location.pathname === "";
+    if (isHomePage) {
+      setLanguageState("en");
+    }
   }, []);
 
   const setLanguage = (lang: Language) => {
@@ -340,7 +349,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<LanguageContextValue>(() => {
-    const dict = translations[language];
+    const dict = language === "es" ? translations.pt : translations[language as "pt" | "en"];
     return {
       language,
       setLanguage,

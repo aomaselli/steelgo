@@ -51,7 +51,7 @@ const COPY = {
 
 export function SecuritySection() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section id="seguranca" className="bg-[#161B22] py-[100px]">

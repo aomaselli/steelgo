@@ -55,7 +55,7 @@ const COPY = {
 
 export function ESGSection() {
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
 
   return (
     <section id="esg" className="bg-[#0D1117] py-[100px]">

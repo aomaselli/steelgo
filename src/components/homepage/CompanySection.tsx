@@ -56,7 +56,7 @@ const COPY = {
 export function CompanySection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
-  const c = COPY[language];
+  const c = COPY[language] ?? COPY.en;
   const [active, setActive] = useState<SegmentKey>("siderurgica");
   const segment = c.segments[active];
 
