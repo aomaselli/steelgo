@@ -8,7 +8,7 @@ import { SecuritySection } from "@/components/homepage/SecuritySection";
 import { ESGSection } from "@/components/homepage/ESGSection";
 import { CarrierSection } from "@/components/homepage/CarrierSection";
 import { CompanySection } from "@/components/homepage/CompanySection";
-import { PricingSection } from "@/components/homepage/PricingSection";
+import { RequestAccessSection } from "@/components/homepage/RequestAccessSection";
 import { FinalCTASection } from "@/components/homepage/FinalCTASection";
 import { Footer } from "@/components/homepage/Footer";
 import { WhatsAppButton } from "@/components/homepage/WhatsAppButton";
@@ -45,7 +45,7 @@ function Home() {
         <ESGSection />
         <CarrierSection />
         <CompanySection />
-        <PricingSection />
+        <RequestAccessSection />
         <FinalCTASection />
       </main>
       <Footer />
