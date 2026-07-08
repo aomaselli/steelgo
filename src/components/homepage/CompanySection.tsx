@@ -57,6 +57,12 @@ export function CompanySection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const c = COPY[language] ?? COPY.en;
+  const contactMailto =
+    language === "en"
+      ? "mailto:ariane@steelgoapp.com?subject=SteelGo%20contact&body=Hello%2C%20I%20would%20like%20to%20learn%20more%20about%20SteelGo."
+      : language === "es"
+        ? "mailto:ariane@steelgoapp.com?subject=Contacto%20SteelGo&body=Hola%2C%20me%20gustaría%20saber%20más%20sobre%20SteelGo."
+        : "mailto:ariane@steelgoapp.com?subject=Contato%20SteelGo&body=Olá%2C%20gostaria%20de%20saber%20mais%20sobre%20a%20SteelGo.";
   const [active, setActive] = useState<SegmentKey>("siderurgica");
   const segment = c.segments[active];
 
@@ -114,7 +120,14 @@ export function CompanySection() {
           <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#1B6CB8] px-8 text-base text-white hover:bg-[#1758a0]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]">{c.ctaSecondary}</Button>
+          <Button
+            size="lg"
+            variant="ghost"
+            className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]"
+            onClick={() => window.location.assign(contactMailto)}
+          >
+            {c.ctaSecondary}
+          </Button>
         </div>
       </div>
     </section>

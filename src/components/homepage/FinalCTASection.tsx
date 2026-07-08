@@ -8,14 +8,21 @@ const COPY = {
     sub: "Cadastre-se em menos de 5 minutos e publique seu primeiro frete hoje. Sem cartão de crédito, sem burocracia.",
     ctaPrimary: "Publicar meu primeiro frete →",
     ctaSecondary: "Falar com especialista",
-    contact: "Ou fale diretamente:",
+    contact: "Contato:",
   },
   en: {
     h2: "Ready to digitize your steel logistics?",
     sub: "Sign up in under 5 minutes and post your first freight today. No credit card, no paperwork.",
     ctaPrimary: "Post my first freight →",
     ctaSecondary: "Talk to a specialist",
-    contact: "Or reach us directly:",
+    contact: "Contact:",
+  },
+  es: {
+    h2: "¿Listo para digitalizar tu logística de acero?",
+    sub: "Regístrate en menos de 5 minutos y publica tu primer flete hoy. Sin tarjeta de crédito y sin burocracia.",
+    ctaPrimary: "Publicar mi primer flete →",
+    ctaSecondary: "Hablar con un especialista",
+    contact: "Contacto:",
   },
 } as const;
 
@@ -23,6 +30,12 @@ export function FinalCTASection() {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const c = COPY[language] ?? COPY.en;
+  const contactMailto =
+    language === "en"
+      ? "mailto:ariane@steelgoapp.com?subject=SteelGo%20contact&body=Hello%2C%20I%20would%20like%20to%20learn%20more%20about%20SteelGo."
+      : language === "es"
+        ? "mailto:ariane@steelgoapp.com?subject=Contacto%20SteelGo&body=Hola%2C%20me%20gustaría%20saber%20más%20sobre%20SteelGo."
+        : "mailto:ariane@steelgoapp.com?subject=Contato%20SteelGo&body=Olá%2C%20gostaria%20de%20saber%20mais%20sobre%20a%20SteelGo.";
 
   return (
     <section className="relative overflow-hidden bg-[#F7F9FB] py-[100px] text-center">
@@ -35,16 +48,19 @@ export function FinalCTASection() {
           <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#1B6CB8] px-8 text-base text-white hover:bg-[#1758a0]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]">
+          <Button
+            size="lg"
+            variant="ghost"
+            className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]"
+            onClick={() => window.location.assign(contactMailto)}
+          >
             {c.ctaSecondary}
           </Button>
         </div>
 
         <div className="text-sm text-[#64748B]">
           {c.contact}{" "}
-          <a href="mailto:oi@steelgo.com.br" className="text-[#1B6CB8] hover:underline">oi@steelgo.com.br</a>{" "}
-          · WhatsApp:{" "}
-          <a href="https://wa.me/5511984339109" target="_blank" rel="noreferrer" className="text-[#1B6CB8] hover:underline">(11) 98433-9109</a>
+          <a href={contactMailto} className="text-[#1B6CB8] hover:underline">ariane@steelgoapp.com</a>
         </div>
       </div>
     </section>

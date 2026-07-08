@@ -6,13 +6,8 @@ import { useLanguage } from "@/lib/i18n";
 const COPY = {
   pt: {
     eyebrow: "Tecnologia para logística industrial",
-    h1: (
-      <>
-        Construindo a{" "}
-        <span className="text-[#1A9B5E]">infraestrutura inteligente</span> da logística industrial na América Latina.
-      </>
-    ),
-    sub: "Começando pelo aço, a SteelGo conecta embarcadores, transportadoras e motoristas por meio de rastreamento, operações verificadas, fluxos digitais e visibilidade em tempo real.",
+    h1: <>Conectando a logística industrial na América Latina.</>,
+    sub: "A SteelGo conecta operações industriais, transportadoras e motoristas em uma infraestrutura digital para controle, rastreamento e visibilidade em tempo real.",
     ctaPrimary: "Solicitar acesso",
     ctaSecondary: "Entrar",
     cardTitle: "Projetado para equipes modernas de logística",
@@ -21,19 +16,14 @@ const COPY = {
     bullets: [
       "Fluxos digitais desde a cotação até a entrega",
       "Rastreamento e visibilidade em tempo real",
-      "Pagamentos protegidos e contratos prontos para assinatura",
+      "Compliance, assinatura e evidências digitais por padrão.",
     ],
     note: "Sem processos dispersos. Mais controle, menos retrabalho.",
   },
   en: {
     eyebrow: "Technology for Industrial Logistics",
-    h1: (
-      <>
-        Building the{" "}
-        <span className="text-[#1A9B5E]">Intelligent Infrastructure</span> for Industrial Logistics in Latin America.
-      </>
-    ),
-    sub: "Starting with steel, SteelGo connects shippers, carriers and drivers through tracking, verified operations, digital workflows and real-time visibility.",
+    h1: <>Connecting industrial logistics across Latin America.</>,
+    sub: "SteelGo connects industrial operations, carriers and drivers through a digital infrastructure for control, tracking and real-time visibility.",
     ctaPrimary: "Request access",
     ctaSecondary: "Sign in",
     cardTitle: "Built for modern logistics teams",
@@ -42,19 +32,14 @@ const COPY = {
     bullets: [
       "Digital flows from quote to delivery",
       "Live tracking and operational visibility",
-      "Protected payments and contract-ready handoffs",
+      "Compliance, signatures and digital evidence by default.",
     ],
     note: "Less noise, more control across every leg of the shipment.",
   },
   es: {
     eyebrow: "Tecnología para logística industrial",
-    h1: (
-      <>
-        Construyendo la{" "}
-        <span className="text-[#1A9B5E]">infraestructura inteligente</span> de la logística industrial en América Latina.
-      </>
-    ),
-    sub: "Comenzando por el acero, SteelGo conecta embarcadores, transportistas y conductores mediante rastreo, operaciones verificadas, flujos digitales y visibilidad en tiempo real.",
+    h1: <>Conectando la logística industrial en América Latina.</>,
+    sub: "SteelGo conecta operaciones industriales, transportistas y conductores en una infraestructura digital para control, rastreo y visibilidad en tiempo real.",
     ctaPrimary: "Solicitar acceso",
     ctaSecondary: "Ingresar",
     cardTitle: "Diseñado para equipos modernos de logística",
@@ -63,7 +48,7 @@ const COPY = {
     bullets: [
       "Flujos digitales desde la cotización hasta la entrega",
       "Seguimiento en tiempo real y visibilidad operativa",
-      "Pagos protegidos y procesos listos para firma",
+      "Cumplimiento, firmas y evidencias digitales por defecto.",
     ],
     note: "Menos ruido, más control en cada etapa del traslado.",
   },

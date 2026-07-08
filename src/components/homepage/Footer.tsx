@@ -1,6 +1,8 @@
 import { Zap, Linkedin, Instagram, Youtube } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
+type FooterLink = { label: string; href: string };
+
 const COPY = {
   pt: {
     tagline: "Plataforma de tecnologia para logística industrial na América Latina, começando pela cadeia do aço.",
@@ -17,6 +19,7 @@ const COPY = {
         ],
       },
     ],
+    contactLine: "Contato:",
     copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, SP",
     badges: ["ANTT Parceiro", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
@@ -35,6 +38,7 @@ const COPY = {
         ],
       },
     ],
+    contactLine: "Contact:",
     copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, Brazil",
     badges: ["ANTT Partner", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
@@ -53,6 +57,7 @@ const COPY = {
         ],
       },
     ],
+    contactLine: "Contacto:",
     copyright: "© 2025 SteelGo Tecnologia Ltda. · São Paulo, Brasil",
     badges: ["Socio ANTT", "LGPD Compliant", "ICP-Brasil", "🌿 Net Zero 2025"],
   },
@@ -61,6 +66,12 @@ const COPY = {
 export function Footer() {
   const { language } = useLanguage();
   const c = COPY[language] ?? COPY.en;
+  const contactMailto =
+    language === "en"
+      ? "mailto:ariane@steelgoapp.com?subject=SteelGo%20contact&body=Hello%2C%20I%20would%20like%20to%20learn%20more%20about%20SteelGo."
+      : language === "es"
+        ? "mailto:ariane@steelgoapp.com?subject=Contacto%20SteelGo&body=Hola%2C%20me%20gustaría%20saber%20más%20sobre%20SteelGo."
+        : "mailto:ariane@steelgoapp.com?subject=Contato%20SteelGo&body=Olá%2C%20gostaria%20de%20saber%20mais%20sobre%20a%20SteelGo.";
 
   return (
     <footer className="border-t border-[#D8E1EA] bg-[#F8FAFC] pt-[60px] pb-8 text-[#0F172A]">
@@ -87,12 +98,17 @@ export function Footer() {
             <div key={col.title}>
               <div className="text-xs uppercase tracking-widest text-[#334155] font-bold mb-4">{col.title}</div>
               <div className="flex flex-col gap-2">
-                {col.links.map((link) => (
+                {(col.links as FooterLink[]).map((link) => (
                   <a key={link.href} href={link.href} className="text-sm text-[#334155] hover:text-[#1A9B5E] hover:underline transition-colors">{link.label}</a>
                 ))}
               </div>
             </div>
           ))}
+        </div>
+
+        <div className="mb-6 text-sm text-[#475569]">
+          {c.contactLine}{" "}
+          <a href={contactMailto} className="text-[#1B6CB8] hover:underline">ariane@steelgoapp.com</a>
         </div>
 
         <div className="border-t border-[#E2E8F0] pt-6 flex items-center justify-between flex-wrap gap-4">
