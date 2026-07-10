@@ -39,22 +39,22 @@ export function RequestAccessSection() {
 
   return (
     <section className="bg-[#F7F9FB] py-[100px]">
-      <div className="mx-auto max-w-[860px] rounded-[24px] border border-[#D8E1EA] bg-white px-8 py-12 text-center shadow-sm sm:px-10">
-        <h2 className="text-3xl font-semibold text-[#0F172A] sm:text-4xl">{c.title}</h2>
-        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#475569]">{c.subtitle}</p>
+      <div className="mx-auto max-w-[860px] rounded-[24px] border border-[#E6EAF0] bg-white px-8 py-12 text-center shadow-sm sm:px-10">
+        <h2 className="text-3xl font-semibold text-[#16263F] sm:text-4xl">{c.title}</h2>
+        <p className="mx-auto mt-5 max-w-2xl text-lg leading-8 text-[#5B6B80]">{c.subtitle}</p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-4">
           <Button
             size="lg"
             onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })}
-            className="h-12 bg-[#1B6CB8] px-8 text-base text-white hover:bg-[#1758a0]"
+            className="h-12 bg-[#16263F] px-8 text-base text-white hover:bg-[#101C30]"
           >
             {c.ctaPrimary}
           </Button>
           <Button
             size="lg"
             variant="ghost"
-            className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]"
+            className="h-12 border-[#E6EAF0] px-8 text-base text-[#1F2933] hover:bg-[#F7F9FB]"
             onClick={() => window.location.assign(contactMailto)}
           >
             {c.ctaSecondary}

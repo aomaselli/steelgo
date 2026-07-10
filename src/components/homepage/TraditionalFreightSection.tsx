@@ -60,8 +60,8 @@ const COPY = {
 
 function payloadBadgeClass(tone: TruckRow["tone"]) {
   switch (tone) {
-    case "blue": return "bg-[#1B6CB8]/20 text-[#79B8F8] border-[#1B6CB8]/40";
-    case "amber": return "bg-[#F0A500]/15 text-[#F0A500] border-[#F0A500]/40";
+    case "blue": return "bg-[#16263F]/20 text-[#9FB4D4] border-[#16263F]/40";
+    case "amber": return "bg-[#E0A23A]/15 text-[#E0A23A] border-[#E0A23A]/40";
     default: return "bg-[#30363D]/60 text-[#C9D1D9] border-[#30363D]";
   }
 }
@@ -75,31 +75,31 @@ export function TraditionalFreightSection() {
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="mb-16">
           <div className="mb-4">
-            <span className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
+            <span className="text-[#16263F] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
           </div>
-          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#475569] text-lg">{c.sub}</p>
+          <h2 className="text-[#16263F] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#5B6B80] text-lg">{c.sub}</p>
         </div>
 
-        <div className="grid grid-cols-1 gap-16 rounded-[24px] border border-[#D8E1EA] bg-white p-8 shadow-sm md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-16 rounded-[24px] border border-[#E6EAF0] bg-white p-8 shadow-sm md:grid-cols-2">
           <div>
-            <h3 className="mb-3 text-sm text-[#475569]">{c.steelLabel}</h3>
+            <h3 className="mb-3 text-sm text-[#5B6B80]">{c.steelLabel}</h3>
             <div className="grid grid-cols-2 gap-3">
               {c.steelTypes.map((t) => (
                 <div key={t} className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-sm bg-[#1B6CB8]" />
-                  <span className="text-sm text-[#334155]">{t}</span>
+                  <span className="h-2 w-2 rounded-sm bg-[#16263F]" />
+                  <span className="text-sm text-[#1F2933]">{t}</span>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="mb-3 text-sm text-[#475569]">{c.truckLabel}</h3>
+            <h3 className="mb-3 text-sm text-[#5B6B80]">{c.truckLabel}</h3>
             <div>
               {c.trucks.map((truck, i) => (
-                <div key={truck.name} className={`flex items-center justify-between py-2 ${i === c.trucks.length - 1 ? "" : "border-b border-[#E2E8F0]"}`}>
-                  <span className="text-sm text-[#334155]">{truck.name}</span>
+                <div key={truck.name} className={`flex items-center justify-between py-2 ${i === c.trucks.length - 1 ? "" : "border-b border-[#E6EAF0]"}`}>
+                  <span className="text-sm text-[#1F2933]">{truck.name}</span>
                   <Badge variant="outline" className={payloadBadgeClass(truck.tone)}>{truck.payload}</Badge>
                 </div>
               ))}
@@ -109,10 +109,10 @@ export function TraditionalFreightSection() {
 
         <div className="mt-16 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {c.features.map((f) => (
-            <div key={f.title} className="rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm">
+            <div key={f.title} className="rounded-[16px] border border-[#E6EAF0] bg-white p-5 shadow-sm">
               <div className="mb-3 text-2xl">{f.icon}</div>
-              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{f.title}</div>
-              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
+              <div className="mb-2 text-sm font-semibold text-[#16263F]">{f.title}</div>
+              <p className="text-xs text-[#5B6B80]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
             </div>
           ))}
         </div>

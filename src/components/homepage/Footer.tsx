@@ -74,20 +74,20 @@ export function Footer() {
         : "mailto:ariane@steelgoapp.com?subject=Contato%20SteelGo&body=Olá%2C%20gostaria%20de%20saber%20mais%20sobre%20a%20SteelGo.";
 
   return (
-    <footer className="border-t border-[#D8E1EA] bg-[#F8FAFC] pt-[60px] pb-8 text-[#0F172A]">
+    <footer id="contato" className="border-t border-[#E6EAF0] bg-[#F7F9FB] pt-[60px] pb-8 text-[#16263F]">
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#1B6CB8] rounded-[8px] flex items-center justify-center">
+              <div className="w-8 h-8 bg-[#16263F] rounded-[8px] flex items-center justify-center">
                 <Zap size={18} className="text-white" />
               </div>
-              <span className="text-[#0F172A] font-bold text-lg">SteelGo</span>
+              <span className="text-[#16263F] font-bold text-lg">SteelGo</span>
             </div>
-            <p className="text-sm text-[#475569] mt-3 mb-4 max-w-xs">{c.tagline}</p>
+            <p className="text-sm text-[#5B6B80] mt-3 mb-4 max-w-xs">{c.tagline}</p>
             <div className="flex gap-3 mt-4">
               {[Linkedin, Instagram, Youtube].map((Icon, i) => (
-                <a key={i} href="#" className="w-8 h-8 rounded-[8px] border border-[#D8E1EA] bg-white flex items-center justify-center text-[#475569] hover:border-[#1A9B5E] hover:text-[#1A9B5E] transition-colors">
+                <a key={i} href="#" className="w-8 h-8 rounded-[8px] border border-[#E6EAF0] bg-white flex items-center justify-center text-[#5B6B80] hover:border-[#2FA98A] hover:text-[#2FA98A] transition-colors">
                   <Icon size={16} />
                 </a>
               ))}
@@ -96,26 +96,26 @@ export function Footer() {
 
           {c.columns.map((col) => (
             <div key={col.title}>
-              <div className="text-xs uppercase tracking-widest text-[#334155] font-bold mb-4">{col.title}</div>
+              <div className="text-xs uppercase tracking-widest text-[#1F2933] font-bold mb-4">{col.title}</div>
               <div className="flex flex-col gap-2">
                 {(col.links as FooterLink[]).map((link) => (
-                  <a key={link.href} href={link.href} className="text-sm text-[#334155] hover:text-[#1A9B5E] hover:underline transition-colors">{link.label}</a>
+                  <a key={link.href} href={link.href} className="text-sm text-[#1F2933] hover:text-[#2FA98A] hover:underline transition-colors">{link.label}</a>
                 ))}
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mb-6 text-sm text-[#475569]">
+        <div className="mb-6 text-sm text-[#5B6B80]">
           {c.contactLine}{" "}
-          <a href={contactMailto} className="text-[#1B6CB8] hover:underline">ariane@steelgoapp.com</a>
+          <a href={contactMailto} className="text-[#16263F] hover:underline">ariane@steelgoapp.com</a>
         </div>
 
-        <div className="border-t border-[#E2E8F0] pt-6 flex items-center justify-between flex-wrap gap-4">
-          <div className="text-xs text-[#64748B]">{c.copyright}</div>
+        <div className="border-t border-[#E6EAF0] pt-6 flex items-center justify-between flex-wrap gap-4">
+          <div className="text-xs text-[#9AA6B2]">{c.copyright}</div>
           <div className="flex gap-2 flex-wrap">
             {c.badges.map((b) => (
-              <span key={b} className="text-xs text-[#334155] bg-white border border-[#D8E1EA] rounded-full px-3 py-1">{b}</span>
+              <span key={b} className="text-xs text-[#1F2933] bg-white border border-[#E6EAF0] rounded-full px-3 py-1">{b}</span>
             ))}
           </div>
         </div>

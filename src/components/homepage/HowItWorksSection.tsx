@@ -55,19 +55,19 @@ export function HowItWorksSection() {
   const { language } = useLanguage();
   const c = COPY[language] ?? COPY.en;
   const steps = tab === "shipper" ? c.shipperSteps : c.carrierSteps;
-  const dotColor = tab === "shipper" ? "bg-[#1B6CB8]" : "bg-[#1A9B5E]";
+  const dotColor = tab === "shipper" ? "bg-[#16263F]" : "bg-[#2FA98A]";
 
   return (
     <section id="como-funciona" className="bg-[#F7F9FB]" style={{ padding: "100px 0" }}>
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="text-center mb-16">
           <div className="mb-3">
-            <span className="text-[#1B6CB8] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
+            <span className="text-[#16263F] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
           </div>
-          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">
-            {c.h2a}<span className="text-[#1B6CB8]">{c.h2b}</span>
+          <h2 className="text-[#16263F] font-bold text-4xl mb-4">
+            {c.h2a}<span className="text-[#16263F]">{c.h2b}</span>
           </h2>
-          <p className="text-[#475569] text-lg max-w-xl mx-auto">{c.sub}</p>
+          <p className="text-[#5B6B80] text-lg max-w-xl mx-auto">{c.sub}</p>
         </div>
 
         <div className="flex justify-center gap-2 mb-12">
@@ -78,8 +78,8 @@ export function HowItWorksSection() {
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={active
-                  ? "bg-[#1B6CB8] text-white rounded-full px-5 py-2 text-sm font-medium shadow-sm"
-                  : "border border-[#D8E1EA] bg-white text-[#475569] rounded-full px-5 py-2 text-sm hover:text-[#0F172A] hover:border-[#1B6CB8]/30 transition-colors"}
+                  ? "bg-[#16263F] text-white rounded-full px-5 py-2 text-sm font-medium shadow-sm"
+                  : "border border-[#E6EAF0] bg-white text-[#5B6B80] rounded-full px-5 py-2 text-sm hover:text-[#16263F] hover:border-[#16263F]/30 transition-colors"}
               >
                 {t.label}
               </button>
@@ -96,14 +96,14 @@ export function HowItWorksSection() {
                   <div className={`w-9 h-9 rounded-full ${dotColor} text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm`}>
                     {i + 1}
                   </div>
-                  {!isLast && <div className="mt-2 min-h-[44px] w-px flex-1 bg-[#E2E8F0]" />}
+                  {!isLast && <div className="mt-2 min-h-[44px] w-px flex-1 bg-[#E6EAF0]" />}
                 </div>
-                <div className={`flex-1 rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm ${isLast ? "" : "mb-2"}`}>
+                <div className={`flex-1 rounded-[20px] border border-[#E6EAF0] bg-white p-6 shadow-sm ${isLast ? "" : "mb-2"}`}>
                   <div className="mb-2 flex items-center gap-2">
                     <span className="text-xl">{s.emoji}</span>
-                    <h3 className="text-[#0F172A] font-semibold text-lg">{s.title}</h3>
+                    <h3 className="text-[#16263F] font-semibold text-lg">{s.title}</h3>
                   </div>
-                  <p className="text-[#475569] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
+                  <p className="text-[#5B6B80] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
                 </div>
               </div>
             );

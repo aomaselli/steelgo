@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Menu, X, Zap } from "lucide-react";
-import { Button } from "@/components/ui";
+import { Menu, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+
+type NavLink = { id: string; target: string; label: string };
 
 const NAV_COPY = {
   pt: {
     links: [
-      { id: "como-funciona", label: "Como funciona" },
-      { id: "empresas", label: "Para empresas" },
-      { id: "transportadoras", label: "Transportadoras" },
-      { id: "logistica-verde", label: "Logística Verde" },
-      { id: "seguranca", label: "Segurança" },
-    ],
+      { id: "solucoes", target: "como-funciona", label: "Soluções" },
+      { id: "tecnologia", target: "seguranca", label: "Tecnologia" },
+      { id: "industrias", target: "empresas", label: "Indústrias" },
+      { id: "recursos", target: "frete-tradicional", label: "Recursos" },
+      { id: "transportadoras", target: "transportadoras", label: "Transportadoras" },
+      { id: "esg", target: "esg", label: "ESG" },
+      { id: "sobre", target: "contato", label: "Sobre" },
+      { id: "contato", target: "contato", label: "Contato" },
+      { id: "suporte", target: "contato", label: "Suporte" },
+    ] as NavLink[],
     signIn: "Entrar",
     cta: "Solicitar acesso →",
     openMenu: "Abrir menu",
@@ -20,12 +25,16 @@ const NAV_COPY = {
   },
   en: {
     links: [
-      { id: "como-funciona", label: "How it works" },
-      { id: "empresas", label: "For companies" },
-      { id: "transportadoras", label: "Carriers" },
-      { id: "logistica-verde", label: "Green logistics" },
-      { id: "seguranca", label: "Security" },
-    ],
+      { id: "solucoes", target: "como-funciona", label: "Solutions" },
+      { id: "tecnologia", target: "seguranca", label: "Technology" },
+      { id: "industrias", target: "empresas", label: "Industries" },
+      { id: "recursos", target: "frete-tradicional", label: "Resources" },
+      { id: "transportadoras", target: "transportadoras", label: "Carriers" },
+      { id: "esg", target: "esg", label: "ESG" },
+      { id: "sobre", target: "contato", label: "About" },
+      { id: "contato", target: "contato", label: "Contact" },
+      { id: "suporte", target: "contato", label: "Support" },
+    ] as NavLink[],
     signIn: "Sign in",
     cta: "Request access →",
     openMenu: "Open menu",
@@ -33,12 +42,16 @@ const NAV_COPY = {
   },
   es: {
     links: [
-      { id: "como-funciona", label: "Cómo funciona" },
-      { id: "empresas", label: "Para empresas" },
-      { id: "transportadoras", label: "Transportistas" },
-      { id: "logistica-verde", label: "Logística verde" },
-      { id: "seguranca", label: "Seguridad" },
-    ],
+      { id: "solucoes", target: "como-funciona", label: "Soluciones" },
+      { id: "tecnologia", target: "seguranca", label: "Tecnología" },
+      { id: "industrias", target: "empresas", label: "Industrias" },
+      { id: "recursos", target: "frete-tradicional", label: "Recursos" },
+      { id: "transportadoras", target: "transportadoras", label: "Transportistas" },
+      { id: "esg", target: "esg", label: "ESG" },
+      { id: "sobre", target: "contato", label: "Nosotros" },
+      { id: "contato", target: "contato", label: "Contacto" },
+      { id: "suporte", target: "contato", label: "Soporte" },
+    ] as NavLink[],
     signIn: "Iniciar sesión",
     cta: "Solicitar acceso →",
     openMenu: "Abrir menú",
@@ -48,11 +61,19 @@ const NAV_COPY = {
 
 function Logo() {
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#1A9B5E]">
-        <Zap size={18} className="text-white" />
+    <div className="flex items-center gap-2.5">
+      <div
+        className="flex h-8 w-8 items-center justify-center rounded-[9px]"
+        style={{ background: "linear-gradient(140deg,#16263F,#2FA98A)" }}
+      >
+        <div
+          className="h-[15px] w-3 bg-white"
+          style={{
+            clipPath: "polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,45% 50%)",
+          }}
+        />
       </div>
-      <span className="text-lg font-semibold text-[#0f172a]">SteelGo</span>
+      <span className="text-lg font-bold tracking-tight text-[#16263F]">SteelGo</span>
     </div>
   );
 }
@@ -60,7 +81,7 @@ function Logo() {
 function LangToggle() {
   const { language, setLanguage } = useLanguage();
   return (
-    <div className="flex overflow-hidden rounded-full border border-[#dbe8f8] bg-white/80">
+    <div className="flex overflow-hidden rounded-full border border-[#E6EAF0] bg-white/80">
       {(["pt", "en", "es"] as const).map((lng) => {
         const active = language === lng;
         return (
@@ -68,7 +89,7 @@ function LangToggle() {
             key={lng}
             onClick={() => setLanguage(lng)}
             className={`px-3 py-1 text-xs transition-colors ${
-              active ? "bg-[#1A9B5E] text-white" : "text-[#475569] hover:text-[#0f172a]"
+              active ? "bg-[#2FA98A] text-white" : "text-[#5B6B80] hover:text-[#16263F]"
             }`}
           >
             {lng.toUpperCase()}
@@ -110,41 +131,43 @@ export function Navbar() {
     <>
       <header
         className={`sticky top-0 z-50 h-16 w-full border-b transition-all duration-200 ${
-          scrolled ? "border-[#dbe8f8] bg-white/90 backdrop-blur" : "border-transparent bg-transparent"
+          scrolled ? "border-[#E6EAF0] bg-white/90 backdrop-blur" : "border-transparent bg-transparent"
         }`}
       >
-        <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6 lg:px-8">
+        <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-4 px-6 lg:px-8">
           <Logo />
 
-          <nav className="hidden gap-6 md:flex">
+          <nav className="hidden items-center gap-4 lg:flex xl:gap-5">
             {c.links.map((l) => (
               <button
                 key={l.id}
-                onClick={() => scrollTo(l.id)}
-                className="text-sm text-[#475569] transition-colors hover:text-[#0f172a]"
+                onClick={() => scrollTo(l.target)}
+                className="whitespace-nowrap text-[13px] text-[#5B6B80] transition-colors hover:text-[#16263F] xl:text-sm"
               >
                 {l.label}
               </button>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-3 lg:flex">
             <LangToggle />
-            <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/login" })}>
+            <button
+              onClick={() => navigate({ to: "/login" })}
+              className="whitespace-nowrap text-sm font-semibold text-[#16263F] transition-colors hover:text-[#101C30]"
+            >
               {c.signIn}
-            </Button>
-            <Button
-              variant="primary"
-              size="sm"
+            </button>
+            <button
               onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })}
+              className="whitespace-nowrap rounded-[10px] bg-[#16263F] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#101C30]"
             >
               {c.cta}
-            </Button>
+            </button>
           </div>
 
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-[#475569] hover:text-[#0f172a] md:hidden"
+            className="text-[#5B6B80] hover:text-[#16263F] lg:hidden"
             aria-label={c.openMenu}
           >
             <Menu size={24} />
@@ -153,17 +176,17 @@ export function Navbar() {
       </header>
 
       <div
-        className={`fixed inset-0 z-50 flex flex-col bg-[#f8fbff] transition-transform duration-250 md:hidden ${
+        className={`fixed inset-0 z-50 flex flex-col bg-[#F7F9FB] transition-transform lg:hidden ${
           mobileOpen ? "translate-x-0" : "translate-x-full"
         }`}
         style={{ transitionDuration: "250ms" }}
         aria-hidden={!mobileOpen}
       >
-        <div className="flex h-16 items-center justify-between border-b border-[#dbe8f8] px-6">
+        <div className="flex h-16 items-center justify-between border-b border-[#E6EAF0] px-6">
           <Logo />
           <button
             onClick={() => setMobileOpen(false)}
-            className="text-[#475569] hover:text-[#0f172a]"
+            className="text-[#5B6B80] hover:text-[#16263F]"
             aria-label={c.closeMenu}
           >
             <X size={24} />
@@ -174,38 +197,34 @@ export function Navbar() {
           {c.links.map((l) => (
             <button
               key={l.id}
-              onClick={() => scrollTo(l.id)}
-              className="block w-full border-b border-[#dbe8f8] py-4 text-left text-xl text-[#0f172a]"
+              onClick={() => scrollTo(l.target)}
+              className="block w-full border-b border-[#E6EAF0] py-4 text-left text-xl text-[#16263F]"
             >
               {l.label}
             </button>
           ))}
         </nav>
 
-        <div className="flex flex-col gap-3 border-t border-[#dbe8f8] p-6">
+        <div className="flex flex-col gap-3 border-t border-[#E6EAF0] p-6">
           <LangToggle />
-          <Button
-            variant="ghost"
-            size="md"
-            fullWidth
+          <button
             onClick={() => {
               setMobileOpen(false);
               navigate({ to: "/login" });
             }}
+            className="w-full rounded-[10px] border border-[#E6EAF0] bg-white px-4 py-3 text-sm font-semibold text-[#16263F]"
           >
             {c.signIn}
-          </Button>
-          <Button
-            variant="primary"
-            size="md"
-            fullWidth
+          </button>
+          <button
             onClick={() => {
               setMobileOpen(false);
               navigate({ to: "/register", search: { role: "shipper" } as never });
             }}
+            className="w-full rounded-[10px] bg-[#16263F] px-4 py-3 text-sm font-semibold text-white hover:bg-[#101C30]"
           >
             {c.cta}
-          </Button>
+          </button>
         </div>
       </div>
     </>

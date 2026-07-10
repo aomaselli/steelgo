@@ -12,11 +12,11 @@ const COPY = {
     sub: "Tecnologia, processos e proteção legal em cada frete.",
     legalTitle: "⚖️ Proteção legal completa",
     cards: [
-      { borderColor: "#1B6CB8", tag: "Rastreamento", tagClass: "bg-[#1B6CB8]/20 text-[#79B8F8] border-[#1B6CB8]/40", icon: "📍", title: "GPS contínuo 30s", body: "Posição a cada 30s. Alerta para desvio de rota acima de 2km. Histórico imutável de toda a jornada." },
-      { borderColor: "#1B6CB8", tag: "Identidade", tagClass: "bg-[#1B6CB8]/20 text-[#79B8F8] border-[#1B6CB8]/40", icon: "🪪", title: "Verificação biométrica", body: "CPF, CNH e selfie do motorista no embarque. Transportadora confirma motorista 2h antes." },
-      { borderColor: "#C23333", tag: "Emergência", tagClass: "bg-[#C23333]/20 text-[#FF6B6B] border-[#C23333]/40", icon: "🚨", title: "Botão de pânico 24/7", body: "3 segundos ativa alerta para central, transportadora e SteelGo com GPS ao vivo. Resposta em 2 min." },
-      { borderColor: "#1A9B5E", tag: "Financeiro", tagClass: "bg-[#1A9B5E]/20 text-[#2ECC8A] border-[#1A9B5E]/40", icon: "🔐", title: "Seu dinheiro fica protegido", body: "O valor do frete fica guardado em uma conta segura. A transportadora só recebe depois que você confirmar que a carga chegou em boas condições." },
-      { borderColor: "#CC8800", tag: "Checkpoint", tagClass: "bg-[#CC8800]/20 text-[#F0A500] border-[#CC8800]/40", icon: "📸", title: "Fotos obrigatórias", body: "Foto com geolocalização na origem, waypoints e destino. Alerta imediato ao embarcador via WhatsApp." },
+      { borderColor: "#16263F", tag: "Rastreamento", tagClass: "bg-[#16263F]/20 text-[#9FB4D4] border-[#16263F]/40", icon: "📍", title: "GPS contínuo 30s", body: "Posição a cada 30s. Alerta para desvio de rota acima de 2km. Histórico imutável de toda a jornada." },
+      { borderColor: "#16263F", tag: "Identidade", tagClass: "bg-[#16263F]/20 text-[#9FB4D4] border-[#16263F]/40", icon: "🪪", title: "Verificação biométrica", body: "CPF, CNH e selfie do motorista no embarque. Transportadora confirma motorista 2h antes." },
+      { borderColor: "#C0392B", tag: "Emergência", tagClass: "bg-[#C0392B]/20 text-[#C0392B] border-[#C0392B]/40", icon: "🚨", title: "Botão de pânico 24/7", body: "3 segundos ativa alerta para central, transportadora e SteelGo com GPS ao vivo. Resposta em 2 min." },
+      { borderColor: "#2FA98A", tag: "Financeiro", tagClass: "bg-[#2FA98A]/20 text-[#2FA98A] border-[#2FA98A]/40", icon: "🔐", title: "Seu dinheiro fica protegido", body: "O valor do frete fica guardado em uma conta segura. A transportadora só recebe depois que você confirmar que a carga chegou em boas condições." },
+      { borderColor: "#9A5B00", tag: "Checkpoint", tagClass: "bg-[#9A5B00]/20 text-[#E0A23A] border-[#9A5B00]/40", icon: "📸", title: "Fotos obrigatórias", body: "Foto com geolocalização na origem, waypoints e destino. Alerta imediato ao embarcador via WhatsApp." },
       { borderColor: "#7C3AED", tag: "Anti-adulteração", tagClass: "bg-purple-900/30 text-purple-400 border-purple-700/30", icon: "🏷️", title: "Lacre QR digital", body: "QR único escaneado em sequência em cada checkpoint. Adulteração detectada instantaneamente." },
     ] as CardDef[],
     legalItems: [
@@ -33,11 +33,11 @@ const COPY = {
     sub: "Technology, process and legal protection on every freight.",
     legalTitle: "⚖️ Full legal protection",
     cards: [
-      { borderColor: "#1B6CB8", tag: "Tracking", tagClass: "bg-[#1B6CB8]/20 text-[#79B8F8] border-[#1B6CB8]/40", icon: "📍", title: "Continuous GPS 30s", body: "Position every 30s. Alert for route deviation over 2km. Immutable journey log." },
-      { borderColor: "#1B6CB8", tag: "Identity", tagClass: "bg-[#1B6CB8]/20 text-[#79B8F8] border-[#1B6CB8]/40", icon: "🪪", title: "Biometric verification", body: "Driver ID, license and selfie at pickup. Carrier confirms driver 2h ahead." },
-      { borderColor: "#C23333", tag: "Emergency", tagClass: "bg-[#C23333]/20 text-[#FF6B6B] border-[#C23333]/40", icon: "🚨", title: "Panic button 24/7", body: "Hold 3 seconds to alert dispatch, carrier and SteelGo with live GPS. 2-minute response." },
-      { borderColor: "#1A9B5E", tag: "Financial", tagClass: "bg-[#1A9B5E]/20 text-[#2ECC8A] border-[#1A9B5E]/40", icon: "🔐", title: "Escrow protects payment", body: "100% held until geotagged-photo delivery. No proof, no release." },
-      { borderColor: "#CC8800", tag: "Checkpoint", tagClass: "bg-[#CC8800]/20 text-[#F0A500] border-[#CC8800]/40", icon: "📸", title: "Mandatory photos", body: "Geotagged photo at origin, waypoints and destination. Instant WhatsApp alert to shipper." },
+      { borderColor: "#16263F", tag: "Tracking", tagClass: "bg-[#16263F]/20 text-[#9FB4D4] border-[#16263F]/40", icon: "📍", title: "Continuous GPS 30s", body: "Position every 30s. Alert for route deviation over 2km. Immutable journey log." },
+      { borderColor: "#16263F", tag: "Identity", tagClass: "bg-[#16263F]/20 text-[#9FB4D4] border-[#16263F]/40", icon: "🪪", title: "Biometric verification", body: "Driver ID, license and selfie at pickup. Carrier confirms driver 2h ahead." },
+      { borderColor: "#C0392B", tag: "Emergency", tagClass: "bg-[#C0392B]/20 text-[#C0392B] border-[#C0392B]/40", icon: "🚨", title: "Panic button 24/7", body: "Hold 3 seconds to alert dispatch, carrier and SteelGo with live GPS. 2-minute response." },
+      { borderColor: "#2FA98A", tag: "Financial", tagClass: "bg-[#2FA98A]/20 text-[#2FA98A] border-[#2FA98A]/40", icon: "🔐", title: "Escrow protects payment", body: "100% held until geotagged-photo delivery. No proof, no release." },
+      { borderColor: "#9A5B00", tag: "Checkpoint", tagClass: "bg-[#9A5B00]/20 text-[#E0A23A] border-[#9A5B00]/40", icon: "📸", title: "Mandatory photos", body: "Geotagged photo at origin, waypoints and destination. Instant WhatsApp alert to shipper." },
       { borderColor: "#7C3AED", tag: "Anti-tamper", tagClass: "bg-purple-900/30 text-purple-400 border-purple-700/30", icon: "🏷️", title: "Digital QR seal", body: "Unique QR scanned in sequence at every checkpoint. Tampering detected instantly." },
     ] as CardDef[],
     legalItems: [
@@ -56,39 +56,39 @@ export function SecuritySection() {
   return (
     <section id="seguranca" className="bg-[#F7F9FB] py-[100px]">
       <div className="max-w-[1280px] mx-auto px-6">
-        <div className="mb-12 flex items-start gap-3 rounded-[12px] border border-[#F0C36D]/40 bg-[#FFF8E8] p-4">
-          <AlertTriangle size={20} className="mt-0.5 flex-shrink-0 text-[#D97706]" />
-          <p className="text-sm text-[#7C4A00]" style={{ lineHeight: 1.6 }}>{c.alert}</p>
+        <div className="mb-12 flex items-start gap-3 rounded-[12px] border border-[#E0A23A]/40 bg-[#FBEED8] p-4">
+          <AlertTriangle size={20} className="mt-0.5 flex-shrink-0 text-[#9A5B00]" />
+          <p className="text-sm text-[#9A5B00]" style={{ lineHeight: 1.6 }}>{c.alert}</p>
         </div>
 
         <div className="mb-12">
-          <div className="text-[#D97706] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
-          <h2 className="text-[#0F172A] font-bold text-4xl mb-4">{c.h2}</h2>
-          <p className="text-[#475569] text-lg">{c.sub}</p>
+          <div className="text-[#9A5B00] text-xs uppercase tracking-widest font-semibold mb-3">{c.eyebrow}</div>
+          <h2 className="text-[#16263F] font-bold text-4xl mb-4">{c.h2}</h2>
+          <p className="text-[#5B6B80] text-lg">{c.sub}</p>
         </div>
 
         <div className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           {c.cards.map((card) => (
-            <div key={card.title} className="relative rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm" style={{ borderTopColor: card.borderColor }}>
+            <div key={card.title} className="relative rounded-[16px] border border-[#E6EAF0] bg-white p-5 shadow-sm" style={{ borderTopColor: card.borderColor }}>
               <Badge variant="outline" className={`absolute right-4 top-4 ${card.tagClass}`}>{card.tag}</Badge>
               <div className="mb-3 text-2xl">{card.icon}</div>
-              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{card.title}</div>
-              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{card.body}</p>
+              <div className="mb-2 text-sm font-semibold text-[#16263F]">{card.title}</div>
+              <p className="text-xs text-[#5B6B80]" style={{ lineHeight: 1.7 }}>{card.body}</p>
             </div>
           ))}
         </div>
 
-        <div className="rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-[#0F172A]">{c.legalTitle}</h3>
+        <div className="rounded-[20px] border border-[#E6EAF0] bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-lg font-semibold text-[#16263F]">{c.legalTitle}</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {c.legalItems.map(({ Icon, title, desc }) => (
               <div key={title} className="flex items-start gap-3">
-                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] bg-[#1B6CB8]/10">
-                  <Icon size={16} className="text-[#1B6CB8]" />
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[8px] bg-[#16263F]/10">
+                  <Icon size={16} className="text-[#16263F]" />
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-[#0F172A]">{title}</div>
-                  <div className="mt-0.5 text-xs text-[#475569]">{desc}</div>
+                  <div className="text-sm font-medium text-[#16263F]">{title}</div>
+                  <div className="mt-0.5 text-xs text-[#5B6B80]">{desc}</div>
                 </div>
               </div>
             ))}

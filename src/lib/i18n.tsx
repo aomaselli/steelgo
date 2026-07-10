@@ -9,17 +9,71 @@ import {
 
 export type Language = "pt" | "en" | "es";
 
+export const HOMEPAGE_NAV_COPY = {
+  pt: {
+    links: [
+      { id: "como-funciona", label: "Soluções" },
+      { id: "tecnologia", label: "Tecnologia" },
+      { id: "empresas", label: "Indústrias" },
+      { id: "logistica-verde", label: "Recursos" },
+      { id: "transportadoras", label: "Transportadoras" },
+      { id: "esg", label: "ESG" },
+      { id: "sobre", label: "Sobre" },
+      { id: "contato", label: "Contato" },
+      { id: "suporte", label: "Suporte" },
+    ],
+    signIn: "Entrar",
+    cta: "Solicitar acesso",
+    openMenu: "Abrir menu",
+    closeMenu: "Fechar menu",
+  },
+  en: {
+    links: [
+      { id: "como-funciona", label: "Solutions" },
+      { id: "tecnologia", label: "Technology" },
+      { id: "empresas", label: "Industries" },
+      { id: "logistica-verde", label: "Resources" },
+      { id: "transportadoras", label: "Carriers" },
+      { id: "esg", label: "ESG" },
+      { id: "sobre", label: "About" },
+      { id: "contact", label: "Contact" },
+      { id: "suporte", label: "Support" },
+    ],
+    signIn: "Log in",
+    cta: "Request access",
+    openMenu: "Open menu",
+    closeMenu: "Close menu",
+  },
+  es: {
+    links: [
+      { id: "como-funciona", label: "Soluciones" },
+      { id: "tecnologia", label: "Tecnología" },
+      { id: "empresas", label: "Industrias" },
+      { id: "logistica-verde", label: "Recursos" },
+      { id: "transportadoras", label: "Transportistas" },
+      { id: "esg", label: "ESG" },
+      { id: "sobre", label: "Sobre" },
+      { id: "contacto", label: "Contacto" },
+      { id: "suporte", label: "Soporte" },
+    ],
+    signIn: "Iniciar sesión",
+    cta: "Solicitar acceso",
+    openMenu: "Abrir menú",
+    closeMenu: "Cerrar menú",
+  },
+} as const;
+
 const translations = {
   pt: {
     nav: {
-      howItWorks: "Como funciona",
-      forCompanies: "Para empresas",
+      howItWorks: "Soluções",
+      forCompanies: "Indústrias",
       forCarriers: "Transportadoras",
-      greenLogistics: "Logística Verde",
-      security: "Segurança",
-      pricing: "Preços",
+      greenLogistics: "Recursos",
+      security: "Suporte",
+      pricing: "Contato",
       login: "Entrar",
-      cta: "Começar grátis →",
+      cta: "Solicitar acesso",
     },
     hero: {
       eyebrow: "🇧🇷 Plataforma brasileira de fretes de aço",
@@ -154,14 +208,14 @@ const translations = {
   },
   en: {
     nav: {
-      howItWorks: "How it works",
-      forCompanies: "For companies",
-      forCarriers: "For carriers",
-      greenLogistics: "Green logistics",
-      security: "Security",
-      pricing: "Pricing",
-      login: "Sign in",
-      cta: "Get started free →",
+      howItWorks: "Solutions",
+      forCompanies: "Industries",
+      forCarriers: "Carriers",
+      greenLogistics: "Resources",
+      security: "Support",
+      pricing: "Contact",
+      login: "Log in",
+      cta: "Request access",
     },
     hero: {
       eyebrow: "🇧🇷 Brazil's steel freight platform",

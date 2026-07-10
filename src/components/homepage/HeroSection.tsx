@@ -65,21 +65,21 @@ export function HeroSection() {
   const primaryRole = currentRole === "carrier" ? "carrier" : "shipper";
 
   return (
-    <section className="relative overflow-hidden homepage-shell">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(26,155,94,0.16),transparent_45%)]" />
+    <section className="relative overflow-hidden bg-[#101C30] text-white">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_12%,rgba(41,96,172,0.28),transparent_48%),radial-gradient(circle_at_80%_78%,rgba(26,155,94,0.15),transparent_45%),linear-gradient(180deg,#101C30_0%,#101C30_55%,#101C30_100%)]" />
       <div className="relative mx-auto flex max-w-6xl flex-col gap-12 px-6 py-24 lg:px-8 lg:py-32">
         <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div className="max-w-2xl">
-            <div className="homepage-pill mb-6 px-4 py-1.5 text-sm font-medium">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-sm font-medium text-white/80">
               <Sparkles size={16} />
               {c.eyebrow}
             </div>
 
-            <h1 className="text-4xl font-semibold tracking-[-0.03em] text-[#0f172a] sm:text-5xl lg:text-7xl">
+            <h1 className="text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl lg:text-7xl">
               <span className="block">{c.h1}</span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg leading-8 text-[#334155]">
+            <p className="mt-6 max-w-xl text-lg leading-8 text-slate-300">
               {c.sub}
             </p>
 
@@ -87,38 +87,44 @@ export function HeroSection() {
               <Button
                 variant="primary"
                 size="xl"
+                className="bg-[#2FA98A] text-white hover:bg-[#1E8168]"
                 onClick={() => navigate({ to: "/register", search: { role: primaryRole } as never })}
               >
                 {c.ctaPrimary}
               </Button>
-              <Button variant="ghost" size="xl" onClick={() => navigate({ to: "/login" })}>
+              <Button
+                variant="ghost"
+                size="xl"
+                className="border-white/20 bg-white/5 text-white hover:bg-white/10"
+                onClick={() => navigate({ to: "/login" })}
+              >
                 {c.ctaSecondary}
               </Button>
             </div>
 
-            <p className="mt-6 text-sm font-medium text-[#475569]">{c.note}</p>
+            <p className="mt-6 text-sm font-medium text-slate-400">{c.note}</p>
           </div>
 
-          <div className="homepage-card rounded-[28px] p-8 sm:p-10">
-            <div className="flex items-center gap-2 text-sm font-semibold text-[#0f172a]">
-              <ShieldCheck size={18} className="text-[#1A9B5E]" />
+          <div className="rounded-[28px] border border-white/12 bg-[#101C30]/95 p-8 shadow-[0_24px_60px_rgba(0,0,0,0.4)] backdrop-blur-sm sm:p-10">
+            <div className="flex items-center gap-2 text-sm font-semibold text-white">
+              <ShieldCheck size={18} className="text-[#2FA98A]" />
               {c.cardTitle}
             </div>
 
             <div className="mt-8 space-y-4">
               {c.bullets.map((item) => (
-                <div key={item} className="flex items-start gap-3 rounded-2xl border border-[#dbe8f8] bg-[#f8fbff] p-4">
-                  <div className="mt-0.5 rounded-full bg-[#1A9B5E]/10 p-2 text-[#1A9B5E]">
+                <div key={item} className="flex items-start gap-3 rounded-2xl border border-white/12 bg-white/5 p-4">
+                  <div className="mt-0.5 rounded-full bg-[#2FA98A]/10 p-2 text-[#2FA98A]">
                     <Gauge size={16} />
                   </div>
-                  <p className="text-sm leading-6 text-[#334155]">{item}</p>
+                  <p className="text-sm leading-6 text-slate-200">{item}</p>
                 </div>
               ))}
             </div>
 
-            <div className="mt-8 flex items-center justify-between rounded-2xl border border-[#dbe8f8] bg-white/80 px-4 py-3 text-sm text-[#475569]">
+            <div className="mt-8 flex items-center justify-between rounded-2xl border border-white/12 bg-[#101C30]/70 px-4 py-3 text-sm text-slate-300">
               <span>{c.cardFooter}</span>
-              <button className="inline-flex items-center gap-2 font-semibold text-[#0f172a]" type="button">
+              <button className="inline-flex items-center gap-2 font-semibold text-white" type="button">
                 {c.cardCta}
                 <ArrowRight size={16} />
               </button>

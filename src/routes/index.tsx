@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   return (
-    <div className="homepage-shell min-h-screen text-[#0f172a]">
+    <div className="homepage-shell min-h-screen text-[#16263F]">
       <Navbar />
       <main>
         <HeroSection />

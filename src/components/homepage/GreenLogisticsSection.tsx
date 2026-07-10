@@ -96,55 +96,55 @@ export function GreenLogisticsSection() {
 
       <div className="relative mx-auto max-w-[1280px] px-6">
         <div className="mb-16 text-center">
-          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#1A9B5E]">{c.eyebrow}</div>
-          <h2 className="mb-4 text-4xl font-bold text-[#0F172A]">
-            {c.h2a}<span className="text-[#1A9B5E]">{c.h2b}</span>
+          <div className="mb-3 text-xs font-semibold uppercase tracking-widest text-[#2FA98A]">{c.eyebrow}</div>
+          <h2 className="mb-4 text-4xl font-bold text-[#16263F]">
+            {c.h2a}<span className="text-[#2FA98A]">{c.h2b}</span>
           </h2>
-          <p className="mx-auto text-lg text-[#475569]">{c.sub}</p>
+          <p className="mx-auto text-lg text-[#5B6B80]">{c.sub}</p>
         </div>
 
         <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-[18px] border border-[#1A9B5E]/30 bg-[#F1FBF7] p-6 shadow-sm">
-            <span className="mb-4 inline-block rounded-full border border-[#1A9B5E]/40 bg-[#1A9B5E]/15 px-2.5 py-0.5 text-xs text-[#1A9B5E]">🔋 EV</span>
-            <h3 className="mb-2 text-xl font-bold text-[#0F172A]">{c.evTitle}</h3>
-            <p className="text-sm text-[#475569]" style={{ lineHeight: 1.7 }}>{c.evDesc}</p>
+          <div className="rounded-[18px] border border-[#2FA98A]/30 bg-[#E2F1EC] p-6 shadow-sm">
+            <span className="mb-4 inline-block rounded-full border border-[#2FA98A]/40 bg-[#2FA98A]/15 px-2.5 py-0.5 text-xs text-[#2FA98A]">🔋 EV</span>
+            <h3 className="mb-2 text-xl font-bold text-[#16263F]">{c.evTitle}</h3>
+            <p className="text-sm text-[#5B6B80]" style={{ lineHeight: 1.7 }}>{c.evDesc}</p>
             <div className="mt-4 flex items-center gap-2">
-              <Leaf size={18} className="text-[#1A9B5E]" />
-              <span className="text-lg font-bold text-[#1A9B5E]">{c.evHighlight}</span>
+              <Leaf size={18} className="text-[#2FA98A]" />
+              <span className="text-lg font-bold text-[#2FA98A]">{c.evHighlight}</span>
             </div>
-            <div className="mt-1 text-xs text-[#64748B]">{c.evNote}</div>
+            <div className="mt-1 text-xs text-[#9AA6B2]">{c.evNote}</div>
           </div>
 
-          <div className="rounded-[18px] border border-[#0F6E56]/30 bg-[#F4FCF8] p-6 shadow-sm">
-            <span className="mb-4 inline-block rounded-full border border-[#0F6E56]/40 bg-[#0F6E56]/15 px-2.5 py-0.5 text-xs text-[#0F6E56]">⛽ LC</span>
-            <h3 className="mb-2 text-xl font-bold text-[#0F172A]">{c.lcTitle}</h3>
-            <p className="text-sm text-[#475569]" style={{ lineHeight: 1.7 }}>{c.lcDesc}</p>
+          <div className="rounded-[18px] border border-[#1E8168]/30 bg-[#E2F1EC] p-6 shadow-sm">
+            <span className="mb-4 inline-block rounded-full border border-[#1E8168]/40 bg-[#1E8168]/15 px-2.5 py-0.5 text-xs text-[#1E8168]">⛽ LC</span>
+            <h3 className="mb-2 text-xl font-bold text-[#16263F]">{c.lcTitle}</h3>
+            <p className="text-sm text-[#5B6B80]" style={{ lineHeight: 1.7 }}>{c.lcDesc}</p>
             <div className="mt-4 flex items-center gap-2">
-              <ArrowDown size={18} className="text-[#0F6E56]" />
-              <span className="text-lg font-bold text-[#0F6E56]">{c.lcHighlight}</span>
+              <ArrowDown size={18} className="text-[#1E8168]" />
+              <span className="text-lg font-bold text-[#1E8168]">{c.lcHighlight}</span>
             </div>
           </div>
         </div>
 
-        <div className="mb-16 rounded-[20px] border border-[#D8E1EA] bg-white p-6 shadow-sm">
-          <h3 className="mb-6 font-semibold text-[#0F172A]">{c.calcTitle}</h3>
+        <div className="mb-16 rounded-[20px] border border-[#E6EAF0] bg-white p-6 shadow-sm">
+          <h3 className="mb-6 font-semibold text-[#16263F]">{c.calcTitle}</h3>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <div>
-              <label className="mb-2 block text-sm text-[#475569]">{c.distance}</label>
-              <input type="range" min={100} max={2000} step={10} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-full" style={{ accentColor: "#1B6CB8" }} />
-              <div className="mt-2 text-lg font-bold text-[#0F172A]">{distance} km</div>
+              <label className="mb-2 block text-sm text-[#5B6B80]">{c.distance}</label>
+              <input type="range" min={100} max={2000} step={10} value={distance} onChange={(e) => setDistance(Number(e.target.value))} className="w-full" style={{ accentColor: "#16263F" }} />
+              <div className="mt-2 text-lg font-bold text-[#16263F]">{distance} km</div>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-[#475569]">{c.weight}</label>
-              <input type="range" min={1} max={74} step={1} value={weight} onChange={(e) => setWeight(Number(e.target.value))} className="w-full" style={{ accentColor: "#1B6CB8" }} />
-              <div className="mt-2 text-lg font-bold text-[#0F172A]">{weight} t</div>
+              <label className="mb-2 block text-sm text-[#5B6B80]">{c.weight}</label>
+              <input type="range" min={1} max={74} step={1} value={weight} onChange={(e) => setWeight(Number(e.target.value))} className="w-full" style={{ accentColor: "#16263F" }} />
+              <div className="mt-2 text-lg font-bold text-[#16263F]">{weight} t</div>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm text-[#475569]">{c.fuel}</label>
-              <select value={factor} onChange={(e) => setFactor(Number(e.target.value))} className="w-full rounded-md border border-[#D8E1EA] bg-[#F8FAFC] px-3 py-2 text-sm text-[#0F172A]">
+              <label className="mb-2 block text-sm text-[#5B6B80]">{c.fuel}</label>
+              <select value={factor} onChange={(e) => setFactor(Number(e.target.value))} className="w-full rounded-md border border-[#E6EAF0] bg-[#F7F9FB] px-3 py-2 text-sm text-[#16263F]">
                 {c.fuelOptions.map((f) => (
                   <option key={f.label} value={f.value}>{f.label}</option>
                 ))}
@@ -152,41 +152,41 @@ export function GreenLogisticsSection() {
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-1 gap-4 border-t border-[#E2E8F0] pt-6 md:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-4 border-t border-[#E6EAF0] pt-6 md:grid-cols-3">
             <div className="text-center">
-              <div className="mb-1 text-xs text-[#64748B]">{c.emitted}</div>
-              <div className="text-xl font-bold text-[#D97706]">{emitted} kg</div>
+              <div className="mb-1 text-xs text-[#9AA6B2]">{c.emitted}</div>
+              <div className="text-xl font-bold text-[#9A5B00]">{emitted} kg</div>
             </div>
             <div className="text-center">
-              <div className="mb-1 text-xs text-[#64748B]">{c.baseline}</div>
-              <div className="text-xl font-bold text-[#64748B]">{baseline} kg</div>
+              <div className="mb-1 text-xs text-[#9AA6B2]">{c.baseline}</div>
+              <div className="text-xl font-bold text-[#9AA6B2]">{baseline} kg</div>
             </div>
             <div className="text-center">
-              <div className="mb-1 text-xs text-[#64748B]">{c.saved}</div>
-              <div className="text-2xl font-bold text-[#1A9B5E]">{saved} kg</div>
+              <div className="mb-1 text-xs text-[#9AA6B2]">{c.saved}</div>
+              <div className="text-2xl font-bold text-[#2FA98A]">{saved} kg</div>
             </div>
           </div>
 
           {saved > 0 && (
-            <div className="mt-3 text-center text-sm text-[#1A9B5E]">{c.trees(trees)}</div>
+            <div className="mt-3 text-center text-sm text-[#2FA98A]">{c.trees(trees)}</div>
           )}
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
           {c.features.map((f) => (
-            <div key={f.title} className="rounded-[16px] border border-[#D8E1EA] bg-white p-5 shadow-sm">
+            <div key={f.title} className="rounded-[16px] border border-[#E6EAF0] bg-white p-5 shadow-sm">
               <div className="mb-3 text-2xl">{f.icon}</div>
-              <div className="mb-2 text-sm font-semibold text-[#0F172A]">{f.title}</div>
-              <p className="text-xs text-[#475569]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
+              <div className="mb-2 text-sm font-semibold text-[#16263F]">{f.title}</div>
+              <p className="text-xs text-[#5B6B80]" style={{ lineHeight: 1.7 }}>{f.desc}</p>
             </div>
           ))}
         </div>
 
         <div className="mt-12 flex flex-col justify-center gap-4 sm:flex-row">
-          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#1A9B5E] px-8 text-base text-white hover:bg-[#168f55]">
+          <Button size="lg" onClick={() => navigate({ to: "/register", search: { role: "shipper" } as never })} className="h-12 bg-[#2FA98A] px-8 text-base text-white hover:bg-[#1E8168]">
             {c.ctaPrimary}
           </Button>
-          <Button size="lg" variant="ghost" className="h-12 border-[#D8E1EA] px-8 text-base text-[#334155] hover:bg-[#F8FAFC]">
+          <Button size="lg" variant="ghost" className="h-12 border-[#E6EAF0] px-8 text-base text-[#1F2933] hover:bg-[#F7F9FB]">
             {c.ctaSecondary}
           </Button>
         </div>
