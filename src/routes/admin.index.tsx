@@ -24,53 +24,68 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button, Badge } from "@/components/steel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { useLanguage, type Language } from "@/lib/i18n";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboardPage,
 });
 
-function fmtBRL(n: number) {
-  return n.toLocaleString("pt-BR", { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
+const LOCALE_MAP: Record<Language, string> = {
+  pt: "pt-BR",
+  en: "en-US",
+  es: "es-ES",
+};
+
+function fmtBRL(n: number, locale: string) {
+  return n.toLocaleString(locale, { style: "currency", currency: "BRL", maximumFractionDigits: 0 });
 }
 
-function useClock() {
+function useClock(language: Language) {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
-  return now.toLocaleTimeString("pt-BR");
+  return now.toLocaleTimeString(LOCALE_MAP[language]);
 }
 
 function AdminDashboardPage() {
-  const time = useClock();
+  const { t, language } = useLanguage();
+  const locale = LOCALE_MAP[language];
+  const time = useClock(language);
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-graphite-50">Painel Administrativo</h1>
+        <h1 className="text-2xl font-bold text-[#1F2933]">{t("admin.title")}</h1>
         <div className="flex items-center gap-3">
-          <span className="rounded-md border border-graphite-700 bg-bg-elevated px-3 py-1.5 font-mono text-sm tabular-nums text-graphite-200">
+          <span className="rounded-md border border-[#D8DFE8] bg-white px-3 py-1.5 font-mono text-sm tabular-nums text-[#5B6B80]">
             {time}
           </span>
-          <Button variant="ghost" size="sm" onClick={() => toast.success("Exportação iniciada")}>
-            <Download className="mr-2 h-4 w-4" /> Exportar dados
+          <Button
+            variant="ghost"
+            size="sm"
+            className="border border-[#D8DFE8] bg-white text-[#1F2933] hover:bg-[#F3F6FA]"
+            onClick={() => toast.success(`${t("admin.exportData")} ${t("admin.started")}`)}
+          >
+            <Download className="mr-2 h-4 w-4" /> {t("admin.exportData")}
           </Button>
         </div>
       </div>
 
-      <MetricsRow />
+      <MetricsRow locale={locale} />
       <div className="grid gap-4 lg:grid-cols-2">
-        <GMVChart />
+        <GMVChart locale={locale} />
         <StatusPie />
       </div>
-      <AlertsFeed />
+      <AlertsFeed locale={locale} />
       <VerificationQueue />
     </div>
   );
 }
 
 // ─────────────── Metrics ───────────────
-function MetricsRow() {
+function MetricsRow({ locale }: { locale: string }) {
+  const { t } = useLanguage();
   const { data } = useQuery({
     queryKey: ["admin-metrics"],
     queryFn: async () => {
@@ -106,22 +121,22 @@ function MetricsRow() {
   });
 
   const cards = [
-    { label: "Fretes hoje", value: data?.freightsToday ?? 0, delta: "+0 vs ontem", color: "text-steel-blue-200" },
-    { label: "GMV hoje", value: fmtBRL(data?.gmv ?? 0), delta: "—", color: "text-graphite-50" },
-    { label: "Receita plataforma", value: fmtBRL(data?.platformRev ?? 0), delta: "—", color: "text-esg-green" },
-    { label: "Taxa de match", value: `${(data?.matchRate ?? 0).toFixed(1)}%`, delta: "últimos 7d", color: "text-steel-blue-200" },
+    { label: t("admin.freightsToday"), value: data?.freightsToday ?? 0, delta: "-", color: "text-[#16263F]" },
+    { label: t("admin.gmvToday"), value: fmtBRL(data?.gmv ?? 0, locale), delta: "-", color: "text-[#16263F]" },
+    { label: t("admin.platformRevenue"), value: fmtBRL(data?.platformRev ?? 0, locale), delta: "-", color: "text-[#2FA98A]" },
+    { label: t("admin.matchRate"), value: `${(data?.matchRate ?? 0).toFixed(1)}%`, delta: t("admin.last7d"), color: "text-[#16263F]" },
     {
-      label: "Alertas ativos",
+      label: t("admin.activeAlerts"),
       value: data?.alerts ?? 0,
-      delta: `${data?.alerts ?? 0} não resolvidos`,
+      delta: `${data?.alerts ?? 0} ${t("admin.unresolved")}`,
       color: (data?.alerts ?? 0) > 0 ? "text-red-400" : "text-graphite-50",
       danger: (data?.alerts ?? 0) > 0,
     },
     {
-      label: "Transp. pendentes",
+      label: t("admin.pendingCarriers"),
       value: data?.carriersPending ?? 0,
-      delta: "aguardando KYC",
-      color: (data?.carriersPending ?? 0) > 0 ? "text-amber-400" : "text-graphite-50",
+      delta: t("admin.awaitingKyc"),
+      color: (data?.carriersPending ?? 0) > 0 ? "text-[#E0A23A]" : "text-[#16263F]",
     },
   ];
 
@@ -131,13 +146,13 @@ function MetricsRow() {
         <div
           key={c.label}
           className={cn(
-            "rounded-[12px] border bg-bg-surface p-4",
-            c.danger ? "border-red-700/50" : "border-graphite-600",
+            "rounded-[14px] border bg-white p-4 shadow-[0_8px_24px_rgba(16,28,48,0.06)]",
+            c.danger ? "border-red-300" : "border-[#E6EAF0]",
           )}
         >
-          <div className="text-xs uppercase tracking-wide text-graphite-400">{c.label}</div>
+          <div className="text-xs uppercase tracking-wide text-[#5B6B80]">{c.label}</div>
           <div className={cn("mt-1 text-3xl font-bold tabular-nums", c.color)}>{c.value}</div>
-          <div className="mt-1 text-xs text-graphite-400">{c.delta}</div>
+          <div className="mt-1 text-xs text-[#5B6B80]">{c.delta}</div>
         </div>
       ))}
     </div>
@@ -145,7 +160,8 @@ function MetricsRow() {
 }
 
 // ─────────────── Charts ───────────────
-function GMVChart() {
+function GMVChart({ locale }: { locale: string }) {
+  const { t } = useLanguage();
   const { data = [] } = useQuery({
     queryKey: ["admin-gmv-30d"],
     queryFn: async () => {
@@ -172,18 +188,18 @@ function GMVChart() {
   });
 
   return (
-    <div className="rounded-[12px] border border-graphite-600 bg-bg-surface p-4">
-      <h3 className="mb-3 text-sm font-semibold text-graphite-50">GMV — Últimos 30 dias</h3>
+    <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-4 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
+      <h3 className="mb-3 text-sm font-semibold text-[#1F2933]">{t("admin.gmvLast30Days")}</h3>
       <ResponsiveContainer width="100%" height={220}>
         <AreaChart data={data}>
-          <CartesianGrid stroke="#30363D" strokeDasharray="3 3" />
-          <XAxis dataKey="date" stroke="#8B949E" fontSize={11} />
-          <YAxis stroke="#8B949E" fontSize={11} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+          <CartesianGrid stroke="#E6EAF0" strokeDasharray="3 3" />
+          <XAxis dataKey="date" stroke="#5B6B80" fontSize={11} />
+          <YAxis stroke="#5B6B80" fontSize={11} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
           <Tooltip
-            contentStyle={{ background: "#161B22", border: "1px solid #30363D", borderRadius: 8 }}
-            formatter={(v: number) => fmtBRL(v)}
+            contentStyle={{ background: "#FFFFFF", border: "1px solid #E6EAF0", borderRadius: 10 }}
+            formatter={(v: number) => fmtBRL(v, locale)}
           />
-          <Area type="monotone" dataKey="value" stroke="#3B89D4" fill="#1B6CB8" fillOpacity={0.2} />
+          <Area type="monotone" dataKey="value" stroke="#2FA98A" fill="#2FA98A" fillOpacity={0.2} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -191,18 +207,19 @@ function GMVChart() {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  published: "#1B6CB8",
-  bidding: "#1B6CB8",
-  contracted: "#CC8800",
-  in_transit: "#CC8800",
-  completed: "#1A9B5E",
-  delivered: "#1A9B5E",
-  cancelled: "#C23333",
-  disputed: "#C23333",
-  draft: "#484F58",
+  published: "#16263F",
+  bidding: "#5B6B80",
+  contracted: "#E0A23A",
+  in_transit: "#E0A23A",
+  completed: "#2FA98A",
+  delivered: "#2FA98A",
+  cancelled: "#B74545",
+  disputed: "#B74545",
+  draft: "#C1C9D6",
 };
 
 function StatusPie() {
+  const { t } = useLanguage();
   const { data = [] } = useQuery({
     queryKey: ["admin-status-pie"],
     queryFn: async () => {
@@ -218,8 +235,8 @@ function StatusPie() {
   });
 
   return (
-    <div className="rounded-[12px] border border-graphite-600 bg-bg-surface p-4">
-      <h3 className="mb-3 text-sm font-semibold text-graphite-50">Fretes por status (30d)</h3>
+    <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-4 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
+      <h3 className="mb-3 text-sm font-semibold text-[#1F2933]">{t("admin.freightsByStatus30d")}</h3>
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
@@ -227,8 +244,8 @@ function StatusPie() {
               <Cell key={e.name} fill={STATUS_COLORS[e.name] ?? "#484F58"} />
             ))}
           </Pie>
-          <Tooltip contentStyle={{ background: "#161B22", border: "1px solid #30363D" }} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Tooltip contentStyle={{ background: "#FFFFFF", border: "1px solid #E6EAF0" }} />
+          <Legend wrapperStyle={{ fontSize: 11, color: "#5B6B80" }} />
         </PieChart>
       </ResponsiveContainer>
     </div>
@@ -237,22 +254,24 @@ function StatusPie() {
 
 // ─────────────── Alerts feed ───────────────
 type Severity = "critical" | "high" | "medium" | "low";
-const SEV_LABEL: Record<Severity, string> = {
-  critical: "Crítico",
-  high: "Alto",
-  medium: "Médio",
-  low: "Baixo",
-};
 const SEV_BORDER: Record<Severity, string> = {
-  critical: "border-l-[#C23333]",
-  high: "border-l-[#CC8800]",
-  medium: "border-l-[#1B6CB8]",
-  low: "border-l-[#484F58]",
+  critical: "border-l-[#B74545]",
+  high: "border-l-[#E0A23A]",
+  medium: "border-l-[#16263F]",
+  low: "border-l-[#93A1B4]",
 };
 
-function AlertsFeed() {
+function AlertsFeed({ locale }: { locale: string }) {
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [filter, setFilter] = useState<Severity | "all">("all");
+
+  const sevLabel: Record<Severity, string> = {
+    critical: t("admin.critical"),
+    high: t("admin.high"),
+    medium: t("admin.medium"),
+    low: t("admin.low"),
+  };
 
   const { data = [] } = useQuery({
     queryKey: ["admin-alerts"],
@@ -283,14 +302,14 @@ function AlertsFeed() {
 
   async function resolve(id: string) {
     await supabase.from("security_alerts").update({ resolved_at: new Date().toISOString() }).eq("id", id);
-    toast.success("Alerta resolvido");
+    toast.success(t("admin.alertResolved"));
     qc.invalidateQueries({ queryKey: ["admin-alerts"] });
   }
 
   return (
-    <div className="rounded-[12px] border border-graphite-600 bg-bg-surface p-5">
+    <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-5 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
       <div className="mb-4 flex flex-wrap items-center gap-3">
-        <h3 className="text-lg font-semibold text-graphite-50">Alertas de segurança ativos</h3>
+        <h3 className="text-lg font-semibold text-[#1F2933]">{t("admin.alertsFeedTitle")}</h3>
         <div className="flex gap-1.5">
           {(["all", "critical", "high", "medium", "low"] as const).map((s) => (
             <button
@@ -299,20 +318,20 @@ function AlertsFeed() {
               className={cn(
                 "rounded-full border px-3 py-1 text-xs",
                 filter === s
-                  ? "border-red-700/30 bg-red-900/20 text-red-400"
-                  : "border-graphite-700 text-graphite-300 hover:bg-bg-elevated",
+                  ? "border-[#E0A23A]/40 bg-[#E0A23A]/10 text-[#A5731D]"
+                  : "border-[#D8DFE8] text-[#5B6B80] hover:bg-[#F3F6FA]",
               )}
             >
-              {s === "all" ? "Todos" : SEV_LABEL[s as Severity]}
+              {s === "all" ? t("admin.all") : sevLabel[s as Severity]}
             </button>
           ))}
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-8 text-esg-green-400">
+        <div className="flex flex-col items-center gap-2 py-8 text-[#2FA98A]">
           <CheckCircle2 className="h-8 w-8" />
-          <p className="text-sm">Nenhum alerta ativo no momento</p>
+          <p className="text-sm">{t("admin.noActiveAlerts")}</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -328,17 +347,17 @@ function AlertsFeed() {
               <div className="flex-1">
                 <div className="flex items-center gap-2">
                   <Badge variant="amber" className="text-[10px]">
-                    {SEV_LABEL[(a.severity ?? "medium") as Severity]}
+                    {sevLabel[(a.severity ?? "medium") as Severity]}
                   </Badge>
-                  <span className="text-sm font-medium text-graphite-50">{a.title ?? a.type}</span>
+                  <span className="text-sm font-medium text-[#1F2933]">{a.title ?? a.type}</span>
                 </div>
-                {a.description && <p className="mt-1 text-xs text-graphite-400">{a.description}</p>}
-                <p className="mt-1 text-[10px] text-graphite-500">
-                  {new Date(a.created_at!).toLocaleString("pt-BR")}
+                {a.description && <p className="mt-1 text-xs text-[#5B6B80]">{a.description}</p>}
+                <p className="mt-1 text-[10px] text-[#8190A4]">
+                  {new Date(a.created_at!).toLocaleString(locale)}
                 </p>
               </div>
               <Button variant="ghost" size="sm" onClick={() => resolve(a.id)}>
-                Resolver
+                {t("admin.resolve")}
               </Button>
             </div>
           ))}
@@ -350,6 +369,8 @@ function AlertsFeed() {
 
 // ─────────────── Verification queue ───────────────
 function VerificationQueue() {
+  const { t, language } = useLanguage();
+  const locale = LOCALE_MAP[language];
   const qc = useQueryClient();
   const { data = [] } = useQuery({
     queryKey: ["admin-verif-queue"],
@@ -374,38 +395,38 @@ function VerificationQueue() {
 
   async function approve(companyId: string) {
     await supabase.from("companies").update({ is_verified: true }).eq("id", companyId);
-    toast.success("Transportadora aprovada");
+    toast.success(t("admin.approvedCarrier"));
     qc.invalidateQueries({ queryKey: ["admin-verif-queue"] });
     qc.invalidateQueries({ queryKey: ["admin-metrics"] });
   }
 
   async function reject(companyId: string) {
-    toast.info("Notificação de rejeição enviada");
+    toast.info(t("admin.rejectionSent"));
     await supabase.from("companies").update({ is_verified: false }).eq("id", companyId);
     qc.invalidateQueries({ queryKey: ["admin-verif-queue"] });
   }
 
   return (
-    <div className="rounded-[12px] border border-graphite-600 bg-bg-surface p-5">
+    <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-5 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
       <div className="mb-4 flex items-center gap-2">
-        <h3 className="text-lg font-semibold text-graphite-50">Transportadoras aguardando verificação</h3>
+        <h3 className="text-lg font-semibold text-[#1F2933]">{t("admin.verificationTitle")}</h3>
         <Badge variant="amber">{data.length}</Badge>
       </div>
       {data.length === 0 ? (
-        <p className="py-6 text-center text-sm text-graphite-400">Nenhuma transportadora na fila.</p>
+        <p className="py-6 text-center text-sm text-[#5B6B80]">{t("admin.noCarrierQueue")}</p>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs uppercase text-graphite-400">
-                <th className="py-2">Empresa</th>
-                <th className="py-2">CNPJ</th>
-                <th className="py-2">ANTT</th>
-                <th className="py-2">Aguardando</th>
-                <th className="py-2 text-right">Ações</th>
+              <tr className="text-left text-xs uppercase text-[#5B6B80]">
+                <th className="py-2">{t("admin.company")}</th>
+                <th className="py-2">{t("admin.cnpj")}</th>
+                <th className="py-2">{t("admin.antt")}</th>
+                <th className="py-2">{t("admin.waiting")}</th>
+                <th className="py-2 text-right">{t("admin.actions")}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-graphite-800">
+            <tbody className="divide-y divide-[#E6EAF0]">
               {data.map((row) => {
                 const days = Math.floor(
                   (Date.now() - new Date(row.created_at ?? Date.now()).getTime()) / 86400000,
@@ -413,26 +434,26 @@ function VerificationQueue() {
                 return (
                   <tr key={row.id}>
                     <td className="py-3">
-                      <div className="font-medium text-graphite-50">{row.name}</div>
-                      <div className="text-xs text-graphite-400">{row.address_city ?? "—"}</div>
+                      <div className="font-medium text-[#1F2933]">{row.name}</div>
+                      <div className="text-xs text-[#5B6B80]">{row.address_city ?? "-"}</div>
                     </td>
-                    <td className="py-3 font-mono text-xs text-graphite-200">{row.cnpj ?? "—"}</td>
-                    <td className="py-3 text-graphite-200">{row.carrier?.antt_rntrc ?? "—"}</td>
+                    <td className="py-3 font-mono text-xs text-[#1F2933]">{row.cnpj ?? "-"}</td>
+                    <td className="py-3 text-[#1F2933]">{row.carrier?.antt_rntrc ?? "-"}</td>
                     <td
                       className={cn(
                         "py-3 text-xs",
-                        days > 2 ? "text-red-400" : days > 1 ? "text-amber-400" : "text-graphite-400",
+                        days > 2 ? "text-red-500" : days > 1 ? "text-[#E0A23A]" : "text-[#5B6B80]",
                       )}
                     >
-                      {days} {days === 1 ? "dia" : "dias"}
+                      {days} {days === 1 ? t("admin.day") : t("admin.days")}
                     </td>
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => approve(row.id)}>
-                          <CheckCircle2 className="mr-1 h-3 w-3 text-esg-green-400" /> Aprovar
+                          <CheckCircle2 className="mr-1 h-3 w-3 text-[#2FA98A]" /> {t("admin.approve")}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => reject(row.id)}>
-                          <AlertTriangle className="mr-1 h-3 w-3 text-red-400" /> Rejeitar
+                          <AlertTriangle className="mr-1 h-3 w-3 text-red-500" /> {t("admin.reject")}
                         </Button>
                       </div>
                     </td>

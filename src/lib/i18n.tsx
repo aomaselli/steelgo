@@ -205,6 +205,62 @@ const translations = {
       platformFee: "Taxa SteelGo",
       total: "Total",
     },
+    admin: {
+      title: "Painel Administrativo",
+      dashboard: "Dashboard",
+      users: "Usuários",
+      carriers: "Transportadoras",
+      freights: "Fretes",
+      disputes: "Disputas",
+      security: "Segurança",
+      esg: "ESG",
+      audit: "Auditoria",
+      settings: "Configurações",
+      freightsToday: "Fretes hoje",
+      gmvToday: "GMV hoje",
+      platformRevenue: "Receita plataforma",
+      matchRate: "Taxa de match",
+      activeAlerts: "Alertas ativos",
+      pendingCarriers: "Transportadoras pendentes",
+      gmvLast30Days: "GMV - Últimos 30 dias",
+      freightsByStatus30d: "Fretes por status (30d)",
+      exportData: "Exportar dados",
+      awaitingKyc: "aguardando KYC",
+      last7d: "últimos 7d",
+      unresolved: "não resolvidos",
+      started: "iniciada",
+      alertsFeedTitle: "Alertas de segurança ativos",
+      all: "Todos",
+      noActiveAlerts: "Nenhum alerta ativo no momento",
+      resolve: "Resolver",
+      verificationTitle: "Transportadoras aguardando verificação",
+      noCarrierQueue: "Nenhuma transportadora na fila.",
+      company: "Empresa",
+      cnpj: "CNPJ",
+      antt: "ANTT",
+      waiting: "Aguardando",
+      actions: "Ações",
+      day: "dia",
+      days: "dias",
+      approve: "Aprovar",
+      reject: "Rejeitar",
+      approvedCarrier: "Transportadora aprovada",
+      rejectionSent: "Notificação de rejeição enviada",
+      alertResolved: "Alerta resolvido",
+      notifications: "Notificações",
+      noNotifications: "Nenhuma notificação ainda.",
+      searchPlaceholder: "Buscar fretes, contratos, transportadoras...",
+      profile: "Perfil",
+      signOut: "Sair",
+      toggleLanguage: "Alternar idioma",
+      openMenu: "Abrir menu",
+      close: "Fechar",
+      critical: "Crítico",
+      high: "Alto",
+      medium: "Médio",
+      low: "Baixo",
+      pendingShort: "pendentes",
+    },
   },
   en: {
     nav: {
@@ -347,23 +403,147 @@ const translations = {
       platformFee: "SteelGo fee",
       total: "Total",
     },
+    admin: {
+      title: "Admin Dashboard",
+      dashboard: "Dashboard",
+      users: "Users",
+      carriers: "Carriers",
+      freights: "Freights",
+      disputes: "Disputes",
+      security: "Security",
+      esg: "ESG",
+      audit: "Audit",
+      settings: "Settings",
+      freightsToday: "Freights today",
+      gmvToday: "GMV today",
+      platformRevenue: "Platform revenue",
+      matchRate: "Match rate",
+      activeAlerts: "Active alerts",
+      pendingCarriers: "Pending carriers",
+      gmvLast30Days: "GMV - Last 30 days",
+      freightsByStatus30d: "Freights by status (30d)",
+      exportData: "Export data",
+      awaitingKyc: "awaiting KYC",
+      last7d: "last 7d",
+      unresolved: "unresolved",
+      started: "started",
+      alertsFeedTitle: "Active security alerts",
+      all: "All",
+      noActiveAlerts: "No active alerts right now",
+      resolve: "Resolve",
+      verificationTitle: "Carriers awaiting verification",
+      noCarrierQueue: "No carriers in queue.",
+      company: "Company",
+      cnpj: "CNPJ",
+      antt: "ANTT",
+      waiting: "Waiting",
+      actions: "Actions",
+      day: "day",
+      days: "days",
+      approve: "Approve",
+      reject: "Reject",
+      approvedCarrier: "Carrier approved",
+      rejectionSent: "Rejection notification sent",
+      alertResolved: "Alert resolved",
+      notifications: "Notifications",
+      noNotifications: "No notifications yet.",
+      searchPlaceholder: "Search freights, contracts, carriers...",
+      profile: "Profile",
+      signOut: "Sign out",
+      toggleLanguage: "Toggle language",
+      openMenu: "Open menu",
+      close: "Close",
+      critical: "Critical",
+      high: "High",
+      medium: "Medium",
+      low: "Low",
+      pendingShort: "pending",
+    },
+  },
+  es: {
+    admin: {
+      title: "Panel Administrativo",
+      dashboard: "Dashboard",
+      users: "Usuarios",
+      carriers: "Transportistas",
+      freights: "Fletes",
+      disputes: "Disputas",
+      security: "Seguridad",
+      esg: "ESG",
+      audit: "Auditoría",
+      settings: "Configuración",
+      freightsToday: "Fletes hoy",
+      gmvToday: "GMV hoy",
+      platformRevenue: "Ingresos de plataforma",
+      matchRate: "Tasa de match",
+      activeAlerts: "Alertas activos",
+      pendingCarriers: "Transportistas pendientes",
+      gmvLast30Days: "GMV - Últimos 30 días",
+      freightsByStatus30d: "Fletes por estado (30d)",
+      exportData: "Exportar datos",
+      awaitingKyc: "esperando KYC",
+      last7d: "últimos 7 días",
+      unresolved: "no resueltos",
+      started: "iniciada",
+      alertsFeedTitle: "Alertas de seguridad activos",
+      all: "Todos",
+      noActiveAlerts: "No hay alertas activos en este momento",
+      resolve: "Resolver",
+      verificationTitle: "Transportistas esperando verificación",
+      noCarrierQueue: "No hay transportistas en cola.",
+      company: "Empresa",
+      cnpj: "CNPJ",
+      antt: "ANTT",
+      waiting: "Esperando",
+      actions: "Acciones",
+      day: "día",
+      days: "días",
+      approve: "Aprobar",
+      reject: "Rechazar",
+      approvedCarrier: "Transportista aprobado",
+      rejectionSent: "Notificación de rechazo enviada",
+      alertResolved: "Alerta resuelto",
+      notifications: "Notificaciones",
+      noNotifications: "No hay notificaciones todavía.",
+      searchPlaceholder: "Buscar fletes, contratos, transportistas...",
+      profile: "Perfil",
+      signOut: "Cerrar sesión",
+      toggleLanguage: "Cambiar idioma",
+      openMenu: "Abrir menú",
+      close: "Cerrar",
+      critical: "Crítico",
+      high: "Alto",
+      medium: "Medio",
+      low: "Bajo",
+      pendingShort: "pendientes",
+    },
   },
 } as const;
 
 type Translations = typeof translations;
 type TranslationDict = Translations[keyof Translations];
 
-function getByPath(obj: unknown, path: string): string {
+function lookupByPath(obj: unknown, path: string): string | null {
   const parts = path.split(".");
   let cur: unknown = obj;
   for (const p of parts) {
     if (cur && typeof cur === "object" && p in (cur as Record<string, unknown>)) {
       cur = (cur as Record<string, unknown>)[p];
     } else {
-      return path;
+      return null;
     }
   }
-  return typeof cur === "string" ? cur : path;
+  return typeof cur === "string" ? cur : null;
+}
+
+function getByPath(obj: unknown, path: string, fallback?: unknown): string {
+  const direct = lookupByPath(obj, path);
+  if (direct !== null) return direct;
+  if (fallback !== undefined) {
+    const fb = lookupByPath(fallback, path);
+    if (fb !== null) return fb;
+  }
+  return path;
 }
 
 interface LanguageContextValue {
@@ -403,11 +583,11 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const value = useMemo<LanguageContextValue>(() => {
-    const dict = language === "es" ? translations.pt : translations[language as "pt" | "en"];
+    const dict = translations[language] ?? translations.pt;
     return {
       language,
       setLanguage,
-      t: (key: string) => getByPath(dict, key),
+      t: (key: string) => getByPath(dict, key, translations.pt),
       raw: dict,
     };
   }, [language]);
