@@ -111,7 +111,7 @@ function CheckpointPage() {
   }
 
   return (
-    <DriverShell activeTab="home" noNav>
+    <DriverShell activeTab="trip" noNav>
       <div className="flex items-center gap-3 px-4 pt-4 pb-3">
         <button
           onClick={() => (step > 1 ? setStep(step - 1) : navigate({ to: "/driver" }))}

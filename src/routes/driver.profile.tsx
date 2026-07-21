@@ -12,7 +12,7 @@ function ProfilePage() {
   const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 
   return (
-    <DriverShell activeTab="profile">
+    <DriverShell activeTab="earnings">
       <header className="px-4 pt-5 pb-3">
         <h1 className="text-[18px] font-medium text-graphite-50">Perfil</h1>
       </header>

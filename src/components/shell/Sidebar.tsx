@@ -4,11 +4,10 @@ import {
   Zap,
   LayoutDashboard,
   Package,
+  Plus,
   FileText,
   CreditCard,
   Leaf,
-  Store,
-  Gavel,
   Truck,
   Users,
   Car,
@@ -17,6 +16,7 @@ import {
   Building2,
   Gavel as GavelIcon,
   Settings as SettingsIcon,
+  HandHelping,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
@@ -27,36 +27,44 @@ interface NavItem {
   to: string;
   labelKey: string;
   icon: LucideIcon;
+  disabled?: boolean;
 }
 
 const NAV: Record<ShellRole, NavItem[]> = {
   shipper: [
-    { to: "/shipper", labelKey: "Dashboard", icon: LayoutDashboard },
-    { to: "/shipper/freights", labelKey: "Meus fretes", icon: Package },
-    { to: "/shipper/contracts", labelKey: "Contratos", icon: FileText },
-    { to: "/shipper/payments", labelKey: "Pagamentos", icon: CreditCard },
-    { to: "/shipper/esg", labelKey: "ESG", icon: Leaf },
+    { to: "/shipper", labelKey: "personaNav.shipper.dashboard", icon: LayoutDashboard },
+    { to: "/shipper/freights/new", labelKey: "personaNav.shipper.requestFreight", icon: Plus },
+    { to: "/shipper/freights", labelKey: "personaNav.shipper.shipments", icon: Package },
+    { to: "/shipper/carriers", labelKey: "personaNav.shipper.carriers", icon: Building2, disabled: true },
+    { to: "/shipper/contracts", labelKey: "personaNav.shipper.documents", icon: FileText },
+    { to: "/shipper/esg", labelKey: "personaNav.shipper.esg", icon: Leaf },
+    { to: "/shipper/payments", labelKey: "personaNav.shipper.payments", icon: CreditCard },
+    { to: "/shipper/support", labelKey: "personaNav.shipper.support", icon: HandHelping, disabled: true },
   ],
   carrier: [
-    { to: "/carrier", labelKey: "Dashboard", icon: LayoutDashboard },
-    { to: "/carrier/marketplace", labelKey: "Marketplace", icon: Store },
-    { to: "/carrier/bids", labelKey: "Minhas ofertas", icon: Gavel },
-    { to: "/carrier/trips", labelKey: "Viagens", icon: Truck },
-    { to: "/carrier/contracts", labelKey: "Contratos", icon: FileText },
-    { to: "/carrier/drivers", labelKey: "Motoristas", icon: Users },
-    { to: "/carrier/vehicles", labelKey: "Veículos", icon: Car },
-    { to: "/carrier/payments", labelKey: "Pagamentos", icon: CreditCard },
+    { to: "/carrier", labelKey: "personaNav.carrier.dashboard", icon: LayoutDashboard },
+    { to: "/carrier/marketplace", labelKey: "personaNav.carrier.availableFreights", icon: Package },
+    { to: "/carrier/active", labelKey: "personaNav.carrier.activeLoads", icon: Truck },
+    { to: "/carrier/drivers", labelKey: "personaNav.carrier.drivers", icon: Users },
+    { to: "/carrier/vehicles", labelKey: "personaNav.carrier.trucks", icon: Car },
+    { to: "/carrier/contracts", labelKey: "personaNav.carrier.documents", icon: FileText },
+    { to: "/carrier/payouts", labelKey: "personaNav.carrier.receivables", icon: CreditCard },
+    { to: "/carrier/score", labelKey: "personaNav.carrier.esg", icon: Leaf },
+    { to: "/carrier/support", labelKey: "personaNav.carrier.support", icon: HandHelping, disabled: true },
   ],
   admin: [
-    { to: "/admin", labelKey: "admin.dashboard", icon: LayoutDashboard },
-    { to: "/admin/users", labelKey: "admin.users", icon: Users },
-    { to: "/admin/carriers", labelKey: "admin.carriers", icon: Building2 },
-    { to: "/admin/freights", labelKey: "admin.freights", icon: Package },
-    { to: "/admin/disputes", labelKey: "admin.disputes", icon: GavelIcon },
+    { to: "/admin", labelKey: "personaNav.admin.dashboard", icon: LayoutDashboard },
+    { to: "/admin/users", labelKey: "personaNav.admin.users", icon: Users },
+    { to: "/admin/carriers", labelKey: "personaNav.admin.companies", icon: Building2 },
+    { to: "/admin/carriers", labelKey: "personaNav.admin.carriers", icon: Truck },
+    { to: "/admin/drivers", labelKey: "personaNav.admin.drivers", icon: Car, disabled: true },
+    { to: "/admin/freights", labelKey: "personaNav.admin.freights", icon: Package },
+    { to: "/admin/disputes", labelKey: "personaNav.admin.disputes", icon: GavelIcon },
+    { to: "/admin/payments", labelKey: "personaNav.admin.payments", icon: CreditCard },
+    { to: "/admin/esg", labelKey: "personaNav.admin.esg", icon: Leaf },
+    { to: "/admin/audit", labelKey: "personaNav.admin.audit", icon: ScrollText },
+    { to: "/admin/settings", labelKey: "personaNav.admin.settings", icon: SettingsIcon },
     { to: "/admin/security", labelKey: "admin.security", icon: Shield },
-    { to: "/admin/esg", labelKey: "admin.esg", icon: Leaf },
-    { to: "/admin/audit", labelKey: "admin.audit", icon: ScrollText },
-    { to: "/admin/settings", labelKey: "admin.settings", icon: SettingsIcon },
   ],
 };
 
@@ -75,10 +83,25 @@ export function Sidebar({ role }: { role: ShellRole }) {
       <nav className="flex-1 space-y-1 p-3">
         {items.map((item) => {
           const active =
-            item.to === `/${role}` ? pathname === item.to : pathname.startsWith(item.to);
+            !item.disabled &&
+            (item.to === `/${role}` ? pathname === item.to : pathname.startsWith(item.to));
+
+          if (item.disabled) {
+            return (
+              <div
+                key={`${item.to}-${item.labelKey}`}
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-[#6D7E94] opacity-65"
+                title={t("personaNav.comingSoon")}
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{t(item.labelKey)}</span>
+              </div>
+            );
+          }
+
           return (
             <Link
-              key={item.to}
+              key={`${item.to}-${item.labelKey}`}
               to={item.to}
               className={cn(
                 "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
