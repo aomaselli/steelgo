@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -63,6 +63,18 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
   const [personal, setPersonal] = useState<PersonalData | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (initialRole === "shipper" || initialRole === "carrier" || initialRole === "driver") {
+      setRole(initialRole);
+      return;
+    }
+    if (typeof window === "undefined") return;
+    const queryRole = new URLSearchParams(window.location.search).get("role");
+    if (queryRole === "driver" || queryRole === "carrier" || queryRole === "shipper") {
+      setRole(queryRole);
+    }
+  }, [initialRole]);
 
   const handleFinish = async (company: CompanyData | null) => {
     if (!personal || !role) return;
@@ -270,6 +282,7 @@ function StepRole({
             <button
               key={c.key}
               type="button"
+              onClickCapture={() => onSelect(c.key)}
               onClick={() => onSelect(c.key)}
               className={`border-2 rounded-[16px] p-5 cursor-pointer transition-all flex gap-4 items-start text-left ${
                 selected

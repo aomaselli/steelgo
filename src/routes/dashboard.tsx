@@ -12,13 +12,13 @@ const ROLE_HOME: Record<string, string> = {
 };
 
 function DashboardRedirect() {
-    const { role } = useAuth();
+    const { userRole } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-      const home = role ? (ROLE_HOME[role] ?? "/") : "/";
+          const home = userRole ? (ROLE_HOME[userRole] ?? "/") : "/";
           void navigate({ to: home, replace: true });
-    }, [role, navigate]);
+    }, [userRole, navigate]);
 
     return null;
 }

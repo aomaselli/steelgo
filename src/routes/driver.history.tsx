@@ -41,7 +41,7 @@ function HistoryPage() {
   const monthTotal = monthDeliveries.reduce((s, d) => s + Number(d.total_amount_brl ?? 0), 0);
 
   return (
-    <DriverShell activeTab="freights">
+    <DriverShell activeTab="history">
       <header className="flex items-center justify-between px-4 pt-5 pb-3">
         <h1 className="text-[18px] font-medium text-graphite-50">Histórico</h1>
         <span

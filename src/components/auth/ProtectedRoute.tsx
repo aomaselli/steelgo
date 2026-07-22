@@ -13,12 +13,12 @@ interface Props {
 const ROLE_HOME: Record<UserRole, string> = {
   shipper: "/shipper",
   carrier: "/carrier",
-  driver: "/carrier",
+  driver: "/driver",
   admin: "/admin",
 };
 
 export function ProtectedRoute({ children, role }: Props) {
-  const { isLoading, isAuthenticated, role: userRole } = useAuth();
+  const { isLoading, isAuthenticated, role: userRole, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,10 +30,16 @@ export function ProtectedRoute({ children, role }: Props) {
     if (role && userRole) {
       const allowed = Array.isArray(role) ? role : [role];
       if (!allowed.includes(userRole)) {
-        void navigate({ to: ROLE_HOME[userRole] });
+        const fallback =
+          userRole === "driver"
+            ? profile?.is_onboarded === true
+              ? "/driver"
+              : "/onboarding"
+            : ROLE_HOME[userRole];
+        void navigate({ to: fallback });
       }
     }
-  }, [isLoading, isAuthenticated, role, userRole, navigate]);
+  }, [isLoading, isAuthenticated, role, userRole, profile, navigate]);
 
   if (isLoading || !isAuthenticated) {
     return (

@@ -3,7 +3,7 @@ import type { UserRole } from "@/types/database";
 export const ROLE_HOME: Record<UserRole, string> = {
   shipper: "/shipper",
   carrier: "/carrier",
-  driver: "/carrier",
+  driver: "/driver",
   admin: "/admin",
 };
 

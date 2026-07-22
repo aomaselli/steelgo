@@ -16,7 +16,7 @@ function DeliveryCompletePage() {
   }, []);
 
   return (
-    <DriverShell activeTab="trip" noNav>
+    <DriverShell activeTab="home" noNav>
       <div className="px-6 py-10 flex flex-col items-center text-center">
         <div
           className="rounded-full flex items-center justify-center transition-transform duration-300"

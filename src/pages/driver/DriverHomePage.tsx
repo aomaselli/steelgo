@@ -175,7 +175,7 @@ export default function DriverHomePage() {
   }, [driverPos?.lat, driverPos?.lng, dest?.lat, dest?.lng]);
 
   return (
-    <DriverShell activeTab="trip">
+    <DriverShell activeTab="home">
       <Toaster position="top-center" />
 
       {!online && (
