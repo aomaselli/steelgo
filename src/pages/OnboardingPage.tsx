@@ -826,17 +826,69 @@ function DriverDocs({ userId, onNext }: { userId: string; onNext: () => void }) 
   const submit = async () => {
     if (!cnh) return;
     setUploading(true);
+    const bucket = "driver-docs";
     const up = async (file: File, name: string) => {
-      const { error } = await supabase.storage.from("driver-docs").upload(`${userId}/${name}.jpg`, file, { upsert: true });
+      const path = `${userId}/${name}.jpg`;
+      const { error } = await supabase.storage.from(bucket).upload(path, file, { upsert: true });
       if (error) throw error;
     };
     try {
+      if (import.meta.env.DEV) {
+        const { data: bucketInfo, error: bucketError } = await supabase.storage.getBucket(bucket);
+        if (bucketError) {
+          console.error("[DriverDocs] bucket lookup failed", {
+            operation: "storage.getBucket",
+            bucket,
+            userId,
+            error: bucketError,
+          });
+        } else {
+          console.info("[DriverDocs] bucket lookup ok", {
+            operation: "storage.getBucket",
+            bucket,
+            userId,
+            bucketInfo,
+          });
+        }
+      }
       await up(cnh, "cnh");
       if (selfie) await up(selfie, "selfie");
       toast.success("Documentos enviados!");
       onNext();
-    } catch (e: any) {
-      toast.error(e?.message ?? "Erro ao enviar");
+    } catch (e: unknown) {
+      const err = e as {
+        message?: string;
+        error?: string;
+        statusCode?: string | number;
+        name?: string;
+      };
+      if (import.meta.env.DEV) {
+        console.error("[DriverDocs] upload failed", {
+          operation: "storage.upload",
+          bucket,
+          expectedStorageTables: ["storage.buckets", "storage.objects"],
+          expectedPolicies: [
+            "doc_buckets_owner_insert",
+            "doc_buckets_owner_update",
+            "doc_buckets_owner_select",
+          ],
+          attemptedPaths: [
+            `${userId}/cnh.jpg`,
+            `${userId}/selfie.jpg`,
+          ],
+          userId,
+          cnhMeta: cnh ? { name: cnh.name, type: cnh.type, size: cnh.size } : null,
+          selfieMeta: selfie ? { name: selfie.name, type: selfie.type, size: selfie.size } : null,
+          error: e,
+          parsedError: {
+            name: err?.name,
+            message: err?.message,
+            error: err?.error,
+            statusCode: err?.statusCode,
+          },
+        });
+      }
+      toast.error(err?.message ?? "Erro ao enviar");
     } finally {
       setUploading(false);
     }
