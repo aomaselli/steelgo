@@ -42,6 +42,9 @@ export function ProtectedRoute({ children, role }: Props) {
   }, [isLoading, isAuthenticated, role, userRole, profile, navigate]);
 
   if (isLoading || !isAuthenticated) {
+    // isLoading stays true until profile/role for the *current* uid have
+    // resolved (see AuthContext), so this also blocks rendering while the
+    // profile is still being fetched for the active user.
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-4">
