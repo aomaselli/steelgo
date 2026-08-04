@@ -229,6 +229,8 @@ export function LoginPage() {
     }
   }, []);
 
+  const showNativeInputDiagnostics = authDebugEnabled && isNativeCapacitorApp;
+
   const bundledSupabaseEnvReady = useMemo(
     () => ({
       hasUrl: Boolean(import.meta.env.VITE_SUPABASE_URL),
@@ -281,13 +283,13 @@ export function LoginPage() {
   const passwordValue = watch("password") ?? "";
 
   useEffect(() => {
-    if (!isNativeCapacitorApp) return;
+    if (!showNativeInputDiagnostics) return;
     const domValue = emailInputRef.current?.value ?? "";
     setEmailDomLength(domValue.length);
-  }, [emailValue, isNativeCapacitorApp]);
+  }, [emailValue, showNativeInputDiagnostics]);
 
   useEffect(() => {
-    if (!isNativeCapacitorApp) return;
+    if (!showNativeInputDiagnostics) return;
 
     const getTargetMeta = (target: EventTarget | null) => {
       if (!(target instanceof HTMLElement)) {
@@ -331,10 +333,10 @@ export function LoginPage() {
         document.removeEventListener(eventName, handler, true);
       });
     };
-  }, [isNativeCapacitorApp]);
+  }, [showNativeInputDiagnostics]);
 
   const recordEmailEvent = (eventName: keyof EmailInputEventCounters, domValue: string) => {
-    if (!isNativeCapacitorApp) return;
+    if (!showNativeInputDiagnostics) return;
     setEmailDomLength(domValue.length);
     setEmailInputEvents((current) => ({
       ...current,
@@ -347,7 +349,7 @@ export function LoginPage() {
     controllerOnChange: (value: string) => void,
   ) => {
     controllerOnChange(nextValue);
-    if (isNativeCapacitorApp) {
+    if (showNativeInputDiagnostics) {
       setEmailDomLength(nextValue.length);
     }
   };
@@ -478,7 +480,7 @@ export function LoginPage() {
           <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">Bem-vindo de volta</h2>
           <p className="text-sm text-[#8B949E] mb-8">Entre na sua conta para continuar</p>
 
-          {isNativeCapacitorApp && (
+          {showNativeInputDiagnostics && (
             <div
               style={{
                 marginBottom: "16px",
@@ -576,17 +578,23 @@ export function LoginPage() {
                           recordEmailEvent("beforeInput", event.currentTarget.value);
                         }}
                         onInput={(event) => {
-                          recordEmailEvent("input", event.currentTarget.value);
+                          const nextValue = event.currentTarget.value;
+                          recordEmailEvent("input", nextValue);
+                          // Fallback for Android/WebView keyboards that emit input but miss change.
+                          if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
+                            field.onChange(nextValue);
+                          }
                         }}
                         onChange={(event) => {
-                          recordEmailEvent("change", event.currentTarget.value);
-                          applyEmailValueFromController(event.target.value, field.onChange);
+                          const nextValue = event.currentTarget.value;
+                          recordEmailEvent("change", nextValue);
+                          applyEmailValueFromController(nextValue, field.onChange);
                         }}
                         onBlur={field.onBlur}
                         className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
                       />
 
-                      {isNativeCapacitorApp && (
+                      {showNativeInputDiagnostics && (
                         <div className="mt-2 rounded-[8px] border border-[#30363D] bg-[#161B22] px-3 py-2 text-xs text-[#8B949E] space-y-1">
                           <div className="text-[#C9D1D9] font-medium">Native input diagnostics</div>
                           <div>DOM value length: {emailDomLength}</div>
@@ -639,7 +647,14 @@ export function LoginPage() {
                       enterKeyHint="go"
                       placeholder="••••••••"
                       value={field.value ?? ""}
-                      onChange={(event) => field.onChange(event.target.value)}
+                      onInput={(event) => {
+                        const nextValue = event.currentTarget.value;
+                        // Fallback for Android/WebView keyboards that emit input but miss change.
+                        if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
+                          field.onChange(nextValue);
+                        }
+                      }}
+                      onChange={(event) => field.onChange(event.currentTarget.value)}
                       onBlur={field.onBlur}
                       className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
                     />
