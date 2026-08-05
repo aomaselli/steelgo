@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -134,55 +134,6 @@ const schema = z.object({
 });
 type FormData = z.infer<typeof schema>;
 
-type AuthDebugState = {
-  submitStarted: boolean;
-  supabaseStarted: boolean;
-  result:
-    | null
-    | {
-        kind: "success";
-      }
-    | {
-        kind: "error";
-        name: string;
-        message: string;
-      };
-};
-
-type EmailInputEventCounters = {
-  beforeInput: number;
-  input: number;
-  change: number;
-};
-
-type NativeCaptureEventName =
-  | "keydown"
-  | "keyup"
-  | "beforeinput"
-  | "input"
-  | "compositionstart"
-  | "compositionupdate"
-  | "compositionend";
-
-type NativeCaptureCounters = Record<NativeCaptureEventName, number>;
-
-type NativeCaptureSnapshot = {
-  eventName: NativeCaptureEventName;
-  targetTag: string;
-  targetType: string;
-  defaultPrevented: boolean;
-};
-
-const NATIVE_CAPTURE_EVENT_NAMES: NativeCaptureEventName[] = [
-  "keydown",
-  "keyup",
-  "beforeinput",
-  "input",
-  "compositionstart",
-  "compositionupdate",
-  "compositionend",
-];
-
 const VALUE_PROPS = [
   { Icon: Shield, bg: "#1B6CB8", title: "Carga protegida", desc: "Conta protegida garante seu pagamento até a entrega confirmada" },
   { Icon: MapPin, bg: "#1B6CB8", title: "Rastreamento GPS", desc: "Posição do caminhão atualizada a cada 30 segundos" },
@@ -197,29 +148,6 @@ export function LoginPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState<DevRole | null>(null);
-  const authDebugEnabled = import.meta.env.DEV;
-  const [authDebug, setAuthDebug] = useState<AuthDebugState>({
-    submitStarted: false,
-    supabaseStarted: false,
-    result: null,
-  });
-  const [emailDomLength, setEmailDomLength] = useState(0);
-  const [emailInputEvents, setEmailInputEvents] = useState<EmailInputEventCounters>({
-    beforeInput: 0,
-    input: 0,
-    change: 0,
-  });
-  const [nativeCaptureCounters, setNativeCaptureCounters] = useState<NativeCaptureCounters>({
-    keydown: 0,
-    keyup: 0,
-    beforeinput: 0,
-    input: 0,
-    compositionstart: 0,
-    compositionupdate: 0,
-    compositionend: 0,
-  });
-  const [nativeCaptureLastEvent, setNativeCaptureLastEvent] = useState<NativeCaptureSnapshot | null>(null);
-  const emailInputRef = useRef<HTMLInputElement | null>(null);
 
   const isNativeCapacitorApp = useMemo(() => {
     try {
@@ -228,21 +156,6 @@ export function LoginPage() {
       return false;
     }
   }, []);
-
-  const showNativeInputDiagnostics = authDebugEnabled && isNativeCapacitorApp;
-
-  const bundledSupabaseEnvReady = useMemo(
-    () => ({
-      hasUrl: Boolean(import.meta.env.VITE_SUPABASE_URL),
-      hasKey: Boolean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY),
-    }),
-    [],
-  );
-
-  const updateAuthDebug = (patch: Partial<AuthDebugState>) => {
-    if (!authDebugEnabled) return;
-    setAuthDebug((current) => ({ ...current, ...patch }));
-  };
 
   const onDevLogin = async (role: DevRole, email: string, index: number) => {
     setDevLoading(role);
@@ -268,7 +181,6 @@ export function LoginPage() {
     control,
     handleSubmit,
     register,
-    watch,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -278,81 +190,6 @@ export function LoginPage() {
       remember: false,
     },
   });
-
-  const emailValue = watch("email") ?? "";
-  const passwordValue = watch("password") ?? "";
-
-  useEffect(() => {
-    if (!showNativeInputDiagnostics) return;
-    const domValue = emailInputRef.current?.value ?? "";
-    setEmailDomLength(domValue.length);
-  }, [emailValue, showNativeInputDiagnostics]);
-
-  useEffect(() => {
-    if (!showNativeInputDiagnostics) return;
-
-    const getTargetMeta = (target: EventTarget | null) => {
-      if (!(target instanceof HTMLElement)) {
-        return { targetTag: "unknown", targetType: "n/a" };
-      }
-
-      const tag = target.tagName.toLowerCase();
-      if (target instanceof HTMLInputElement) {
-        return { targetTag: tag, targetType: target.type || "text" };
-      }
-      if (target instanceof HTMLTextAreaElement) {
-        return { targetTag: tag, targetType: "textarea" };
-      }
-      if (target.isContentEditable) {
-        return { targetTag: tag, targetType: "contenteditable" };
-      }
-      return { targetTag: tag, targetType: "n/a" };
-    };
-
-    const handlers = NATIVE_CAPTURE_EVENT_NAMES.map((eventName) => {
-      const handler = (event: Event) => {
-        const meta = getTargetMeta(event.target);
-        setNativeCaptureCounters((current) => ({
-          ...current,
-          [eventName]: current[eventName] + 1,
-        }));
-        setNativeCaptureLastEvent({
-          eventName,
-          targetTag: meta.targetTag,
-          targetType: meta.targetType,
-          defaultPrevented: event.defaultPrevented,
-        });
-      };
-
-      document.addEventListener(eventName, handler, true);
-      return { eventName, handler };
-    });
-
-    return () => {
-      handlers.forEach(({ eventName, handler }) => {
-        document.removeEventListener(eventName, handler, true);
-      });
-    };
-  }, [showNativeInputDiagnostics]);
-
-  const recordEmailEvent = (eventName: keyof EmailInputEventCounters, domValue: string) => {
-    if (!showNativeInputDiagnostics) return;
-    setEmailDomLength(domValue.length);
-    setEmailInputEvents((current) => ({
-      ...current,
-      [eventName]: current[eventName] + 1,
-    }));
-  };
-
-  const applyEmailValueFromController = (
-    nextValue: string,
-    controllerOnChange: (value: string) => void,
-  ) => {
-    controllerOnChange(nextValue);
-    if (showNativeInputDiagnostics) {
-      setEmailDomLength(nextValue.length);
-    }
-  };
 
   useEffect(() => {
     if (isLoading || devLoading) return;
@@ -366,15 +203,9 @@ export function LoginPage() {
 
   const onSubmit = async (data: FormData) => {
     setAuthError(null);
-    updateAuthDebug({
-      submitStarted: true,
-      supabaseStarted: false,
-      result: null,
-    });
     setLoading(true);
 
     try {
-      updateAuthDebug({ supabaseStarted: true });
       const { error } = await signIn(data.email, data.password);
 
       if (error) {
@@ -383,43 +214,15 @@ export function LoginPage() {
           message: error.message,
         });
         setAuthError(error.message);
-        updateAuthDebug({
-          result: {
-            kind: "error",
-            name: error.name || "AuthError",
-            message: error.message,
-          },
-        });
         return;
       }
-
-      updateAuthDebug({ result: { kind: "success" } });
     } catch (error) {
       const authException = error instanceof Error ? error : new Error(String(error));
       console.error("[Login] signInWithPassword threw", authException);
       setAuthError(authException.message);
-      updateAuthDebug({
-        result: {
-          kind: "error",
-          name: authException.name,
-          message: authException.message,
-        },
-      });
     } finally {
       setLoading(false);
     }
-  };
-
-  const onInvalid = () => {
-    updateAuthDebug({
-      submitStarted: true,
-      supabaseStarted: false,
-      result: {
-        kind: "error",
-        name: "ValidationError",
-        message: "Form validation prevented submit",
-      },
-    });
   };
 
   const onGoogle = async () => {
@@ -480,73 +283,7 @@ export function LoginPage() {
           <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">Bem-vindo de volta</h2>
           <p className="text-sm text-[#8B949E] mb-8">Entre na sua conta para continuar</p>
 
-          {showNativeInputDiagnostics && (
-            <div
-              style={{
-                marginBottom: "16px",
-                border: "1px solid #30363D",
-                borderRadius: "8px",
-                background: "#161B22",
-                padding: "12px",
-                color: "#C9D1D9",
-                fontSize: "12px",
-              }}
-            >
-              <div style={{ fontWeight: 600, marginBottom: "8px" }}>Native input isolation</div>
-
-              <div style={{ marginBottom: "8px" }}>
-                <label htmlFor="native-raw-input" style={{ display: "block", marginBottom: "4px" }}>
-                  Raw input
-                </label>
-                <input
-                  id="native-raw-input"
-                  type="text"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  style={{ width: "100%", height: "36px", padding: "6px 8px", border: "1px solid #30363D", background: "#0D1117", color: "#E6EDF3" }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "8px" }}>
-                <label htmlFor="native-raw-textarea" style={{ display: "block", marginBottom: "4px" }}>
-                  Raw textarea
-                </label>
-                <textarea
-                  id="native-raw-textarea"
-                  rows={3}
-                  style={{ width: "100%", padding: "6px 8px", border: "1px solid #30363D", background: "#0D1117", color: "#E6EDF3" }}
-                />
-              </div>
-
-              <div style={{ marginBottom: "8px" }}>
-                <div style={{ marginBottom: "4px" }}>Raw contentEditable</div>
-                <div
-                  contentEditable
-                  suppressContentEditableWarning
-                  style={{ minHeight: "36px", padding: "6px 8px", border: "1px solid #30363D", background: "#0D1117", color: "#E6EDF3" }}
-                />
-              </div>
-
-              <div style={{ borderTop: "1px solid #30363D", marginTop: "8px", paddingTop: "8px", lineHeight: 1.5 }}>
-                <div>keydown: {nativeCaptureCounters.keydown}</div>
-                <div>keyup: {nativeCaptureCounters.keyup}</div>
-                <div>beforeinput: {nativeCaptureCounters.beforeinput}</div>
-                <div>input: {nativeCaptureCounters.input}</div>
-                <div>compositionstart: {nativeCaptureCounters.compositionstart}</div>
-                <div>compositionupdate: {nativeCaptureCounters.compositionupdate}</div>
-                <div>compositionend: {nativeCaptureCounters.compositionend}</div>
-                <div style={{ marginTop: "6px" }}>
-                  Last target: {nativeCaptureLastEvent ? `${nativeCaptureLastEvent.targetTag}[${nativeCaptureLastEvent.targetType}]` : "none"}
-                </div>
-                <div>
-                  Last defaultPrevented: {nativeCaptureLastEvent ? String(nativeCaptureLastEvent.defaultPrevented) : "n/a"}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div>
               <label className="block text-sm text-[#C9D1D9] mb-1.5">Email</label>
               <div className="relative">
@@ -558,68 +295,32 @@ export function LoginPage() {
                   name="email"
                   control={control}
                   render={({ field }) => (
-                    <>
-                      <input
-                        ref={(node) => {
-                          field.ref(node);
-                          emailInputRef.current = node;
-                        }}
-                        name={field.name}
-                        type="email"
-                        inputMode="email"
-                        autoComplete="email"
-                        autoCapitalize="none"
-                        autoCorrect="off"
-                        spellCheck={false}
-                        enterKeyHint="next"
-                        placeholder="seu@email.com.br"
-                        value={field.value ?? ""}
-                        onBeforeInput={(event) => {
-                          recordEmailEvent("beforeInput", event.currentTarget.value);
-                        }}
-                        onInput={(event) => {
-                          const nextValue = event.currentTarget.value;
-                          recordEmailEvent("input", nextValue);
-                          // Fallback for Android/WebView keyboards that emit input but miss change.
-                          if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
-                            field.onChange(nextValue);
-                          }
-                        }}
-                        onChange={(event) => {
-                          const nextValue = event.currentTarget.value;
-                          recordEmailEvent("change", nextValue);
-                          applyEmailValueFromController(nextValue, field.onChange);
-                        }}
-                        onBlur={field.onBlur}
-                        className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
-                      />
-
-                      {showNativeInputDiagnostics && (
-                        <div className="mt-2 rounded-[8px] border border-[#30363D] bg-[#161B22] px-3 py-2 text-xs text-[#8B949E] space-y-1">
-                          <div className="text-[#C9D1D9] font-medium">Native input diagnostics</div>
-                          <div>DOM value length: {emailDomLength}</div>
-                          <div>React/RHF value length: {emailValue.length}</div>
-                          <div>beforeinput events: {emailInputEvents.beforeInput}</div>
-                          <div>input events: {emailInputEvents.input}</div>
-                          <div>change events: {emailInputEvents.change}</div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              applyEmailValueFromController("teste@steelgo.com.br", field.onChange);
-                            }}
-                            className="mt-1 h-8 rounded-[6px] bg-[#1B6CB8] px-3 text-xs font-medium text-white hover:bg-[#1758a0]"
-                          >
-                            Fill test email
-                          </button>
-                        </div>
-                      )}
-                    </>
+                    <input
+                      ref={field.ref}
+                      name={field.name}
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="next"
+                      placeholder="seu@email.com.br"
+                      value={field.value ?? ""}
+                      onInput={(event) => {
+                        const nextValue = event.currentTarget.value;
+                        // Fallback for Android/WebView keyboards that emit input but miss change.
+                        if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
+                          field.onChange(nextValue);
+                        }
+                      }}
+                      onChange={(event) => field.onChange(event.currentTarget.value)}
+                      onBlur={field.onBlur}
+                      className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                    />
                   )}
                 />
               </div>
-              {authDebugEnabled && (
-                <p className="text-xs text-[#8B949E] mt-1">Email length: {emailValue.length}</p>
-              )}
               {errors.email && (
                 <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>
               )}
@@ -749,28 +450,6 @@ export function LoginPage() {
               })}
             </div>
           </>
-
-          {authDebugEnabled && (
-            <div className="mt-4 rounded-[8px] border border-[#30363D] bg-[#161B22] px-3 py-2 text-xs text-[#8B949E] space-y-1">
-              <div>Debug email length: {emailValue.length}</div>
-              <div>Debug password populated: {passwordValue.length > 0 ? "yes" : "no"}</div>
-              <div>Debug submit started: {authDebug.submitStarted ? "yes" : "no"}</div>
-              <div>Debug Supabase call started: {authDebug.supabaseStarted ? "yes" : "no"}</div>
-              <div>
-                Debug result:{" "}
-                {authDebug.result
-                  ? authDebug.result.kind === "success"
-                    ? "success"
-                    : `${authDebug.result.name}: ${authDebug.result.message}`
-                  : "pending"}
-              </div>
-              <div>
-                Debug bundled Supabase env: {bundledSupabaseEnvReady.hasUrl && bundledSupabaseEnvReady.hasKey ? "present" : "missing"}
-              </div>
-            </div>
-          )}
-
-
 
           <p className="text-sm text-[#8B949E] text-center mt-8">
             Não tem uma conta?{" "}
