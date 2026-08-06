@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useMemo, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Zap, Mail, Lock, Eye, EyeOff, Shield, MapPin, Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
@@ -148,6 +149,14 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [devLoading, setDevLoading] = useState<DevRole | null>(null);
 
+  const isNativeCapacitorApp = useMemo(() => {
+    try {
+      return Capacitor.isNativePlatform();
+    } catch {
+      return false;
+    }
+  }, []);
+
   const onDevLogin = async (role: DevRole, email: string, index: number) => {
     setDevLoading(role);
     setAuthError(null);
@@ -169,10 +178,18 @@ export function LoginPage() {
 
 
   const {
-    register,
+    control,
     handleSubmit,
+    register,
     formState: { errors },
-  } = useForm<FormData>({ resolver: zodResolver(schema) });
+  } = useForm<FormData>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      email: "",
+      password: "",
+      remember: false,
+    },
+  });
 
   useEffect(() => {
     if (isLoading || devLoading) return;
@@ -187,9 +204,25 @@ export function LoginPage() {
   const onSubmit = async (data: FormData) => {
     setAuthError(null);
     setLoading(true);
-    const { error } = await signIn(data.email, data.password);
-    setLoading(false);
-    if (error) setAuthError(error.message);
+
+    try {
+      const { error } = await signIn(data.email, data.password);
+
+      if (error) {
+        console.error("[Login] signInWithPassword returned error", {
+          name: error.name,
+          message: error.message,
+        });
+        setAuthError(error.message);
+        return;
+      }
+    } catch (error) {
+      const authException = error instanceof Error ? error : new Error(String(error));
+      console.error("[Login] signInWithPassword threw", authException);
+      setAuthError(authException.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onGoogle = async () => {
@@ -201,7 +234,13 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-[#0D1117]">
+    <div
+      className="min-h-screen flex bg-[#0D1117]"
+      style={{
+        minHeight: "100dvh",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
+    >
       {/* LEFT */}
       <aside className="hidden md:flex flex-1 flex-col p-12 bg-[#161B22] border-r border-[#30363D]">
         <div>
@@ -252,11 +291,34 @@ export function LoginPage() {
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B949E] pointer-events-none"
                 />
-                <input
-                  type="email"
-                  placeholder="seu@email.com.br"
-                  {...register("email")}
-                  className="w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      ref={field.ref}
+                      name={field.name}
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="next"
+                      placeholder="seu@email.com.br"
+                      value={field.value ?? ""}
+                      onInput={(event) => {
+                        const nextValue = event.currentTarget.value;
+                        // Fallback for Android/WebView keyboards that emit input but miss change.
+                        if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
+                          field.onChange(nextValue);
+                        }
+                      }}
+                      onChange={(event) => field.onChange(event.currentTarget.value)}
+                      onBlur={field.onBlur}
+                      className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                    />
+                  )}
                 />
               </div>
               {errors.email && (
@@ -271,11 +333,33 @@ export function LoginPage() {
                   size={16}
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8B949E] pointer-events-none"
                 />
-                <input
-                  type={showPwd ? "text" : "password"}
-                  placeholder="••••••••"
-                  {...register("password")}
-                  className="w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                <Controller
+                  name="password"
+                  control={control}
+                  render={({ field }) => (
+                    <input
+                      ref={field.ref}
+                      name={field.name}
+                      type={showPwd ? "text" : "password"}
+                      autoComplete="current-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      enterKeyHint="go"
+                      placeholder="••••••••"
+                      value={field.value ?? ""}
+                      onInput={(event) => {
+                        const nextValue = event.currentTarget.value;
+                        // Fallback for Android/WebView keyboards that emit input but miss change.
+                        if (isNativeCapacitorApp && nextValue !== (field.value ?? "")) {
+                          field.onChange(nextValue);
+                        }
+                      }}
+                      onChange={(event) => field.onChange(event.currentTarget.value)}
+                      onBlur={field.onBlur}
+                      className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                    />
+                  )}
                 />
                 <button
                   type="button"
@@ -366,8 +450,6 @@ export function LoginPage() {
               })}
             </div>
           </>
-
-
 
           <p className="text-sm text-[#8B949E] text-center mt-8">
             Não tem uma conta?{" "}

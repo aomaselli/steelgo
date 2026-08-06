@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -37,13 +38,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [company, setCompany] = useState<Company | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  // Tracks the uid that state should currently reflect; lets in-flight
+  // fetches from a stale/previous uid detect they're obsolete and no-op.
+  const activeUidRef = useRef<string | null>(null);
 
   const loadUserData = async (uid: string) => {
+    activeUidRef.current = uid;
+    setIsLoading(true);
     try {
       const [{ data: profileRow }, { data: roleRows }] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
+
+      // uid changed while this request was in flight — discard stale result
+      if (activeUidRef.current !== uid) return;
 
       const firstRole = (roleRows?.[0]?.role ?? null) as UserRole | null;
       setRole(firstRole);
@@ -55,12 +64,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           .select("*")
           .eq("owner_id", uid)
           .limit(1);
+        if (activeUidRef.current !== uid) return;
         setCompany((companyRows?.[0] as Company | undefined) ?? null);
       } else {
         setCompany(null);
       }
     } catch (err) {
       console.error("[Auth] loadUserData failed", err);
+      if (activeUidRef.current === uid) {
+        setProfile(null);
+        setRole(null);
+        setCompany(null);
+      }
+    } finally {
+      if (activeUidRef.current === uid) setIsLoading(false);
     }
   };
 
@@ -70,14 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
+        const uid = newSession.user.id;
+        // Mark loading synchronously (same tick as isAuthenticated flips true)
+        // so ProtectedRoute never renders with a stale/absent profile.
+        activeUidRef.current = uid;
+        setIsLoading(true);
         // Defer fetch to avoid blocking the auth callback
         setTimeout(() => {
-          void loadUserData(newSession.user.id);
+          void loadUserData(uid);
         }, 0);
       } else {
+        activeUidRef.current = null;
         setProfile(null);
         setCompany(null);
         setRole(null);
+        setIsLoading(false);
       }
     });
 
@@ -85,8 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(data.session);
       setUser(data.session?.user ?? null);
       if (data.session?.user) {
-        void loadUserData(data.session.user.id).finally(() => setIsLoading(false));
+        void loadUserData(data.session.user.id);
       } else {
+        activeUidRef.current = null;
         setIsLoading(false);
       }
     });
@@ -121,6 +146,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    // Clear explicitly/immediately instead of waiting on the async listener
+    activeUidRef.current = null;
+    setUser(null);
+    setSession(null);
+    setProfile(null);
+    setCompany(null);
+    setRole(null);
+    setIsLoading(false);
     await supabase.auth.signOut();
   };
 

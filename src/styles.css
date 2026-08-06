@@ -234,6 +234,26 @@
   input[type="number"] {
     font-variant-numeric: tabular-nums;
   }
+
+  .auth-login-input {
+    color: #e6edf3;
+    caret-color: #e6edf3;
+    -webkit-text-fill-color: #e6edf3;
+    opacity: 1;
+  }
+
+  .auth-login-input::placeholder {
+    -webkit-text-fill-color: #484f58;
+  }
+
+  .auth-login-input:-webkit-autofill,
+  .auth-login-input:-webkit-autofill:hover,
+  .auth-login-input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #e6edf3;
+    caret-color: #e6edf3;
+    box-shadow: 0 0 0 1000px #0d1117 inset;
+    transition: background-color 9999s ease-out 0s;
+  }
 }
 
 ::selection {
