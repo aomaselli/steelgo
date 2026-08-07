@@ -1,7 +1,8 @@
 import { useMemo, useState } from "react";
-import { Leaf, Zap, TrendingDown } from "lucide-react";
+import { Leaf, TrendingDown } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { Button, Input } from "@/components/steel";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 const COPY = {
   pt: {
@@ -63,7 +64,7 @@ export function GreenLogistics() {
           <h2 className="mt-4 text-3xl font-bold text-graphite-50 md:text-4xl">{c.headline}</h2>
           <p className="mt-3 text-base text-graphite-300">{c.desc}</p>
           <Button variant="green" size="lg" className="mt-6">
-            <Zap className="h-4 w-4" />
+            <BrandLogo surface="dark" markOnly className="h-4 w-4" />
             {c.cta}
           </Button>
         </div>

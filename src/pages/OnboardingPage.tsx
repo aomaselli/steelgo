@@ -12,7 +12,6 @@ import {
   IdCard,
   UploadCloud,
   Loader2,
-  Zap,
   Plus,
   Trash2,
   Calendar,
@@ -23,6 +22,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
 import { maskCPF, maskPlate } from "@/lib/masks";
@@ -112,7 +112,7 @@ export function OnboardingPage() {
   // Show spinner only briefly. After 3s, render the page regardless.
   if (!bypassTimeout && (isLoading || !user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0D1117]">
+      <div className="flex min-h-screen items-center justify-center bg-[#0B1628]">
         <Loader2 className="h-8 w-8 animate-spin text-[#1B6CB8]" />
       </div>
     );
@@ -134,15 +134,10 @@ export function OnboardingPage() {
   const goNext = () => setStep((s) => Math.min(s + 1, lastStep));
 
   return (
-    <div className="flex min-h-screen bg-[#0D1117] text-[#E6EDF3]">
+    <div className="flex min-h-screen bg-[#0B1628] text-[#E6EDF3]">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-[#30363D] bg-[#161B22] p-8 md:flex">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#1B6CB8]">
-            <Zap className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-lg font-bold text-[#E6EDF3]">SteelGo</span>
-        </div>
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-[#29405F] bg-[#111E33] p-8 md:flex">
+        <BrandLogo surface="dark" className="h-8 w-auto" />
         <div className="mt-8 mb-4 text-xs uppercase tracking-widest text-[#484F58]">
           Configuração inicial
         </div>
@@ -260,7 +255,7 @@ function UploadArea({
     <div
       onClick={() => ref.current?.click()}
       className={cn(
-        "cursor-pointer rounded-[16px] border-2 border-dashed border-[#30363D] text-center transition hover:border-[#484F58]",
+        "cursor-pointer rounded-[16px] border-2 border-dashed border-[#29405F] text-center transition hover:border-[#484F58]",
         compact ? "p-4" : "p-8",
       )}
     >
@@ -306,7 +301,7 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
         "cursor-pointer rounded-[6px] border px-2 py-1 text-xs transition",
         active
           ? "border-[#1B6CB8] bg-[#1B6CB8]/20 text-[#3B89D4]"
-          : "border-[#30363D] bg-transparent text-[#484F58] hover:border-[#484F58]",
+          : "border-[#29405F] bg-transparent text-[#484F58] hover:border-[#484F58]",
       )}
     >
       {children}
@@ -339,7 +334,7 @@ function GhostBtn({ children, onClick, full }: { children: React.ReactNode; onCl
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-[10px] border border-[#30363D] bg-transparent px-6 py-3 text-sm font-medium text-[#C9D1D9] transition hover:border-[#484F58] hover:bg-[#161B22]",
+        "rounded-[10px] border border-[#29405F] bg-transparent px-6 py-3 text-sm font-medium text-[#C9D1D9] transition hover:border-[#484F58] hover:bg-[#111E33]",
         full && "w-full",
       )}
     >
@@ -372,7 +367,7 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement> & { leftIc
       <input
         {...rest}
         className={cn(
-          "w-full rounded-[10px] border border-[#30363D] bg-[#0D1117] py-2.5 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:border-[#1B6CB8] focus:outline-none",
+          "w-full rounded-[10px] border border-[#29405F] bg-[#0B1628] py-2.5 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:border-[#1B6CB8] focus:outline-none",
           Icon ? "pl-9 pr-3" : "px-3",
           className,
         )}
@@ -523,7 +518,7 @@ function ShipperFirstFreight({ onPost, onExplore }: { onPost: () => void; onExpl
           <div className="text-sm text-[#8B949E]">Receba propostas de transportadoras verificadas em minutos.</div>
           <PrimaryBtn full className="mt-4" onClick={onPost}>Publicar agora</PrimaryBtn>
         </div>
-        <div className="rounded-[16px] border border-[#30363D] bg-[#161B22] p-6">
+        <div className="rounded-[16px] border border-[#29405F] bg-[#111E33] p-6">
           <LayoutDashboard className="mb-3 h-8 w-8 text-[#484F58]" />
           <div className="mb-2 text-lg font-bold text-[#E6EDF3]">Explorar a plataforma primeiro</div>
           <div className="text-sm text-[#8B949E]">Conheça o dashboard antes de publicar seu frete.</div>
@@ -609,7 +604,7 @@ function CarrierCompany({ userId, companyId, onNext }: { userId: string; company
               onClick={() => setHasEv((v) => !v)}
               className={cn(
                 "relative h-6 w-11 rounded-full transition",
-                hasEv ? "bg-[#1A9B5E]" : "bg-[#30363D]",
+                hasEv ? "bg-[#1A9B5E]" : "bg-[#29405F]",
               )}
             >
               <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition", hasEv ? "left-[22px]" : "left-0.5")} />
@@ -669,7 +664,7 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
 
       <div className="flex flex-col gap-3">
         {trucks.map((t, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#30363D] bg-[#161B22] p-4">
+          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
             <div>
               <div className="font-semibold text-[#E6EDF3]">{t.plate}</div>
               <div className="text-xs text-[#8B949E]">{t.type} • {t.capacity || "?"}t {t.is_ev && "• EV"}</div>
@@ -681,13 +676,13 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
         ))}
 
         {open ? (
-          <div className="rounded-[10px] border border-[#30363D] bg-[#161B22] p-4">
+          <div className="rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
             <div className="grid grid-cols-2 gap-3">
               <TextInput placeholder="Placa ABC-1234" value={form.plate} onChange={(e) => setForm({ ...form, plate: maskPlate(e.target.value) })} />
               <select
                 value={form.type}
                 onChange={(e) => setForm({ ...form, type: e.target.value as TruckType })}
-                className="rounded-[10px] border border-[#30363D] bg-[#0D1117] px-3 py-2.5 text-sm text-[#E6EDF3]"
+                className="rounded-[10px] border border-[#29405F] bg-[#0B1628] px-3 py-2.5 text-sm text-[#E6EDF3]"
               >
                 {TRUCK_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
@@ -700,7 +695,7 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
               <button
                 type="button"
                 onClick={() => setForm({ ...form, is_ev: !form.is_ev })}
-                className={cn("relative h-6 w-11 rounded-full transition", form.is_ev ? "bg-[#1A9B5E]" : "bg-[#30363D]")}
+                className={cn("relative h-6 w-11 rounded-full transition", form.is_ev ? "bg-[#1A9B5E]" : "bg-[#29405F]")}
               >
                 <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition", form.is_ev ? "left-[22px]" : "left-0.5")} />
               </button>
@@ -720,7 +715,7 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#30363D] bg-[#161B22] px-4 py-3 text-sm text-[#C9D1D9] hover:border-[#484F58]"
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#29405F] bg-[#111E33] px-4 py-3 text-sm text-[#C9D1D9] hover:border-[#484F58]"
           >
             <Plus className="h-4 w-4" /> Adicionar caminhão
           </button>
@@ -764,7 +759,7 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
 
       <div className="flex flex-col gap-3">
         {drivers.map((d, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#30363D] bg-[#161B22] p-4">
+          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
             <div>
               <div className="font-semibold text-[#E6EDF3]">{d.full_name}</div>
               <div className="text-xs text-[#8B949E]">CNH {d.cnh_category} • {d.cnh_number} {d.has_mopp && "• MOPP"}</div>
@@ -776,7 +771,7 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
         ))}
 
         {open ? (
-          <div className="rounded-[10px] border border-[#30363D] bg-[#161B22] p-4">
+          <div className="rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
             <div className="grid grid-cols-2 gap-3">
               <TextInput placeholder="Nome completo" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
               <TextInput placeholder="CPF" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })} />
@@ -784,7 +779,7 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
               <select
                 value={form.cnh_category}
                 onChange={(e) => setForm({ ...form, cnh_category: e.target.value })}
-                className="rounded-[10px] border border-[#30363D] bg-[#0D1117] px-3 py-2.5 text-sm text-[#E6EDF3]"
+                className="rounded-[10px] border border-[#29405F] bg-[#0B1628] px-3 py-2.5 text-sm text-[#E6EDF3]"
               >
                 {["C","D","E"].map((c) => <option key={c} value={c}>Categoria {c}</option>)}
               </select>
@@ -802,7 +797,7 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#30363D] bg-[#161B22] px-4 py-3 text-sm text-[#C9D1D9] hover:border-[#484F58]"
+            className="flex w-full items-center justify-center gap-2 rounded-[10px] border border-[#29405F] bg-[#111E33] px-4 py-3 text-sm text-[#C9D1D9] hover:border-[#484F58]"
           >
             <Plus className="h-4 w-4" /> Adicionar motorista
           </button>
@@ -847,7 +842,7 @@ function DriverDocs({ userId, onNext }: { userId: string; onNext: () => void }) 
       <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Envie seus documentos</h1>
       <p className="mb-6 text-sm text-[#8B949E]">Para liberar suas entregas precisamos verificar sua CNH.</p>
 
-      <div className="mb-6 flex gap-3 rounded-[14px] border border-[#30363D] bg-[#161B22] p-4">
+      <div className="mb-6 flex gap-3 rounded-[14px] border border-[#29405F] bg-[#111E33] p-4">
         <Info className="h-5 w-5 shrink-0 text-[#3B89D4]" />
         <p className="text-sm text-[#8B949E]">
           <strong className="text-[#C9D1D9]">Por que precisamos da sua CNH?</strong> Para confirmar que você é um motorista habilitado e proteger sua segurança nas entregas.

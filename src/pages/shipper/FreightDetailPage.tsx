@@ -6,11 +6,11 @@ import {
   Pencil,
   Clock,
   MapPin,
-  Zap,
   ShieldCheck,
   Map as MapIcon,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -362,7 +362,7 @@ export function FreightDetailPage() {
                             </div>
                             {b.ev_certified && (
                               <span className="inline-flex items-center gap-1 text-xs text-esg-green-400 bg-esg-green-400/10 px-2 py-1 rounded">
-                                <Zap className="w-3 h-3" /> Caminhão elétrico
+                                <BrandLogo markOnly className="h-3 w-3" /> Caminhão elétrico
                               </span>
                             )}
                           </div>

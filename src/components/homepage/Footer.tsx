@@ -1,5 +1,6 @@
-import { Zap, Linkedin, Instagram, Youtube } from "lucide-react";
+import { Linkedin, Instagram, Youtube } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type FooterLink = { label: string; href: string };
 
@@ -60,12 +61,7 @@ export function Footer() {
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8 mb-12">
           <div className="col-span-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-[#16263F] rounded-[8px] flex items-center justify-center">
-                <Zap size={18} className="text-white" />
-              </div>
-              <span className="text-[#16263F] font-bold text-lg">SteelGo</span>
-            </div>
+            <BrandLogo surface="dark" className="h-10 w-auto" />
             <p className="text-sm text-[#B8C6D9] mt-3 mb-4 max-w-xs">{c.tagline}</p>
             <div className="flex gap-3 mt-4">
               {[Linkedin, Instagram, Youtube].map((Icon, i) => (

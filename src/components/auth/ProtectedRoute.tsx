@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import { Spinner } from "@/components/steel/Spinner";
-import { Zap } from "lucide-react";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { UserRole } from "@/types/database";
 
 interface Props {
@@ -48,9 +48,7 @@ export function ProtectedRoute({ children, role }: Props) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-bg-base">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-[12px] bg-steel-blue animate-pulse">
-            <Zap className="h-7 w-7 text-white" />
-          </div>
+          <BrandLogo surface="dark" markOnly className="h-14 w-14 animate-pulse" />
           <Spinner />
         </div>
       </div>

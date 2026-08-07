@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import type { LucideIcon } from "lucide-react";
 import {
-  Zap,
   LayoutDashboard,
   Package,
   Plus,
@@ -75,10 +75,7 @@ export function Sidebar({ role }: { role: ShellRole }) {
   return (
     <aside className="hidden w-60 shrink-0 border-r border-[#22334A] bg-[#16263F] md:flex md:flex-col">
       <div className="flex h-14 items-center gap-2 border-b border-[#22334A] px-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[#1A9B5E]">
-          <Zap size={18} className="text-white" />
-        </div>
-        <span className="text-lg font-bold text-[#E6EAF0]">SteelGo</span>
+        <BrandLogo surface="dark" className="h-8 w-auto" />
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {items.map((item) => {

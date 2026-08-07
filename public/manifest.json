@@ -1,13 +1,54 @@
 {
-    "name": "SteelGo Motorista",
-    "short_name": "SteelGo",
-    "description": "App para motoristas SteelGo",
-    "start_url": "/driver",
-    "display": "standalone",
-    "background_color": "#0D1117",
-    "theme_color": "#1B6CB8",
-    "orientation": "portrait",
-    "icons": [
-          { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml" }
-    ]
+  "name": "SteelGo Motorista",
+  "short_name": "SteelGo",
+  "description": "App para motoristas SteelGo",
+  "start_url": "/driver",
+  "display": "standalone",
+  "background_color": "#F7F9FB",
+  "theme_color": "#1B6CB8",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/icon-48.webp",
+      "type": "image/webp",
+      "sizes": "48x48",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-72.webp",
+      "type": "image/webp",
+      "sizes": "72x72",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-96.webp",
+      "type": "image/webp",
+      "sizes": "96x96",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-128.webp",
+      "type": "image/webp",
+      "sizes": "128x128",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-192.webp",
+      "type": "image/webp",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-256.webp",
+      "type": "image/webp",
+      "sizes": "256x256",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.webp",
+      "type": "image/webp",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
 }

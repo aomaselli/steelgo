@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
 import { Avatar } from "@/components/steel/Avatar";
 import { Button } from "@/components/steel/Button";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 export function Topbar() {
   const { profile, signOut } = useAuth();
@@ -15,8 +16,8 @@ export function Topbar() {
       style={{ paddingRight: "max(1rem, env(safe-area-inset-right))" }}
     >
       <div className="md:hidden">
-        <Link to="/" className="text-lg font-bold text-[#16263F]">
-          SteelGo
+        <Link to="/" aria-label="SteelGo">
+          <BrandLogo className="h-7 w-auto" />
         </Link>
       </div>
       <div className="ml-auto flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">

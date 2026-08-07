@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Menu, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type NavLink = { id: string; target: string; label: string };
 
@@ -60,22 +61,7 @@ const NAV_COPY = {
 } as const;
 
 function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className="flex h-8 w-8 items-center justify-center rounded-[9px]"
-        style={{ background: "linear-gradient(140deg,#16263F,#2FA98A)" }}
-      >
-        <div
-          className="h-[15px] w-3 bg-white"
-          style={{
-            clipPath: "polygon(0 0,55% 0,100% 50%,55% 100%,0 100%,45% 50%)",
-          }}
-        />
-      </div>
-      <span className="text-lg font-bold tracking-tight text-[#16263F]">SteelGo</span>
-    </div>
-  );
+  return <BrandLogo className="h-9 w-auto" />;
 }
 
 function LangToggle() {

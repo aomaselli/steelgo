@@ -1,6 +1,6 @@
 import { Link, useRouterState } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
-  Zap,
   LayoutDashboard,
   Package,
   Plus,
@@ -131,10 +131,7 @@ export function Sidebar({ userRole, className = "" }: SidebarProps) {
     >
       {/* Logo */}
       <div className="flex flex-row gap-2 items-center" style={{ padding: "20px 16px 16px" }}>
-        <div className="w-8 h-8 bg-[#1B6CB8] rounded-[8px] flex items-center justify-center">
-          <Zap size={18} className="text-white" />
-        </div>
-        <span className="text-[#E6EDF3] font-bold text-lg">SteelGo</span>
+        <BrandLogo surface="dark" className="h-8 w-auto" />
         <span className="text-[9px] bg-[#1B6CB8]/20 text-[#79B8F8] border border-[#1B6CB8]/30 rounded-full px-2 py-0.5">
           Beta
         </span>

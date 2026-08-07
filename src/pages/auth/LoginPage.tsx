@@ -3,12 +3,13 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Zap, Mail, Lock, Eye, EyeOff, Shield, MapPin, Leaf, Loader2 } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Shield, MapPin, Leaf, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
+import { BrandLogo } from "@/components/brand/BrandLogo";
 
 type DevRole = "shipper" | "carrier" | "driver";
 // Preview-only test accounts. These addresses are intentionally safe/test-only.
@@ -135,10 +136,10 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const VALUE_PROPS = [
-  { Icon: Shield, bg: "#1B6CB8", title: "Carga protegida", desc: "Conta protegida garante seu pagamento até a entrega confirmada" },
-  { Icon: MapPin, bg: "#1B6CB8", title: "Rastreamento GPS", desc: "Posição do caminhão atualizada a cada 30 segundos" },
-  { Icon: Leaf, bg: "#1A9B5E", title: "Logística verde", desc: "Relatórios ESG automáticos para seu compliance" },
-  { Icon: Lock, bg: "#1A9B5E", title: "Contratos digitais", desc: "Assinatura ICP-Brasil com validade jurídica" },
+  { Icon: Shield, bg: "#1B6CB8", title: "Gestão de pagamentos", desc: "Centralize condições de pagamento e evidências de entrega." },
+  { Icon: MapPin, bg: "#1B6CB8", title: "Visibilidade operacional", desc: "Acompanhe rotas, checkpoints e registros da operação." },
+  { Icon: Leaf, bg: "#1A9B5E", title: "Logística de menor impacto", desc: "Compare cenários e acompanhe estimativas de emissões." },
+  { Icon: Lock, bg: "#1A9B5E", title: "Documentos digitais", desc: "Centralize contratos, documentos e evidências digitais." },
 ];
 
 export function LoginPage() {
@@ -235,20 +236,15 @@ export function LoginPage() {
 
   return (
     <div
-      className="min-h-screen flex bg-[#0D1117]"
+      className="min-h-screen flex bg-[#0B1628]"
       style={{
         minHeight: "100dvh",
         paddingBottom: "env(safe-area-inset-bottom)",
       }}
     >
       {/* LEFT */}
-      <aside className="hidden md:flex flex-1 flex-col p-12 bg-[#161B22] border-r border-[#30363D]">
-        <div>
-          <div className="w-14 h-14 bg-[#1B6CB8] rounded-[16px] flex items-center justify-center">
-            <Zap size={40} className="text-white" />
-          </div>
-          <div className="text-3xl font-bold text-[#E6EDF3] mt-4">SteelGo</div>
-        </div>
+      <aside className="hidden md:flex flex-1 flex-col p-12 bg-[#111E33] border-r border-[#29405F]">
+        <BrandLogo surface="dark" className="h-12 w-auto" />
 
         <div className="flex flex-col gap-6 mt-12 flex-1">
           {VALUE_PROPS.map(({ Icon, bg, title, desc }) => (
@@ -266,18 +262,13 @@ export function LoginPage() {
             </div>
           ))}
         </div>
-
-        <div className="text-xs text-[#484F58]">340+ transportadoras verificadas</div>
       </aside>
 
       {/* RIGHT */}
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-[400px]">
-          <Link to="/" className="md:hidden flex items-center gap-2 mb-8">
-            <div className="w-8 h-8 bg-[#1B6CB8] rounded-[8px] flex items-center justify-center">
-              <Zap size={18} className="text-white" />
-            </div>
-            <span className="text-[#E6EDF3] font-bold text-lg">SteelGo</span>
+          <Link to="/" className="mb-8 flex md:hidden" aria-label="SteelGo">
+            <BrandLogo surface="dark" className="h-9 w-auto" />
           </Link>
 
           <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">Bem-vindo de volta</h2>
@@ -316,7 +307,7 @@ export function LoginPage() {
                       }}
                       onChange={(event) => field.onChange(event.currentTarget.value)}
                       onBlur={field.onBlur}
-                      className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                      className="auth-login-input w-full h-11 bg-[#0B1628] border border-[#29405F] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
                     />
                   )}
                 />
@@ -357,7 +348,7 @@ export function LoginPage() {
                       }}
                       onChange={(event) => field.onChange(event.currentTarget.value)}
                       onBlur={field.onBlur}
-                      className="auth-login-input w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
+                      className="auth-login-input w-full h-11 bg-[#0B1628] border border-[#29405F] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
                     />
                   )}
                 />
@@ -380,7 +371,7 @@ export function LoginPage() {
                 <input
                   type="checkbox"
                   {...register("remember")}
-                  className="w-4 h-4 rounded border-[#30363D] bg-[#21262D] accent-[#1B6CB8]"
+                  className="w-4 h-4 rounded border-[#29405F] bg-[#21262D] accent-[#1B6CB8]"
                 />
                 Lembrar de mim
               </label>
@@ -408,15 +399,15 @@ export function LoginPage() {
           </form>
 
           <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-[#30363D]" />
+            <div className="flex-1 h-px bg-[#29405F]" />
             <span className="text-xs text-[#484F58]">ou</span>
-            <div className="flex-1 h-px bg-[#30363D]" />
+            <div className="flex-1 h-px bg-[#29405F]" />
           </div>
 
           <button
             type="button"
             onClick={() => void onGoogle()}
-            className="w-full h-11 bg-[#21262D] hover:bg-[#30363D] border border-[#30363D] text-[#E6EDF3] text-sm font-medium rounded-[8px] flex items-center justify-center gap-2 transition-colors"
+            className="w-full h-11 bg-[#21262D] hover:bg-[#29405F] border border-[#29405F] text-[#E6EDF3] text-sm font-medium rounded-[8px] flex items-center justify-center gap-2 transition-colors"
           >
             <GoogleIcon />
             Continuar com Google
