@@ -228,10 +228,13 @@ export function LoginPage() {
 
   const onGoogle = async () => {
     setAuthError(null);
-    const r = await supabase.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/auth/callback",
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin + "/auth/callback",
+      },
     });
-    if (r.error) setAuthError(r.error.message);
+    if (error) setAuthError(error.message);
   };
 
   return (
