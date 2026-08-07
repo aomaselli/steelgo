@@ -16,14 +16,13 @@ import { WhatsAppButton } from "@/components/homepage/WhatsAppButton";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "SteelGo — Transporte de aço seguro, digital e rastreável" },
+      { title: "SteelGo — A infraestrutura digital logística da América Latina" },
       {
         name: "description",
-        content:
-          "Plataforma brasileira que conecta siderúrgicas e indústrias a transportadoras verificadas, com contrato digital, conta protegida e rastreamento ponta a ponta.",
+        content: "Tecnologia para conectar embarcadores, transportadoras e motoristas, integrando fretes, documentos, pagamentos e rastreamento em uma única operação.",
       },
-      { property: "og:title", content: "SteelGo — Transporte de aço seguro, digital e rastreável" },
-      { property: "og:description", content: "Plataforma brasileira que conecta siderúrgicas e indústrias a transportadoras verificadas, com contrato digital, conta protegida e rastreamento ponta a ponta." },
+      { property: "og:title", content: "SteelGo — A infraestrutura digital logística da América Latina" },
+      { property: "og:description", content: "Tecnologia para conectar embarcadores, transportadoras e motoristas em operações logísticas mais seguras, visíveis e eficientes." },
     ],
     scripts: [
       { children: `document.documentElement.style.scrollBehavior='smooth';` },

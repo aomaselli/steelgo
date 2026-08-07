@@ -6,46 +6,46 @@ type TabKey = "shipper" | "carrier";
 const COPY = {
   pt: {
     eyebrow: "COMO FUNCIONA",
-    h2a: "Do frete à entrega em ",
-    h2b: "menos de 30 minutos",
-    sub: "Um fluxo desenhado para reduzir burocracia, custos e risco em cada etapa da operação.",
+    h2a: "Do planejamento à entrega, em ",
+    h2b: "um único fluxo digital",
+    sub: "Menos burocracia e mais controle em cada etapa da operação logística.",
     tabShipper: "Para embarcadores",
     tabCarrier: "Para transportadoras",
     shipperSteps: [
-      { emoji: "📦", title: "Publique seu frete", body: "Informe tipo de aço, peso, rota e data. Escolha entre frete tradicional ou logística verde. Receba propostas em minutos de transportadoras verificadas pela ANTT." },
-      { emoji: "⚡", title: "Escolha com score", body: "Compare propostas por preço, score de segurança (0–10), rating ESG e histórico. Todas as transportadoras são verificadas e têm apólice RCTR-C ativa." },
-      { emoji: "✍️", title: "Contrato digital", body: "Contrato gerado automaticamente com todos os termos legais. Assinatura digital com validade jurídica ICP-Brasil em menos de 2 minutos." },
-      { emoji: "🔒", title: "Pagamento garantido", body: "Seu pagamento fica 100% protegido até a entrega confirmada com foto com geolocalização e GPS. Sem prova de entrega, sem liberação." },
-      { emoji: "📊", title: "Rastreie cada km", body: "Mapa ao vivo atualizado a cada 30 segundos. Alertas automáticos por WhatsApp e push para desvio de rota, atraso ou incidente." },
+      { emoji: "📦", title: "Publique sua operação", body: "Informe o perfil da carga, peso, rota, janela de coleta e requisitos da operação." },
+      { emoji: "⚡", title: "Compare condições", body: "Avalie propostas, histórico operacional, indicadores de segurança e critérios ESG em um único ambiente." },
+      { emoji: "✍️", title: "Formalize digitalmente", body: "Centralize contratos, documentos e evidências digitais com rastreabilidade e validade jurídica." },
+      { emoji: "🔒", title: "Gerencie o pagamento", body: "Acompanhe as condições de pagamento e a liberação vinculada às evidências da entrega." },
+      { emoji: "📊", title: "Acompanhe cada etapa", body: "Visualize a jornada do frete, checkpoints e alertas operacionais em tempo real." },
     ],
     carrierSteps: [
-      { emoji: "🔍", title: "Encontre fretes", body: "Veja fretes disponíveis filtrados por estado, tipo de caminhão e tipo de aço. Alertas automáticos quando surgir um frete que combina com sua frota." },
-      { emoji: "💰", title: "Envie sua proposta", body: "Defina seu valor, escolha motorista e caminhão. Para fretes verdes, destaque se tem caminhão elétrico ou baixo carbono e garanta um diferencial competitivo." },
-      { emoji: "✍️", title: "Assine em segundos", body: "Proposta aceita → contrato em segundos → assine no celular com validade jurídica plena. Conforme legislação brasileira de transporte de cargas." },
-      { emoji: "🗺️", title: "App do motorista", body: "Motorista usa o app SteelGo com rota, checkpoints obrigatórios com foto, QR do lacre e botão de emergência. Tudo registrado e auditável." },
-      { emoji: "💳", title: "Receba em 24 horas", body: "Após confirmação de entrega, pagamento liberado automaticamente. Via PIX ou transferência bancária. Sem 30, 60 ou 90 dias de espera." },
+      { emoji: "🔍", title: "Encontre oportunidades", body: "Consulte operações compatíveis com suas rotas, veículos e capacidade disponível." },
+      { emoji: "💰", title: "Envie sua proposta", body: "Defina condições, motorista e veículo, incluindo alternativas de menor emissão quando disponíveis." },
+      { emoji: "✍️", title: "Formalize a operação", body: "Assine contratos e mantenha documentos e responsabilidades organizados em um único fluxo." },
+      { emoji: "🗺️", title: "Conecte o motorista", body: "Use o app SteelGo para rota, checkpoints, fotos, QR de lacre e recursos de emergência." },
+      { emoji: "💳", title: "Acompanhe o recebimento", body: "Consulte a confirmação de entrega, as evidências e o andamento do pagamento pela plataforma." },
     ],
   },
   en: {
     eyebrow: "HOW IT WORKS",
-    h2a: "From posting to delivery in ",
-    h2b: "under 30 minutes",
-    sub: "A flow designed to cut paperwork, cost and risk at every step of the operation.",
+    h2a: "From planning to delivery in ",
+    h2b: "one digital workflow",
+    sub: "Less paperwork and more control at every stage of the logistics operation.",
     tabShipper: "For shippers",
     tabCarrier: "For carriers",
     shipperSteps: [
-      { emoji: "📦", title: "Post your freight", body: "Enter steel type, weight, route and date. Pick traditional or green logistics. Receive bids in minutes from ANTT-verified carriers." },
-      { emoji: "⚡", title: "Pick by score", body: "Compare bids by price, safety score (0–10), ESG rating and history. Every carrier is verified and holds an active RCTR-C insurance policy." },
-      { emoji: "✍️", title: "Digital contract", body: "Contract generated automatically with all legal terms. ICP-Brasil-grade digital signature in under 2 minutes." },
-      { emoji: "🔒", title: "Escrow payment", body: "Your payment is 100% protected until delivery is confirmed with a geotagged photo and GPS. No proof, no release." },
-      { emoji: "📊", title: "Track every km", body: "Live map refreshed every 30 seconds. Automatic WhatsApp and push alerts for route deviation, delay or incident." },
+      { emoji: "📦", title: "Post your operation", body: "Enter cargo profile, weight, route, pickup window and operation requirements." },
+      { emoji: "⚡", title: "Compare conditions", body: "Review bids, operating history, safety indicators and ESG criteria in one place." },
+      { emoji: "✍️", title: "Formalize digitally", body: "Centralize contracts, documents and digital evidence with traceability and legal validity." },
+      { emoji: "🔒", title: "Manage payment", body: "Track payment conditions and release linked to delivery evidence." },
+      { emoji: "📊", title: "Follow every stage", body: "View the freight journey, checkpoints and operational alerts in real time." },
     ],
     carrierSteps: [
-      { emoji: "🔍", title: "Find freights", body: "See available freights filtered by state, truck type and steel type. Automatic alerts when a freight matches your fleet." },
-      { emoji: "💰", title: "Send your bid", body: "Set your price, pick driver and truck. For green freights, highlight EV or low-carbon trucks to stand out." },
-      { emoji: "✍️", title: "Sign in seconds", body: "Bid accepted → contract in seconds → sign on mobile with full legal value. Compliant with Brazilian cargo transport law." },
-      { emoji: "🗺️", title: "Driver app", body: "Driver uses the SteelGo app with route, mandatory photo checkpoints, seal QR and emergency button. All recorded and auditable." },
-      { emoji: "💳", title: "Get paid in 24h", body: "After delivery confirmation, payment is auto-released via PIX or bank transfer. No 30, 60 or 90-day wait." },
+      { emoji: "🔍", title: "Find opportunities", body: "Browse operations that match your routes, vehicles and available capacity." },
+      { emoji: "💰", title: "Send your bid", body: "Set conditions, driver and vehicle, including lower-emission alternatives when available." },
+      { emoji: "✍️", title: "Formalize the operation", body: "Sign contracts and keep documents and responsibilities organized in one workflow." },
+      { emoji: "🗺️", title: "Connect the driver", body: "Use the SteelGo app for route, checkpoints, photos, seal QR and emergency resources." },
+      { emoji: "💳", title: "Track receivables", body: "Check delivery confirmation, evidence and payment progress through the platform." },
     ],
   },
 } as const;
@@ -58,16 +58,16 @@ export function HowItWorksSection() {
   const dotColor = tab === "shipper" ? "bg-[#16263F]" : "bg-[#2FA98A]";
 
   return (
-    <section id="como-funciona" className="bg-[#F7F9FB]" style={{ padding: "100px 0" }}>
+    <section id="como-funciona" className="bg-[#0B1628]" style={{ padding: "100px 0" }}>
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="text-center mb-16">
           <div className="mb-3">
-            <span className="text-[#16263F] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
+            <span className="text-[#9FB4D4] text-xs uppercase tracking-widest font-semibold">{c.eyebrow}</span>
           </div>
-          <h2 className="text-[#16263F] font-bold text-4xl mb-4">
-            {c.h2a}<span className="text-[#16263F]">{c.h2b}</span>
+          <h2 className="text-white font-bold text-4xl mb-4">
+            {c.h2a}<span className="text-[#9FB4D4]">{c.h2b}</span>
           </h2>
-          <p className="text-[#5B6B80] text-lg max-w-xl mx-auto">{c.sub}</p>
+          <p className="text-[#B8C6D9] text-lg max-w-xl mx-auto">{c.sub}</p>
         </div>
 
         <div className="flex justify-center gap-2 mb-12">
@@ -79,7 +79,7 @@ export function HowItWorksSection() {
                 onClick={() => setTab(t.key)}
                 className={active
                   ? "bg-[#16263F] text-white rounded-full px-5 py-2 text-sm font-medium shadow-sm"
-                  : "border border-[#E6EAF0] bg-white text-[#5B6B80] rounded-full px-5 py-2 text-sm hover:text-[#16263F] hover:border-[#16263F]/30 transition-colors"}
+                  : "border border-[#29405F] bg-[#111E33] text-[#B8C6D9] rounded-full px-5 py-2 text-sm hover:text-white hover:border-[#9FB4D4]/50 transition-colors"}
               >
                 {t.label}
               </button>
@@ -96,14 +96,14 @@ export function HowItWorksSection() {
                   <div className={`w-9 h-9 rounded-full ${dotColor} text-white font-bold text-sm flex items-center justify-center flex-shrink-0 shadow-sm`}>
                     {i + 1}
                   </div>
-                  {!isLast && <div className="mt-2 min-h-[44px] w-px flex-1 bg-[#E6EAF0]" />}
+                  {!isLast && <div className="mt-2 min-h-[44px] w-px flex-1 bg-[#29405F]" />}
                 </div>
-                <div className={`flex-1 rounded-[20px] border border-[#E6EAF0] bg-white p-6 shadow-sm ${isLast ? "" : "mb-2"}`}>
+                <div className={`flex-1 rounded-[20px] border border-[#29405F] bg-[#111E33] p-6 shadow-sm ${isLast ? "" : "mb-2"}`}>
                   <div className="mb-2 flex items-center gap-2">
                     <span className="text-xl">{s.emoji}</span>
-                    <h3 className="text-[#16263F] font-semibold text-lg">{s.title}</h3>
+                    <h3 className="text-white font-semibold text-lg">{s.title}</h3>
                   </div>
-                  <p className="text-[#5B6B80] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
+                  <p className="text-[#B8C6D9] text-sm" style={{ lineHeight: 1.7 }}>{s.body}</p>
                 </div>
               </div>
             );
