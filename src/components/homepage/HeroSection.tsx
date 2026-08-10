@@ -7,7 +7,7 @@ const COPY = {
   pt: {
     eyebrow: "Tecnologia para logística industrial",
     h1: <>Conectando a logística industrial na América Latina.</>,
-    sub: "A SteelGo conecta operações industriais, transportadoras e motoristas em uma infraestrutura digital para controle, rastreamento e visibilidade em tempo real.",
+    sub: "A SteelGo é uma plataforma digital de gestão logística que conecta operações industriais, transportadoras e motoristas para controle, rastreamento e visibilidade em tempo real.",
     ctaPrimary: "Solicitar acesso",
     ctaSecondary: "Entrar",
     cardTitle: "Projetado para equipes modernas de logística",
@@ -23,7 +23,7 @@ const COPY = {
   en: {
     eyebrow: "Technology for Industrial Logistics",
     h1: <>Connecting industrial logistics across Latin America.</>,
-    sub: "SteelGo connects industrial operations, carriers and drivers through a digital infrastructure for control, tracking and real-time visibility.",
+    sub: "SteelGo is a digital logistics management platform that connects industrial operations, carriers and drivers for control, tracking and real-time visibility.",
     ctaPrimary: "Request access",
     ctaSecondary: "Sign in",
     cardTitle: "Built for modern logistics teams",
@@ -39,7 +39,7 @@ const COPY = {
   es: {
     eyebrow: "Tecnología para logística industrial",
     h1: <>Conectando la logística industrial en América Latina.</>,
-    sub: "SteelGo conecta operaciones industriales, transportistas y conductores en una infraestructura digital para control, rastreo y visibilidad en tiempo real.",
+    sub: "SteelGo es una plataforma digital de gestión logística que conecta operaciones industriales, transportistas y conductores para control, rastreo y visibilidad en tiempo real.",
     ctaPrimary: "Solicitar acceso",
     ctaSecondary: "Ingresar",
     cardTitle: "Diseñado para equipos modernos de logística",
