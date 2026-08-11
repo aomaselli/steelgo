@@ -7,6 +7,7 @@ import { Button, Card, EmptyState, Spinner } from "@/components/steel";
 import { GreenFreightTag } from "@/components/steel/GreenFreightTag";
 import { StatusPill } from "@/components/steel/StatusPill";
 import { steelLabel, formatBRL, formatNum } from "@/lib/steel";
+import { OperationsBoard } from "@/components/operations/OperationsBoard";
 
 export function CarrierDashboardPage() {
   const { profile, company } = useAuth();
@@ -189,6 +190,8 @@ export function CarrierDashboardPage() {
           </div>
         </Card>
       </div>
+
+      <OperationsBoard scope="carrier" companyId={company?.id} />
 
       {/* Available Freights */}
       <section>

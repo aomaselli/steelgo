@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useLanguage, type Language } from "@/lib/i18n";
 import { AdminOperationsMap } from "@/components/maps/AdminOperationsMap";
+import { OperationsBoard } from "@/components/operations/OperationsBoard";
 
 export const Route = createFileRoute("/admin/")({
   component: AdminDashboardPage,
@@ -75,6 +76,7 @@ function AdminDashboardPage() {
 
       <MetricsRow locale={locale} />
       <AdminOperationsMap />
+      <OperationsBoard scope="admin" />
       <div className="grid gap-4 lg:grid-cols-2">
         <GMVChart locale={locale} />
         <StatusPie />

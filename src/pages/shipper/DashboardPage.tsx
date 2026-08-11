@@ -18,6 +18,7 @@ import { StatusPill } from "@/components/steel/StatusPill";
 import { EmptyState } from "@/components/steel";
 import { steelLabel, formatBRL } from "@/lib/steel";
 import { cn } from "@/lib/utils";
+import { OperationsBoard } from "@/components/operations/OperationsBoard";
 
 const BR_CENTER = { lat: -15.7801, lng: -47.9292 };
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
@@ -98,7 +99,7 @@ export function DashboardPage() {
       const { data } = await supabase.from("contracts")
         .select("id, contract_number, status, driver_id, freight_id")
         .eq("shipper_company_id", companyId!)
-        .in("status", ["activated", "in_transit"] as any);
+        .eq("status", "active");
       return data ?? [];
     },
   });
@@ -232,6 +233,10 @@ export function DashboardPage() {
             </Link>
           </div>
           <LiveMap contractIds={activeContractIds} />
+        </div>
+
+        <div className="mb-8">
+          <OperationsBoard scope="shipper" companyId={companyId} />
         </div>
 
         {/* Two-column layout */}
