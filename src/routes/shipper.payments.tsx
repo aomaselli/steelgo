@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PaymentsPage } from "@/pages/shipper/PaymentsPage";
+import { FinanceCenter } from "@/components/finance/FinanceCenter";
 
 export const Route = createFileRoute("/shipper/payments")({
-  component: PaymentsPage,
+  component: () => <FinanceCenter scope="shipper" />,
 });
