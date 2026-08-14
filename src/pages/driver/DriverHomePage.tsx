@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Camera,
   AlertTriangle,
@@ -47,6 +47,64 @@ type Checkpoint = {
   recorded_at: string | null;
 };
 
+type DriverRecord = {
+  id: string;
+  carrier_id: string | null;
+  profile_id: string | null;
+  full_name: string | null;
+  cpf: string | null;
+  cnh_number: string | null;
+  cnh_category: string | null;
+  cnh_expiry: string | null;
+  license_number: string | null;
+  license_category: string | null;
+  license_expiry: string | null;
+  license_issuer_country: string | null;
+  license_verification_status: string | null;
+  country_code: string | null;
+};
+
+type CarrierSuggestion = {
+  carrier_id: string;
+  company_name: string | null;
+  trade_name: string | null;
+  city: string | null;
+  subdivision: string | null;
+  country_code: string | null;
+  verified: boolean;
+};
+
+type PendingRequest = {
+  id: string;
+  carrier_id: string | null;
+  status: string | null;
+  message: string | null;
+  created_at: string | null;
+  carriers?: { company_name?: string | null; trade_name?: string | null } | null;
+};
+
+type AvailabilityRecord = {
+  id: string;
+  status: string | null;
+  truck_id: string | null;
+  carrier_id: string | null;
+  driver_id: string | null;
+  max_pickup_radius_km: number | null;
+  available_from: string | null;
+  available_until: string | null;
+  preferred_destination_countries: string[] | null;
+  preferred_destination_subdivisions: string[] | null;
+  accepts_backhaul: boolean | null;
+};
+
+type TruckRecord = {
+  id: string;
+  carrier_id: string | null;
+  plate: string | null;
+  type: string | null;
+  is_active: boolean | null;
+};
+
 const CACHE_KEY = "steelgo_active_delivery";
 const CHECKPOINT_ORDER: Array<{ key: string; label: string }> = [
   { key: "pickup", label: "Coleta" },
@@ -56,11 +114,90 @@ const CHECKPOINT_ORDER: Array<{ key: string; label: string }> = [
 ];
 
 export default function DriverHomePage() {
+  const qc = useQueryClient();
   const { user, profile } = useAuth();
   const online = useOnlineStatus();
   const firstName = (profile?.full_name ?? "Motorista").split(" ")[0];
   const lastName = (profile?.full_name ?? "").split(" ").slice(-1)[0] ?? "";
   const initials = (firstName[0] ?? "M") + (lastName[0] ?? "");
+  const [inviteToken, setInviteToken] = useState("");
+  const [carrierQuery, setCarrierQuery] = useState("");
+  const [selectedCarrierId, setSelectedCarrierId] = useState<string | null>(null);
+  const [linkMessage, setLinkMessage] = useState("");
+  const [prelinkCpf, setPrelinkCpf] = useState("");
+  const [prelinkLicenseNumber, setPrelinkLicenseNumber] = useState("");
+  const [prelinkLicenseCountry, setPrelinkLicenseCountry] = useState("BR");
+  const [selectedTruckId, setSelectedTruckId] = useState<string | null>(null);
+  const [radius, setRadius] = useState(80);
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [availableUntil, setAvailableUntil] = useState("");
+  const [preferredCountries, setPreferredCountries] = useState<string[]>([]);
+  const [preferredStates, setPreferredStates] = useState<string[]>([]);
+  const [acceptsBackhaul, setAcceptsBackhaul] = useState(true);
+  const [availabilityBusy, setAvailabilityBusy] = useState(false);
+
+  const { data: driverRecord } = useQuery<DriverRecord | null>({
+    queryKey: ["driver-record", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("drivers").select("*").eq("profile_id", user!.id).maybeSingle();
+      return (data as DriverRecord | null) ?? null;
+    },
+  });
+
+  const { data: pendingRequests = [] } = useQuery<PendingRequest[]>({
+    queryKey: ["driver-pending-requests", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("driver_carrier_requests")
+        .select("id, carrier_id, status, message, created_at, carriers(company_name, trade_name)")
+        .eq("profile_id", user!.id)
+        .in("status", ["pending", "review", "submitted"])
+        .order("created_at", { ascending: false });
+      return (data ?? []) as PendingRequest[];
+    },
+  });
+
+  const { data: fleet = [] } = useQuery<TruckRecord[]>({
+    queryKey: ["driver-fleet", driverRecord?.carrier_id],
+    enabled: !!driverRecord?.carrier_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("trucks")
+        .select("id, carrier_id, plate, type, is_active")
+        .eq("carrier_id", driverRecord!.carrier_id!)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as TruckRecord[];
+    },
+  });
+
+  const { data: availability } = useQuery<AvailabilityRecord | null>({
+    queryKey: ["driver-availability", driverRecord?.id],
+    enabled: !!driverRecord?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("capacity_availability")
+        .select("*")
+        .eq("driver_id", driverRecord!.id)
+        .in("status", ["available", "paused", "offline", "reserved"])
+        .maybeSingle();
+      return (data as AvailabilityRecord | null) ?? null;
+    },
+  });
+
+  const { data: suggestions = [] } = useQuery<CarrierSuggestion[]>({
+    queryKey: ["driver-carrier-search", carrierQuery],
+    enabled: carrierQuery.trim().length >= 2,
+    queryFn: async () => {
+      const { data } = await supabase.rpc("search_carriers_for_driver", {
+        p_query: carrierQuery,
+        p_country_code: undefined,
+        p_limit: 10,
+      });
+      return (data ?? []) as CarrierSuggestion[];
+    },
+  });
 
   const { data: active, isLoading } = useQuery<ActiveContract | null>({
     queryKey: ["driver-active", user?.id],
@@ -136,7 +273,193 @@ export default function DriverHomePage() {
     watch: true,
     contractId: active?.id ?? null,
     driverId: user?.id ?? null,
+    availabilityId: availability?.id ?? null,
   });
+
+  const normalizeCpf = (value: string) => value.replace(/\D/g, "").slice(0, 11);
+
+  const getIdentityForRequest = () => {
+    const cpf = normalizeCpf((profile as { cpf?: string | null } | undefined)?.cpf ?? driverRecord?.cpf ?? prelinkCpf ?? "");
+    const rawLicenseNumber = (driverRecord?.license_number ?? driverRecord?.cnh_number ?? prelinkLicenseNumber ?? "").trim();
+    const licenseNumber = rawLicenseNumber.replace(/\s+/g, " ");
+    const licenseCountry = driverRecord?.license_issuer_country ?? driverRecord?.country_code ?? (prelinkLicenseCountry || "BR");
+    return { cpf, licenseNumber, licenseCountry };
+  };
+
+  const licenseApproved = driverRecord?.license_verification_status === "approved";
+  const hasCarrierLink = !!driverRecord?.carrier_id;
+
+  const getLiveLocation = async () => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      throw new Error("Geolocalização não disponível neste dispositivo.");
+    }
+    return new Promise<{ lat: number; lng: number; accuracy: number }>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: pos.coords.accuracy ?? 0 }),
+        (err) => reject(new Error(err.message || "Não foi possível obter o GPS.")),
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+      );
+    });
+  };
+
+  const acceptInvitation = async () => {
+    const token = inviteToken.trim();
+    if (!token) {
+      toast.error("Informe o token do convite");
+      return;
+    }
+
+    const { cpf: payloadCpf, licenseNumber: payloadLicenseNumber, licenseCountry: payloadCountry } = getIdentityForRequest();
+    if (!payloadCpf || payloadCpf.length < 11) {
+      toast.error("Informe um CPF válido antes de aceitar o convite.");
+      return;
+    }
+    if (!payloadLicenseNumber) {
+      toast.error("Informe o número da CNH ou licença antes de aceitar o convite.");
+      return;
+    }
+
+    const { error } = await supabase.rpc("accept_driver_invitation", {
+      p_token: token,
+      p_cpf: payloadCpf,
+      p_license_number: payloadLicenseNumber,
+      p_license_country: payloadCountry,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Vínculo realizado com sucesso");
+    setInviteToken("");
+    qc.invalidateQueries({ queryKey: ["driver-record", user?.id] });
+  };
+
+  const requestLink = async () => {
+    if (!selectedCarrierId) {
+      toast.error("Selecione uma transportadora");
+      return;
+    }
+
+    const { cpf: payloadCpf, licenseNumber: payloadLicenseNumber, licenseCountry: payloadCountry } = getIdentityForRequest();
+    if (!payloadCpf || payloadCpf.length < 11) {
+      toast.error("Informe um CPF válido antes de solicitar o vínculo.");
+      return;
+    }
+    if (!payloadLicenseNumber) {
+      toast.error("Informe o número da CNH ou licença antes de solicitar o vínculo.");
+      return;
+    }
+
+    const { error } = await supabase.rpc("request_driver_carrier_link", {
+      p_carrier_id: selectedCarrierId,
+      p_cpf: payloadCpf,
+      p_license_number: payloadLicenseNumber,
+      p_license_country: payloadCountry,
+      p_license_category: driverRecord?.license_category ?? driverRecord?.cnh_category ?? undefined,
+      p_license_expiry: driverRecord?.license_expiry ?? driverRecord?.cnh_expiry ?? undefined,
+      p_message: linkMessage.trim() || undefined,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Solicitação enviada para revisão");
+    setSelectedCarrierId(null);
+    setLinkMessage("");
+    setCarrierQuery("");
+    qc.invalidateQueries({ queryKey: ["driver-pending-requests", user?.id] });
+  };
+
+  const cancelRequest = async (requestId: string) => {
+    const { error } = await supabase.rpc("cancel_driver_carrier_request", { p_request_id: requestId });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Solicitação cancelada");
+    qc.invalidateQueries({ queryKey: ["driver-pending-requests", user?.id] });
+  };
+
+  const setCapacityStatus = async (targetStatus: "available" | "paused" | "offline") => {
+    if (!driverRecord?.id || !availability?.id) {
+      toast.error("Não existe disponibilidade ativa para alterar.");
+      return;
+    }
+    const { error } = await supabase.rpc("set_capacity_status", {
+      p_availability_id: availability.id,
+      p_status: targetStatus,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(targetStatus === "available" ? "Disponibilidade retomada" : targetStatus === "paused" ? "Disponibilidade pausada" : "Disponibilidade encerrada");
+    qc.invalidateQueries({ queryKey: ["driver-availability", driverRecord.id] });
+  };
+
+  const createAvailability = async () => {
+    if (!driverRecord?.id || !selectedTruckId) {
+      toast.error("Selecione um caminhão antes de ativar a disponibilidade.");
+      return;
+    }
+    if (!hasCarrierLink || !licenseApproved) {
+      toast.error("Vínculo e licença aprovados são obrigatórios para estar disponível.");
+      return;
+    }
+    if (geo.lat == null || geo.lng == null) {
+      toast.error("GPS real não encontrado. Aguarde a localização do celular antes de ativar.");
+      return;
+    }
+    if (radius < 10 || radius > 500) {
+      toast.error("O raio deve estar entre 10 e 500 km.");
+      return;
+    }
+    if (!navigator.onLine) {
+      toast.error("Sem conexão para sincronizar a disponibilidade.");
+      return;
+    }
+    setAvailabilityBusy(true);
+    try {
+      const loc = await getLiveLocation();
+      const nextFrom = availableFrom ? new Date(availableFrom) : new Date();
+      const nextUntil = availableUntil ? new Date(availableUntil) : null;
+      if (nextUntil && nextUntil <= new Date()) {
+        toast.error("A janela de disponibilidade precisa ser no futuro.");
+        return;
+      }
+      if (loc.accuracy > 200) {
+        toast.error("GPS pouco preciso. Afaste-se de prédios e tente novamente.");
+        return;
+      }
+      const { error } = await supabase.rpc("set_capacity_available", {
+        p_driver_id: driverRecord.id,
+        p_truck_id: selectedTruckId,
+        p_lat: loc.lat,
+        p_lng: loc.lng,
+        p_accuracy_m: loc.accuracy,
+        p_available_from: nextFrom.toISOString(),
+        p_available_until: nextUntil ? nextUntil.toISOString() : undefined,
+        p_max_pickup_radius_km: radius,
+        p_preferred_destination_countries: preferredCountries.length ? preferredCountries : [],
+        p_preferred_destination_subdivisions: preferredStates.length ? preferredStates : [],
+        p_accepts_backhaul: acceptsBackhaul,
+        p_min_rate_per_loaded_km: undefined,
+        p_min_total_amount: undefined,
+        p_currency_code: "BRL",
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("Estou disponível");
+      setSelectedTruckId(null);
+      qc.invalidateQueries({ queryKey: ["driver-availability", driverRecord.id] });
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setAvailabilityBusy(false);
+    }
+  };
 
   // Realtime: security alerts on this contract
   useEffect(() => {
@@ -160,10 +483,10 @@ export default function DriverHomePage() {
     return () => { supabase.removeChannel(ch); };
   }, [active?.id]);
 
-  const driverPos = geo.lat && geo.lng ? { lat: geo.lat, lng: geo.lng } : null;
+  const driverPos = geo.lat != null && geo.lng != null ? { lat: geo.lat, lng: geo.lng } : null;
   const f = active?.freight ?? null;
-  const origin = f?.origin_lat && f?.origin_lng ? { lat: Number(f.origin_lat), lng: Number(f.origin_lng) } : null;
-  const dest = f?.dest_lat && f?.dest_lng ? { lat: Number(f.dest_lat), lng: Number(f.dest_lng) } : null;
+  const origin = f?.origin_lat != null && f?.origin_lng != null ? { lat: Number(f.origin_lat), lng: Number(f.origin_lng) } : null;
+  const dest = f?.dest_lat != null && f?.dest_lng != null ? { lat: Number(f.dest_lat), lng: Number(f.dest_lng) } : null;
 
   const eta = useMemo(() => {
     // Cheap ETA: 60 km/h straight-line from driver to dest
@@ -203,6 +526,103 @@ export default function DriverHomePage() {
           {initials}
         </div>
       </header>
+
+      {!driverRecord ? (
+        <div className="mx-4 mb-4 rounded-[16px] border border-[#30363D] bg-[#161B22] p-4 space-y-3">
+          <div className="text-[18px] font-medium text-[#E6EDF3]">Vincular transportadora</div>
+          <div className="text-sm text-[#8B949E]">Faça o vínculo com um token ou solicite associação à transportadora.</div>
+          <div className="space-y-2">
+            <input value={prelinkCpf} onChange={(e) => setPrelinkCpf(normalizeCpf(e.target.value))} placeholder="CPF obrigatório" inputMode="numeric" maxLength={11} className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+            <input value={prelinkLicenseNumber} onChange={(e) => setPrelinkLicenseNumber(e.target.value.trimStart())} placeholder="CNH ou número da licença obrigatório" className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+            <input value={prelinkLicenseCountry} onChange={(e) => setPrelinkLicenseCountry(e.target.value.toUpperCase() || "BR")} placeholder="País emissor" maxLength={3} className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+            <input value={inviteToken} onChange={(e) => setInviteToken(e.target.value)} placeholder="Cole o token do convite" className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+            <button type="button" onClick={() => void acceptInvitation()} className="w-full rounded-[10px] bg-[#1B6CB8] px-3 py-2 text-sm font-medium text-white">Aceitar convite</button>
+          </div>
+          <div className="space-y-2">
+            <input value={carrierQuery} onChange={(e) => setCarrierQuery(e.target.value)} placeholder="Buscar transportadora" className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+            {suggestions.length > 0 && (
+              <div className="space-y-2">
+                {suggestions.map((carrier) => (
+                  <button key={carrier.carrier_id} type="button" onClick={() => setSelectedCarrierId(carrier.carrier_id)} className="w-full text-left rounded-[10px] border border-[#30363D] bg-[#0D1117] p-3">
+                    <div className="font-medium text-[#E6EDF3]">{carrier.company_name ?? carrier.trade_name ?? "Transportadora"}</div>
+                    <div className="text-xs text-[#8B949E]">{carrier.city ?? "—"} · {carrier.country_code ?? "BR"}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <textarea value={linkMessage} onChange={(e) => setLinkMessage(e.target.value)} placeholder="Mensagem para a transportadora" className="w-full min-h-[80px] rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+          <button type="button" onClick={() => void requestLink()} className="w-full rounded-[10px] bg-[#1A9B5E] px-3 py-2 text-sm font-medium text-white">Solicitar vínculo</button>
+          {pendingRequests.length > 0 && (
+            <div className="space-y-2 pt-2">
+              <div className="text-[11px] uppercase tracking-[0.08em] text-[#8B949E]">Solicitações pendentes</div>
+              {pendingRequests.map((req) => (
+                <div key={req.id} className="rounded-[10px] border border-[#30363D] bg-[#0D1117] p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-sm text-[#E6EDF3]">{req.carriers?.company_name ?? req.carriers?.trade_name ?? "Transportadora"}</div>
+                    <span className="text-[10px] uppercase text-[#8B949E]">{req.status}</span>
+                  </div>
+                  {req.message && <div className="mt-1 text-xs text-[#8B949E]">{req.message}</div>}
+                  <button type="button" onClick={() => void cancelRequest(req.id)} className="mt-2 text-xs text-[#F87171]">Cancelar</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mx-4 mb-4 rounded-[16px] border border-[#30363D] bg-[#161B22] p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.08em] text-[#8B949E]">Status da CNH</div>
+              <div className="text-[16px] font-medium text-[#E6EDF3]">{driverRecord.license_verification_status ?? "pending"}</div>
+            </div>
+            <div className={`px-2.5 py-1 rounded-full text-xs ${licenseApproved ? "bg-emerald-500/20 text-emerald-400" : driverRecord.license_verification_status === "rejected" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}>
+              {driverRecord.license_verification_status ?? "pending"}
+            </div>
+          </div>
+          <div className="text-sm text-[#8B949E]">CNH: {driverRecord.license_number ?? driverRecord.cnh_number ?? "—"} · {driverRecord.license_issuer_country ?? driverRecord.country_code ?? "BR"}</div>
+          {hasCarrierLink && licenseApproved && (
+            <div className="space-y-3 pt-2">
+              <div className="text-sm text-[#8B949E]">Disponibilidade de capacidade</div>
+              <div className="space-y-2">
+                <select value={selectedTruckId ?? ""} onChange={(e) => setSelectedTruckId(e.target.value || null)} className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]">
+                  <option value="">Selecione um caminhão</option>
+                  {fleet.map((truck) => (
+                    <option key={truck.id} value={truck.id}>{truck.plate ?? "Caminhão"}</option>
+                  ))}
+                </select>
+                <div className="space-y-2">
+                  <label className="block text-xs text-[#8B949E]">Raio de coleta (10–500 km)</label>
+                  <input type="range" min={10} max={500} value={radius} onChange={(e) => setRadius(Number(e.target.value))} className="w-full" />
+                  <div className="text-sm text-[#E6EDF3]">{radius} km</div>
+                </div>
+                <input type="datetime-local" value={availableFrom} onChange={(e) => setAvailableFrom(e.target.value)} className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+                <input type="datetime-local" value={availableUntil} onChange={(e) => setAvailableUntil(e.target.value)} className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+                <div className="flex gap-2 flex-wrap">
+                  <input value={preferredCountries.join(",")} onChange={(e) => setPreferredCountries(e.target.value.split(",").map((v) => v.trim()).filter(Boolean))} placeholder="Países preferidos, ex.: BR,AR" className="flex-1 min-w-[130px] rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+                  <input value={preferredStates.join(",")} onChange={(e) => setPreferredStates(e.target.value.split(",").map((v) => v.trim()).filter(Boolean))} placeholder="Estados preferidos" className="flex-1 min-w-[130px] rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]" />
+                </div>
+                <label className="flex items-center gap-2 text-sm text-[#C6CFD8]">
+                  <input type="checkbox" checked={acceptsBackhaul} onChange={(e) => setAcceptsBackhaul(e.target.checked)} />
+                  Aceita retorno / backhaul
+                </label>
+                {availability?.status ? (
+                  <div className="flex gap-2 flex-wrap">
+                    <button type="button" onClick={() => void setCapacityStatus(availability.status === "available" ? "paused" : "available")} className="rounded-[10px] bg-[#1B6CB8] px-3 py-2 text-sm font-medium text-white">
+                      {availability.status === "available" ? "Pausar disponibilidade" : "Retomar disponibilidade"}
+                    </button>
+                    <button type="button" onClick={() => void setCapacityStatus("offline")} className="rounded-[10px] border border-[#30363D] px-3 py-2 text-sm font-medium text-[#F87171]">Encerrar</button>
+                  </div>
+                ) : (
+                  <button type="button" disabled={availabilityBusy} onClick={() => void createAvailability()} className="w-full rounded-[10px] bg-[#1A9B5E] px-3 py-2 text-sm font-medium text-white">
+                    {availabilityBusy ? "Ativando..." : "Estou disponível"}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {isLoading && !active ? (
         <div className="px-4">

@@ -103,7 +103,9 @@ export function OperationsBoard({ scope, companyId }: OperationsBoardProps) {
       if (!contracts?.length) return [];
 
       const contractIds = contracts.map((contract) => contract.id);
-      const driverIds = contracts.map((contract) => contract.driver_id).filter(Boolean);
+      const driverIds = contracts
+        .map((contract) => contract.driver_id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0);
       const [positionsResult, alertsResult, paymentsResult, driversResult] = await Promise.all([
         supabase
           .from("driver_positions")

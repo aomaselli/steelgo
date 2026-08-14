@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -50,6 +50,26 @@ function truckLabel(t?: string | null) {
   return TRUCK_TYPE_OPTIONS.find((o) => o.id === t)?.label ?? t ?? "—";
 }
 
+type FleetTruck = {
+  id: string;
+  plate: string | null;
+  type: string | null;
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  max_weight_tons: number | null;
+  capacity_tons: number | null;
+  is_ev: boolean | null;
+  co2_per_km: number | null;
+  crlv_url: string | null;
+};
+
+type AvailabilityStatus = {
+  id: string;
+  status: string | null;
+  truck_id: string | null;
+};
+
 const FUEL_CO2: Record<string, number> = {
   diesel: 0.0892,
   biodiesel_b20: 0.071,
@@ -90,7 +110,7 @@ export function FleetPage() {
     },
   });
 
-  const { data: trucks, isLoading } = useQuery({
+  const { data: trucks = [], isLoading } = useQuery<FleetTruck[]>({
     queryKey: ["fleet-trucks", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
@@ -99,11 +119,29 @@ export function FleetPage() {
         .select("*")
         .eq("carrier_id", carrier!.id)
         .order("created_at", { ascending: false });
-      return data ?? [];
+      return (data ?? []) as FleetTruck[];
     },
   });
 
-  const total = trucks?.length ?? 0;
+  const { data: availabilityStatus = [] } = useQuery<AvailabilityStatus[]>({
+    queryKey: ["fleet-availability", carrier?.id],
+    enabled: !!carrier?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("capacity_availability")
+        .select("id,status,truck_id")
+        .eq("carrier_id", carrier!.id)
+        .order("updated_at", { ascending: false });
+      return (data ?? []) as AvailabilityStatus[];
+    },
+  });
+
+  const availabilityMap = useMemo(
+    () => Object.fromEntries((availabilityStatus ?? []).map((item) => [item.truck_id, item])),
+    [availabilityStatus],
+  );
+
+  const total = trucks.length;
   const evCount = (trucks ?? []).filter((t) => t.is_ev).length;
   const activeCount = total; // is_active not in schema; treat all as active
   const capSum = (trucks ?? []).reduce(
@@ -179,6 +217,24 @@ export function FleetPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const setTruckAvailability = async (truckId: string, nextStatus: "available" | "paused" | "offline") => {
+    const availability = availabilityMap[truckId];
+    if (!availability?.id) {
+      toast.error("A disponibilidade desse caminhão ainda não foi ativada pelo motorista.");
+      return;
+    }
+    const { error } = await supabase.rpc("set_capacity_status", {
+      p_availability_id: availability.id,
+      p_status: nextStatus,
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(nextStatus === "available" ? "Disponibilidade retomada" : nextStatus === "paused" ? "Disponibilidade pausada" : "Disponibilidade encerrada");
+    qc.invalidateQueries({ queryKey: ["fleet-availability", carrier?.id] });
   };
 
   return (
