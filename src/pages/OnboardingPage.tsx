@@ -56,6 +56,8 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [bypassTimeout, setBypassTimeout] = useState(false);
+  const [companyBootstrapState, setCompanyBootstrapState] = useState<"idle" | "loading" | "error">("idle");
+  const [companyBootstrapError, setCompanyBootstrapError] = useState<string | null>(null);
   const ensuredRef = useRef(false);
 
   // Failsafe: never block on the spinner more than 3s
@@ -106,6 +108,42 @@ export function OnboardingPage() {
     })();
   }, [user, refresh]);
 
+  useEffect(() => {
+    if (isLoading || !user || !role || (role !== "shipper" && role !== "carrier")) return;
+    if (company) {
+      setCompanyBootstrapState("idle");
+      setCompanyBootstrapError(null);
+      return;
+    }
+
+    const pendingCompany = (user.user_metadata as { pending_company?: Record<string, unknown> } | undefined)?.pending_company;
+    if (!pendingCompany) return;
+
+    let active = true;
+    setCompanyBootstrapState("loading");
+    setCompanyBootstrapError(null);
+
+    void (async () => {
+      try {
+        const { error } = await supabase.rpc("complete_company_registration");
+        if (error) throw error;
+        await refresh();
+        await supabase.auth.updateUser({ data: { pending_company: null } });
+        if (active) {
+          setCompanyBootstrapState("idle");
+        }
+      } catch (error) {
+        if (!active) return;
+        setCompanyBootstrapState("error");
+        setCompanyBootstrapError(error instanceof Error ? error.message : "Não foi possível concluir o cadastro da empresa.");
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [company, isLoading, refresh, role, user]);
+
   const effectiveRole = (role ?? "shipper") as UserRole;
   const steps = useMemo(() => STEPS_BY_ROLE[effectiveRole] ?? [], [effectiveRole]);
 
@@ -124,6 +162,27 @@ export function OnboardingPage() {
     return null;
   }
 
+  if ((role === "shipper" || role === "carrier") && !company && companyBootstrapState === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0B1628] text-[#E6EDF3]">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-[#1B6CB8]" />
+          <p className="text-sm text-[#8B949E]">Concluindo cadastro da empresa...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if ((role === "shipper" || role === "carrier") && !company && companyBootstrapState === "error") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#0B1628] p-6 text-center">
+        <div className="max-w-md rounded-[16px] border border-red-500/40 bg-[#111E33] p-6">
+          <h1 className="mb-2 text-xl font-bold text-[#E6EDF3]">Não foi possível concluir o cadastro</h1>
+          <p className="text-sm text-[#F85149]">{companyBootstrapError ?? "Erro desconhecido ao concluir a empresa."}</p>
+        </div>
+      </div>
+    );
+  }
 
   const finish = async () => {
     await (supabase.from("profiles") as any).update({ is_onboarded: true }).eq("id", user.id);
@@ -542,29 +601,44 @@ function CarrierCompany({ userId, companyId, onNext }: { userId: string; company
   const save = async () => {
     if (!companyId) { toast.error("Empresa não encontrada"); return; }
     setSaving(true);
-    let docPath: string | null = null;
-    if (policy) {
-      const path = `${companyId}/rctr_c.pdf`;
-      const { error } = await supabase.storage.from("company-docs").upload(path, policy, { upsert: true });
-      if (error) { toast.error(error.message); setSaving(false); return; }
-      docPath = path;
+
+    try {
+      let docPath: string | null = null;
+      if (policy) {
+        const path = `${companyId}/rctr_c.pdf`;
+        const { error: uploadError } = await supabase.storage.from("company-docs").upload(path, policy, { upsert: true });
+        if (uploadError) throw uploadError;
+        docPath = path;
+      }
+
+      const { data: existing, error: existingError } = await supabase.from("carriers").select("id").eq("company_id", companyId).maybeSingle();
+      if (existingError) throw existingError;
+
+      const payload: any = {
+        antt_rntrc: antt,
+        insurance_expiry: expiry || null,
+        operating_states: states,
+        has_ev_trucks: hasEv,
+        ev_truck_count: hasEv ? evCount : 0,
+      };
+      if (docPath) payload.insurance_doc_url = docPath;
+
+      let carrierError: any = null;
+      if (existing) {
+        const result = await (supabase.from("carriers") as any).update(payload).eq("id", existing.id);
+        carrierError = result.error;
+      } else {
+        const result = await (supabase.from("carriers") as any).insert({ company_id: companyId, ...payload });
+        carrierError = result.error;
+      }
+
+      if (carrierError) throw carrierError;
+      setSaving(false);
+      onNext();
+    } catch (error: any) {
+      setSaving(false);
+      toast.error(error?.message ?? "Não foi possível salvar os dados da transportadora.");
     }
-    const { data: existing } = await supabase.from("carriers").select("id").eq("company_id", companyId).maybeSingle();
-    const payload: any = {
-      antt_rntrc: antt,
-      insurance_expiry: expiry || null,
-      operating_states: states,
-      has_ev_trucks: hasEv,
-      ev_truck_count: hasEv ? evCount : 0,
-    };
-    if (docPath) payload.insurance_doc_url = docPath;
-    if (existing) {
-      await (supabase.from("carriers") as any).update(payload).eq("id", existing.id);
-    } else {
-      await (supabase.from("carriers") as any).insert({ company_id: companyId, ...payload });
-    }
-    setSaving(false);
-    onNext();
   };
 
   return (

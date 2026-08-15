@@ -81,6 +81,18 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
     setSubmitting(true);
     setAuthError(null);
 
+    const pendingCompany =
+      company && role !== "driver"
+        ? {
+            legal_name: company.legal_name.trim(),
+            trade_name: company.trade_name?.trim() || null,
+            cnpj: onlyDigits(company.cnpj),
+            type: company.type,
+            state: company.state,
+            ...(role === "carrier" && company.antt ? { antt: company.antt.trim() } : {}),
+          }
+        : null;
+
     const { data, error } = await supabase.auth.signUp({
       email: personal.email,
       password: personal.password,
@@ -90,7 +102,8 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
           full_name: personal.full_name,
           role,
           phone: personal.phone,
-          },
+          pending_company: pendingCompany,
+        },
       },
     });
 
@@ -100,36 +113,18 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
       return;
     }
 
-    const userId = data.user?.id;
+    if (!data.session) {
+      setSubmitting(false);
+      setAuthError("Conta criada com sucesso. Confirme o e-mail para concluir o cadastro da empresa.");
+      return;
+    }
 
-    if (userId && company && role !== "driver") {
-      const { data: companyRow, error: cErr } = await supabase
-        .from("companies")
-        .insert({
-          name: company.legal_name,
-          trade_name: company.trade_name || null,
-          cnpj: company.cnpj,
-          type: company.type,
-          address_state: company.state,
-          owner_id: userId,
-        })
-        .select()
-        .single();
-
-      if (cErr) {
-        setAuthError(`Conta criada, mas empresa falhou: ${cErr.message}`);
-      } else if (companyRow) {
-        await supabase.from("company_members").insert({
-          company_id: companyRow.id,
-          user_id: userId,
-          member_role: "owner",
-        });
-        if (role === "carrier" && company.antt) {
-          await supabase.from("carriers").insert({
-            company_id: companyRow.id,
-            antt_rntrc: company.antt,
-          });
-        }
+    if (pendingCompany && role !== "driver") {
+      const { error: rpcError } = await supabase.rpc("complete_company_registration");
+      if (rpcError) {
+        setAuthError(`Conta criada, mas o cadastro da empresa falhou: ${rpcError.message}`);
+        setSubmitting(false);
+        return;
       }
     }
 

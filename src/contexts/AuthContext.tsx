@@ -22,7 +22,13 @@ interface AuthContextValue {
   signUp: (
     email: string,
     password: string,
-    data: { full_name?: string; role?: UserRole; phone?: string; cpf?: string },
+    data: {
+      full_name?: string;
+      role?: UserRole;
+      phone?: string;
+      cpf?: string;
+      pending_company?: Record<string, unknown> | null;
+    },
   ) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<Profile>) => Promise<{ error: Error | null }>;
@@ -138,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           full_name: data.full_name ?? "",
           role: data.role ?? "shipper",
           phone: data.phone ?? null,
-          
+          pending_company: data.pending_company ?? null,
         },
       },
     });

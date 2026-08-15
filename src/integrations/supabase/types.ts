@@ -2012,6 +2012,7 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: boolean
       }
+      complete_company_registration: { Args: never; Returns: Json }
       create_driver_invitation: {
         Args: {
           p_driver_id: string
