@@ -25,15 +25,16 @@ export function Topbar({
   onMenuClick,
   showMenu,
 }: TopbarProps) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, role } = useAuth();
   const { language, setLanguage } = useLanguage();
   const [searchOpen, setSearchOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const isCarrierTopbar = role === "carrier";
 
   return (
     <>
-      <header className="h-14 bg-[#161B22] border-b border-[#30363D] flex items-center px-6 gap-4 sticky top-0 z-40">
+      <header className={`h-14 ${isCarrierTopbar ? "bg-white border-b border-[#E6EAF0]" : "bg-[#161B22] border-b border-[#30363D]"} flex items-center px-6 gap-4 sticky top-0 z-40`}>
         {showMenu && (
           <button
             onClick={onMenuClick}
@@ -50,12 +51,18 @@ export function Topbar({
             <nav className="flex items-center gap-1 text-sm">
               {breadcrumb.map((c, i) => {
                 const last = i === breadcrumb.length - 1;
-                const cls = last ? "text-[#E6EDF3]" : "text-[#484F58]";
+                const cls = last
+                  ? isCarrierTopbar
+                    ? "text-[#10274A]"
+                    : "text-[#E6EDF3]"
+                  : isCarrierTopbar
+                    ? "text-[#54657C]"
+                    : "text-[#484F58]";
                 return (
                   <span key={i} className="flex items-center gap-1">
-                    {i > 0 && <ChevronRight size={14} className="text-[#484F58]" />}
+                    {i > 0 && <ChevronRight size={14} className={isCarrierTopbar ? "text-[#9AA9B7]" : "text-[#484F58]"} />}
                     {c.href && !last ? (
-                      <Link to={c.href} className={`${cls} hover:text-[#E6EDF3]`}>
+                      <Link to={c.href} className={`${cls} ${isCarrierTopbar ? "hover:text-[#10274A]" : "hover:text-[#E6EDF3]"}`}>
                         {c.label}
                       </Link>
                     ) : (
@@ -66,7 +73,7 @@ export function Topbar({
               })}
             </nav>
           ) : (
-            <h1 className="text-lg font-semibold text-[#E6EDF3] truncate">{title}</h1>
+            <h1 className={`text-lg font-semibold truncate ${isCarrierTopbar ? "text-[#10274A]" : "text-[#E6EDF3]"}`}>{title}</h1>
           )}
         </div>
 
@@ -74,16 +81,16 @@ export function Topbar({
         <div className="flex-1 flex justify-center">
           <button
             onClick={() => setSearchOpen(true)}
-            className="bg-[#21262D] border border-[#30363D] rounded-[10px] px-3 py-1.5 flex items-center gap-2 w-full max-w-xs cursor-pointer hover:border-[#484F58] transition"
+            className={`${isCarrierTopbar ? "bg-[#F4F7FB] border border-[#DDE7F2]" : "bg-[#21262D] border border-[#30363D]"} rounded-[10px] px-3 py-1.5 flex items-center gap-2 w-full max-w-xs cursor-pointer ${isCarrierTopbar ? "hover:border-[#B9C9DC]" : "hover:border-[#484F58]"} transition`}
           >
-            <Search size={16} className="text-[#484F58]" />
-            <span className="text-sm text-[#484F58]">Buscar...</span>
+            <Search size={16} className={isCarrierTopbar ? "text-[#5B6B80]" : "text-[#484F58]"} />
+            <span className={`text-sm ${isCarrierTopbar ? "text-[#5B6B80]" : "text-[#484F58]"}`}>Buscar...</span>
           </button>
         </div>
 
         {/* Right */}
         <div className="flex items-center gap-3">
-          <div className="flex border border-[#30363D] rounded-full overflow-hidden">
+          <div className={`flex rounded-full overflow-hidden ${isCarrierTopbar ? "border border-[#DDE7F2]" : "border border-[#30363D]"}`}>
             {(["pt", "en"] as const).map((lng) => {
               const active = language === lng;
               return (
@@ -93,7 +100,9 @@ export function Topbar({
                   className={`text-xs px-3 py-1 transition ${
                     active
                       ? "bg-[#1B6CB8] text-white"
-                      : "text-[#8B949E] hover:text-[#E6EDF3]"
+                      : isCarrierTopbar
+                        ? "text-[#5B6B80] hover:text-[#10274A]"
+                        : "text-[#8B949E] hover:text-[#E6EDF3]"
                   }`}
                 >
                   {lng.toUpperCase()}
@@ -104,7 +113,7 @@ export function Topbar({
 
           <button
             onClick={() => setNotifOpen((v) => !v)}
-            className="relative text-[#8B949E] hover:text-[#E6EDF3]"
+            className={`relative ${isCarrierTopbar ? "text-[#5B6B80] hover:text-[#10274A]" : "text-[#8B949E] hover:text-[#E6EDF3]"}`}
             aria-label="Notificações"
           >
             <Bell size={20} />
@@ -123,11 +132,11 @@ export function Topbar({
                   className="fixed inset-0 z-40"
                   onClick={() => setMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 w-44 bg-[#1C2128] border border-[#30363D] rounded-[10px] shadow-2xl z-50 py-1">
+                <div className={`absolute right-0 mt-2 w-44 ${isCarrierTopbar ? "bg-white border border-[#E6EAF0] shadow-[0_16px_30px_rgba(16,39,74,0.12)]" : "bg-[#1C2128] border border-[#30363D] shadow-2xl"} rounded-[10px] z-50 py-1`}>
                   <Link
                     to="/shipper/settings"
                     onClick={() => setMenuOpen(false)}
-                    className="block px-3 py-2 text-sm text-[#C9D1D9] hover:bg-[#21262D]"
+                    className={`block px-3 py-2 text-sm ${isCarrierTopbar ? "text-[#10274A] hover:bg-[#F4F7FB]" : "text-[#C9D1D9] hover:bg-[#21262D]"}`}
                   >
                     Ver perfil
                   </Link>

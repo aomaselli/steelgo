@@ -13,13 +13,14 @@ export function AppShell({ children, title, breadcrumb }: AppShellProps) {
   const { role } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const effectiveRole: UserRole = (role as UserRole) ?? "shipper";
+  const isCarrierShell = effectiveRole === "carrier";
 
   if (effectiveRole === "driver") {
     return <>{children}</>;
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0D1117]">
+    <div className={`flex h-screen overflow-hidden ${isCarrierShell ? "bg-[#F4F7FB]" : "bg-[#0D1117]"}`}>
       {/* Desktop sidebar */}
       <div className="hidden md:block">
         <Sidebar userRole={effectiveRole} />
@@ -38,14 +39,14 @@ export function AppShell({ children, title, breadcrumb }: AppShellProps) {
         </div>
       )}
 
-      <div className="flex flex-col flex-1 md:ml-[220px] min-w-0">
+      <div className={`flex flex-col flex-1 md:ml-[220px] min-w-0 ${isCarrierShell ? "bg-[#F4F7FB]" : "bg-transparent"}`}>
         <Topbar
           title={title}
           breadcrumb={breadcrumb}
           showMenu
           onMenuClick={() => setMobileOpen(true)}
         />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        <main className={`flex-1 overflow-y-auto p-6 ${isCarrierShell ? "bg-[#F4F7FB]" : ""}`}>{children}</main>
       </div>
     </div>
   );

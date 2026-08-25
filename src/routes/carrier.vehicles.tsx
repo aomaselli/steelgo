@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Plus, Truck as TruckIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/lib/i18n";
 import { Button, Card, EmptyState, Input, Modal, Select, Spinner } from "@/components/steel";
 import { TRUCK_TYPES, formatNum } from "@/lib/steel";
 import { maskPlate } from "@/lib/masks";
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/carrier/vehicles")({
 
 function VehiclesPage() {
   const { company } = useAuth();
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ plate: "", brand: "", model: "", year: "", type: "carreta", capacity_tons: "", is_ev: false });
@@ -61,72 +63,72 @@ function VehiclesPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-graphite-50">Frota</h1>
-          <p className="text-graphite-200 mt-1">Cadastre e gerencie seus veículos</p>
+          <h1 className="text-2xl font-bold text-[#10274A]">{t("carrierFleet.title")}</h1>
+          <p className="text-[#5B6B80] mt-1">{t("carrierFleet.subtitle")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Adicionar veículo</Button>
+        <Button onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> {t("carrierFleet.addTruck")}</Button>
       </div>
 
       {isLoading ? (
         <div className="flex justify-center p-12"><Spinner /></div>
       ) : !trucks?.length ? (
-        <EmptyState icon={TruckIcon} title="Nenhum veículo" description="Adicione o primeiro caminhão da sua frota."
-          action={<Button onClick={() => setOpen(true)}>Adicionar veículo</Button>} />
+        <EmptyState icon={TruckIcon} title={t("carrierFleet.emptyTitle")} description={t("carrierFleet.emptyDesc")}
+          action={<Button onClick={() => setOpen(true)}>{t("carrierFleet.addTruck")}</Button>} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {trucks.map((t) => (
-            <Card key={t.id} className="p-4 space-y-2">
+          {trucks.map((truck) => (
+            <Card key={truck.id} className="p-4 space-y-2 border-[#E3EAF3] bg-white">
               <div className="flex items-start justify-between">
                 <div>
-                  <div className="text-lg font-bold text-graphite-50 tracking-wider">{t.plate ?? "—"}</div>
-                  <div className="text-xs text-graphite-400">{t.brand ?? "—"} {t.model ?? ""} {t.year ?? ""}</div>
+                  <div className="text-lg font-bold text-[#10274A] tracking-wider">{truck.plate ?? "—"}</div>
+                  <div className="text-xs text-[#5B6B80]">{truck.brand ?? "—"} {truck.model ?? ""} {truck.year ?? ""}</div>
                 </div>
-                {t.is_ev && <span className="text-xs px-2 py-0.5 rounded-full bg-esg-green-400/20 text-esg-green-400">Verde</span>}
+                {truck.is_ev && <span className="text-xs px-2 py-0.5 rounded-full bg-esg-green-400/20 text-esg-green-400">Verde</span>}
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-graphite-700">
-                <div><div className="text-graphite-400">Tipo</div><div className="text-graphite-100 capitalize">{t.type ?? "—"}</div></div>
-                <div><div className="text-graphite-400">Capacidade</div><div className="text-graphite-100 tabular-nums">{formatNum(t.capacity_tons)} t</div></div>
+              <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-[#E3EAF3]">
+                <div><div className="text-[#5B6B80]">{t("carrierFleet.type")}</div><div className="text-[#10274A] capitalize">{truck.type ?? "—"}</div></div>
+                <div><div className="text-[#5B6B80]">{t("carrierFleet.capacity")}</div><div className="text-[#10274A] tabular-nums">{formatNum(truck.capacity_tons)} t</div></div>
               </div>
             </Card>
           ))}
         </div>
       )}
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Adicionar veículo">
+      <Modal open={open} onClose={() => setOpen(false)} title={t("carrierFleet.modalTitle")}>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="text-xs text-graphite-200 block mb-1">Placa</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.plate")}</label>
             <Input value={form.plate} onChange={(e) => setForm({ ...form, plate: maskPlate(e.target.value) })} placeholder="ABC-1D23" />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Marca</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.brand")}</label>
             <Input value={form.brand} onChange={(e) => setForm({ ...form, brand: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Modelo</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.model")}</label>
             <Input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Ano</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.year")}</label>
             <Input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Tipo</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.type")}</label>
             <Select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-              {TRUCK_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+              {TRUCK_TYPES.map((type) => <option key={type.id} value={type.id}>{type.label}</option>)}
             </Select>
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Capacidade (t)</label>
+            <label className="text-xs text-[#5B6B80] block mb-1">{t("carrierFleet.capacity")}</label>
             <Input type="number" value={form.capacity_tons} onChange={(e) => setForm({ ...form, capacity_tons: e.target.value })} />
           </div>
-          <label className="col-span-2 flex items-center gap-2 text-sm text-graphite-100">
+          <label className="col-span-2 flex items-center gap-2 text-sm text-[#10274A]">
             <input type="checkbox" checked={form.is_ev} onChange={(e) => setForm({ ...form, is_ev: e.target.checked })} />
-            Veículo elétrico ou biodiesel certificado
+            {t("carrierFleet.isElectric")}
           </label>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={save}>Salvar</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={save}>{t("common.save")}</Button>
           </div>
         </div>
       </Modal>

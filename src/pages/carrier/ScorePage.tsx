@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/lib/i18n";
 import { Card, Spinner } from "@/components/steel";
 import { ScoreRing } from "@/components/steel/ScoreRing";
 import { formatNum } from "@/lib/steel";
@@ -32,11 +33,11 @@ const TIER_LABEL: Record<Tier, string> = {
   platinum: "Platinum",
 };
 
-const TIERS: { id: Tier; minScore: number; minFreights: number; esg: string }[] = [
-  { id: "standard", minScore: 0, minFreights: 0, esg: "—" },
-  { id: "silver", minScore: 7, minFreights: 10, esg: "Recomendada" },
-  { id: "gold", minScore: 8.5, minFreights: 50, esg: "Certificada" },
-  { id: "platinum", minScore: 9.2, minFreights: 150, esg: "Certificada" },
+const TIERS: { id: Tier; minScore: number; minFreights: number; esgKey: string }[] = [
+  { id: "standard", minScore: 0, minFreights: 0, esgKey: "esgNone" },
+  { id: "silver", minScore: 7, minFreights: 10, esgKey: "esgRecommended" },
+  { id: "gold", minScore: 8.5, minFreights: 50, esgKey: "esgCertified" },
+  { id: "platinum", minScore: 9.2, minFreights: 150, esgKey: "esgCertified" },
 ];
 
 function barColor(s: number) {
@@ -63,12 +64,12 @@ function Bar({
     <div className="flex items-center gap-4">
       <div className="flex items-center gap-2 w-44 flex-shrink-0">
         <Icon className="w-4 h-4" style={{ color: iconColor }} />
-        <span className="text-sm text-[#C9D1D9]">{label}</span>
+        <span className="text-sm text-[#2C3E50]">{label}</span>
       </div>
-      <span className="text-[10px] bg-[#21262D] text-[#484F58] rounded px-2 py-0.5 w-10 text-center flex-shrink-0">
+      <span className="text-[10px] bg-[#EEF3FA] text-[#5B6B80] rounded px-2 py-0.5 w-10 text-center flex-shrink-0">
         {weight}
       </span>
-      <div className="flex-1 h-2 bg-[#21262D] rounded-full overflow-hidden">
+      <div className="flex-1 h-2 bg-[#E3EAF3] rounded-full overflow-hidden">
         <div
           className="h-full rounded-full transition-all"
           style={{
@@ -77,7 +78,7 @@ function Bar({
           }}
         />
       </div>
-      <span className="text-sm font-bold text-[#E6EDF3] w-8 text-right flex-shrink-0 tabular-nums">
+      <span className="text-sm font-bold text-[#10274A] w-8 text-right flex-shrink-0 tabular-nums">
         {value.toFixed(1)}
       </span>
     </div>
@@ -104,11 +105,11 @@ function TipCard({
     >
       <div className="flex items-center gap-2 mb-2">
         <Icon className="w-4 h-4" style={{ color: borderColor }} />
-        <span className="text-sm font-semibold text-[#E6EDF3]">{title}</span>
+        <span className="text-sm font-semibold text-[#10274A]">{title}</span>
       </div>
       <ul className="space-y-1">
         {tips.map((t, i) => (
-          <li key={i} className="text-xs text-[#8B949E]">
+          <li key={i} className="text-xs text-[#5B6B80]">
             • {t}
           </li>
         ))}
@@ -119,6 +120,7 @@ function TipCard({
 
 export function ScorePage() {
   const { company } = useAuth();
+  const { t } = useLanguage();
 
   const { data: carrier } = useQuery({
     queryKey: ["carrier-self", company?.id],
@@ -183,11 +185,11 @@ export function ScorePage() {
         borderColor="#F0A500"
         bg="rgba(240,165,0,0.08)"
         icon={Clock}
-        title="Melhore sua pontualidade"
+        title={t("carrierScore.tipPunctualityTitle")}
         tips={[
-          "Confirme janelas de coleta com antecedência",
-          "Use o app do motorista para checkpoints em tempo real",
-          "Planeje rotas considerando trânsito e descanso obrigatório",
+          t("carrierScore.tipPunctuality1"),
+          t("carrierScore.tipPunctuality2"),
+          t("carrierScore.tipPunctuality3"),
         ]}
       />,
     );
@@ -199,11 +201,11 @@ export function ScorePage() {
         borderColor="#1A9B5E"
         bg="rgba(26,155,94,0.08)"
         icon={Leaf}
-        title="Aumente seu rating ESG"
+        title={t("carrierScore.tipEsgTitle")}
         tips={[
-          "Adicione veículos elétricos ou com biodiesel B100 à frota",
-          "Certifique sua transportadora em programas verdes",
-          "Aceite mais fretes da categoria Verde / Verde EV",
+          t("carrierScore.tipEsg1"),
+          t("carrierScore.tipEsg2"),
+          t("carrierScore.tipEsg3"),
         ]}
       />,
     );
@@ -215,11 +217,11 @@ export function ScorePage() {
         borderColor="#3B89D4"
         bg="rgba(59,137,212,0.08)"
         icon={Shield}
-        title="Reforce a segurança"
+        title={t("carrierScore.tipSafetyTitle")}
         tips={[
-          "Mantenha CRLV e inspeções dos caminhões em dia",
-          "Capacite motoristas com MOPP quando aplicável",
-          "Revise apólice de seguro e sinistralidade",
+          t("carrierScore.tipSafety1"),
+          t("carrierScore.tipSafety2"),
+          t("carrierScore.tipSafety3"),
         ]}
       />,
     );
@@ -231,11 +233,11 @@ export function ScorePage() {
         borderColor="#F0A500"
         bg="rgba(240,165,0,0.08)"
         icon={ThumbsUp}
-        title="Melhore as avaliações"
+        title={t("carrierScore.tipRatingsTitle")}
         tips={[
-          "Mantenha comunicação clara com o embarcador",
-          "Entregue a carga sem avarias e dentro do prazo",
-          "Solicite feedback após a entrega",
+          t("carrierScore.tipRatings1"),
+          t("carrierScore.tipRatings2"),
+          t("carrierScore.tipRatings3"),
         ]}
       />,
     );
@@ -247,8 +249,8 @@ export function ScorePage() {
         borderColor="#2ECC8A"
         bg="rgba(46,204,138,0.08)"
         icon={CheckCircle2}
-        title="Continue assim!"
-        tips={["Todas as dimensões estão saudáveis. Mantenha o desempenho."]}
+        title={t("carrierScore.tipOkTitle")}
+        tips={[t("carrierScore.tipOk1")]}
       />,
     );
   }
@@ -261,7 +263,7 @@ export function ScorePage() {
   const nextTier = TIERS[currentIdx + 1];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 bg-[#F4F7FB] p-1">
       {/* Hero */}
       <div className="text-center mb-10">
         <div className="flex justify-center">
@@ -277,60 +279,59 @@ export function ScorePage() {
         >
           {TIER_LABEL[tier]}
         </div>
-        <h1 className="text-xl font-bold text-[#E6EDF3] mt-4">
-          Meu Score de Transportadora
+        <h1 className="text-xl font-bold text-[#10274A] mt-4">
+          {t("carrierScore.heading")}
         </h1>
-        <p className="text-xs text-[#484F58] mt-1">
-          Atualizado em {updatedAt}
+        <p className="text-xs text-[#5B6B80] mt-1">
+          {t("carrierScore.updatedAt")} {updatedAt}
         </p>
       </div>
 
       {/* Formula */}
-      <div className="bg-[#161B22] rounded-[12px] p-3 text-center mb-8">
-        <p className="text-xs text-[#484F58]">
-          segurança (30%) + pontualidade (25%) + ESG (20%) + segurança de carga
-          (15%) + avaliações (10%)
+      <div className="bg-white border border-[#DDE7F2] rounded-[12px] p-3 text-center mb-8 shadow-[0_8px_18px_rgba(16,39,74,0.04)]">
+        <p className="text-xs text-[#5B6B80]">
+          {t("carrierScore.formula")}
         </p>
       </div>
 
       {/* Dimension bars */}
-      <Card className="p-6 mb-6">
-        <h2 className="text-base font-semibold text-[#E6EDF3] mb-5">
-          Detalhamento do score
+      <Card className="p-6 mb-6 border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)]">
+        <h2 className="text-base font-semibold text-[#10274A] mb-5">
+          {t("carrierScore.detailHeading")}
         </h2>
         <div className="space-y-4">
           <Bar
             icon={Shield}
             iconColor="#3B89D4"
-            label="Segurança"
+            label={t("carrierScore.safety")}
             weight="30%"
             value={safety}
           />
           <Bar
             icon={Clock}
             iconColor="#F0A500"
-            label="Pontualidade"
+            label={t("carrierScore.punctuality")}
             weight="25%"
             value={delivery}
           />
           <Bar
             icon={Leaf}
             iconColor="#2ECC8A"
-            label="Rating ESG"
+            label={t("carrierScore.esgRating")}
             weight="20%"
             value={esg}
           />
           <Bar
             icon={Lock}
             iconColor="#3B89D4"
-            label="Seg. de carga"
+            label={t("carrierScore.cargoSafety")}
             weight="15%"
             value={security}
           />
           <Bar
             icon={Star}
             iconColor="#F0A500"
-            label="Avaliações"
+            label={t("carrierScore.ratings")}
             weight="10%"
             value={client}
           />
@@ -340,99 +341,99 @@ export function ScorePage() {
       {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
         {[
-          { value: formatNum(total), label: "Total de fretes", color: "#E6EDF3" },
+          { value: formatNum(total), label: t("carrierScore.totalFreights"), color: "#10274A" },
           {
             value: `${onTime}/${total}`,
-            label: "Entregas no prazo",
-            color: "#E6EDF3",
+            label: t("carrierScore.onTimeDeliveries"),
+            color: "#10274A",
           },
           {
             value: `${onTimePct}%`,
-            label: "Taxa de pontualidade",
+            label: t("carrierScore.onTimeRate"),
             color: "#2ECC8A",
           },
           {
             value: "0",
-            label: "Incidentes",
+            label: t("carrierScore.incidents"),
             color: "#2ECC8A",
           },
           {
-            value: score?.esg_certified ? "Certificada" : "Não certificada",
-            label: "Certificação ESG",
-            color: score?.esg_certified ? "#2ECC8A" : "#8B949E",
+            value: score?.esg_certified ? t("carrierScore.certified") : t("carrierScore.notCertified"),
+            label: t("carrierScore.esgCertification"),
+            color: score?.esg_certified ? "#2ECC8A" : "#5B6B80",
           },
           {
             value: TIER_LABEL[tier],
-            label: "Nível do badge",
+            label: t("carrierScore.badgeLevel"),
             color: tierColor,
           },
         ].map((s, i) => (
-          <Card key={i} className="p-4 text-center">
+          <Card key={i} className="p-4 text-center border-[#DDE7F2] bg-white">
             <div
               className="text-2xl font-bold tabular-nums"
               style={{ color: s.color }}
             >
               {s.value}
             </div>
-            <div className="text-xs text-[#484F58] mt-1">{s.label}</div>
+            <div className="text-xs text-[#5B6B80] mt-1">{s.label}</div>
           </Card>
         ))}
       </div>
 
       {/* How to improve */}
-      <Card className="p-5 mb-6">
-        <h2 className="text-base font-semibold text-[#E6EDF3] mb-4">
-          💡 Como melhorar seu score
+      <Card className="p-5 mb-6 border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)]">
+        <h2 className="text-base font-semibold text-[#10274A] mb-4">
+          💡 {t("carrierScore.improveHeading")}
         </h2>
         <div className="space-y-3">{tips}</div>
       </Card>
 
       {/* Badge requirements */}
-      <Card className="p-5">
-        <h2 className="text-base font-semibold text-[#E6EDF3] mb-4">
-          Níveis de badge
+      <Card className="p-5 border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)]">
+        <h2 className="text-base font-semibold text-[#10274A] mb-4">
+          {t("carrierScore.badgeLevelsHeading")}
         </h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="text-xs uppercase text-[#484F58]">
+            <thead className="text-xs uppercase text-[#5B6B80]">
               <tr>
-                <th className="text-left py-2">Nível</th>
-                <th className="text-right py-2">Score mínimo</th>
-                <th className="text-right py-2">Fretes</th>
-                <th className="text-right py-2">ESG</th>
+                <th className="text-left py-2">{t("carrierScore.colLevel")}</th>
+                <th className="text-right py-2">{t("carrierScore.colMinScore")}</th>
+                <th className="text-right py-2">{t("carrierScore.colFreights")}</th>
+                <th className="text-right py-2">{t("carrierScore.colEsg")}</th>
               </tr>
             </thead>
             <tbody>
-              {TIERS.map((t) => {
-                const isCurrent = t.id === tier;
+              {TIERS.map((tierRow) => {
+                const isCurrent = tierRow.id === tier;
                 return (
                   <tr
-                    key={t.id}
-                    className="border-t border-[#30363D]"
+                    key={tierRow.id}
+                    className="border-t border-[#DDE7F2]"
                     style={
                       isCurrent
-                        ? { backgroundColor: `${TIER_COLOR[t.id]}15` }
+                        ? { backgroundColor: `${TIER_COLOR[tierRow.id]}15` }
                         : undefined
                     }
                   >
                     <td
                       className="py-3 font-semibold"
-                      style={{ color: TIER_COLOR[t.id] }}
+                      style={{ color: TIER_COLOR[tierRow.id] }}
                     >
-                      {TIER_LABEL[t.id]}{" "}
+                      {TIER_LABEL[tierRow.id]}{" "}
                       {isCurrent && (
-                        <span className="text-[10px] ml-1 text-[#8B949E]">
-                          (atual)
+                        <span className="text-[10px] ml-1 text-[#5B6B80]">
+                          {t("carrierScore.current")}
                         </span>
                       )}
                     </td>
-                    <td className="py-3 text-right text-[#C9D1D9] tabular-nums">
-                      {t.minScore.toFixed(1)}
+                    <td className="py-3 text-right text-[#2C3E50] tabular-nums">
+                      {tierRow.minScore.toFixed(1)}
                     </td>
-                    <td className="py-3 text-right text-[#C9D1D9] tabular-nums">
-                      {t.minFreights}
+                    <td className="py-3 text-right text-[#2C3E50] tabular-nums">
+                      {tierRow.minFreights}
                     </td>
-                    <td className="py-3 text-right text-[#8B949E]">{t.esg}</td>
+                    <td className="py-3 text-right text-[#5B6B80]">{t(`carrierScore.${tierRow.esgKey}`)}</td>
                   </tr>
                 );
               })}
@@ -440,17 +441,17 @@ export function ScorePage() {
           </table>
         </div>
         {nextTier && (
-          <div className="mt-4 flex items-center gap-2 text-xs text-[#8B949E]">
+          <div className="mt-4 flex items-center gap-2 text-xs text-[#5B6B80]">
             <AlertTriangle className="w-3.5 h-3.5 text-[#F0A500]" />
-            Faltam{" "}
-            <strong className="text-[#E6EDF3]">
-              {Math.max(0, nextTier.minScore - overall).toFixed(1)} pontos
+            {t("carrierScore.missingPrefix")}{" "}
+            <strong className="text-[#10274A]">
+              {Math.max(0, nextTier.minScore - overall).toFixed(1)} {t("carrierScore.points")}
             </strong>{" "}
-            e{" "}
-            <strong className="text-[#E6EDF3]">
-              {Math.max(0, nextTier.minFreights - total)} fretes
+            {t("carrierScore.and")}{" "}
+            <strong className="text-[#10274A]">
+              {Math.max(0, nextTier.minFreights - total)} {t("carrierScore.freightsWord")}
             </strong>{" "}
-            para {TIER_LABEL[nextTier.id]}
+            {t("carrierScore.forTier")} {TIER_LABEL[nextTier.id]}
           </div>
         )}
       </Card>

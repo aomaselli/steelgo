@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { Copy, FileCheck2, Plus, ShieldCheck, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Button, Card, EmptyState, Input, Modal, Select, Spinner } from "@/components/steel";
+import { useLanguage } from "@/lib/i18n";
+import { Button, Card, Input, Modal, Select, Spinner } from "@/components/steel";
 import { maskCPF } from "@/lib/masks";
 
 export const Route = createFileRoute("/carrier/drivers")({
@@ -49,6 +50,7 @@ type RequestRow = {
 function DriversPage() {
   const { company } = useAuth();
   const qc = useQueryClient();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<DriverTab>("drivers");
   const [open, setOpen] = useState(false);
   const [inviteDriverId, setInviteDriverId] = useState<string | null>(null);
@@ -99,7 +101,7 @@ function DriversPage() {
   const save = async () => {
     if (!carrier) return;
     if (!form.full_name) {
-      toast.error("Informe o nome do motorista");
+      toast.error(t("carrierDrivers.toastNameRequired"));
       return;
     }
     const { error } = await supabase.from("drivers").insert({
@@ -115,7 +117,7 @@ function DriversPage() {
       toast.error(error.message);
       return;
     }
-    toast.success("Motorista cadastrado");
+    toast.success(t("carrierDrivers.toastDriverCreated"));
     setOpen(false);
     setForm({ full_name: "", cpf: "", cnh_number: "", cnh_category: "C", cnh_expiry: "", has_mopp: false });
     qc.invalidateQueries({ queryKey: ["carrier-drivers", carrier.id] });
@@ -126,7 +128,7 @@ function DriversPage() {
     const email = inviteForm.email.trim();
     const phone = inviteForm.phone.replace(/\D/g, "");
     if (!email && !phone) {
-      toast.error("Informe e-mail ou telefone do motorista");
+      toast.error(t("carrierDrivers.toastNoContact"));
       return;
     }
     const { data, error } = await supabase.rpc("create_driver_invitation", {
@@ -144,7 +146,7 @@ function DriversPage() {
     setInviteDriverId(null);
     setInviteForm({ email: "", phone: "" });
     qc.invalidateQueries({ queryKey: ["carrier-invitations", carrier?.id] });
-    toast.success("Convite criado");
+    toast.success(t("carrierDrivers.toastInviteCreated"));
   };
 
   const reviewRequest = async (requestId: string, decisionValue: "approved" | "rejected") => {
@@ -153,13 +155,13 @@ function DriversPage() {
       p_request_id: requestId,
       p_decision: decisionValue,
       p_driver_id: undefined,
-      p_rejection_reason: decisionValue === "rejected" ? rejectReason || "Sem justificativa" : undefined,
+      p_rejection_reason: decisionValue === "rejected" ? rejectReason || t("carrierDrivers.toastDefaultRejectReason") : undefined,
     });
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success(decisionValue === "approved" ? "Solicitação aprovada" : "Solicitação rejeitada");
+    toast.success(decisionValue === "approved" ? t("carrierDrivers.toastRequestApproved") : t("carrierDrivers.toastRequestRejected"));
     setDecision(null);
     setRejectReason("");
     qc.invalidateQueries({ queryKey: ["carrier-requests", carrier.id] });
@@ -170,13 +172,13 @@ function DriversPage() {
     const { error } = await supabase.rpc("review_driver_license", {
       p_driver_id: driverId,
       p_status: nextStatus,
-      p_reason: nextStatus === "rejected" ? "Documentação divergente" : undefined,
+      p_reason: nextStatus === "rejected" ? t("carrierDrivers.toastLicenseRejectReason") : undefined,
     });
     if (error) {
       toast.error(error.message);
       return;
     }
-    toast.success(nextStatus === "approved" ? "Licença aprovada" : "Licença rejeitada");
+    toast.success(nextStatus === "approved" ? t("carrierDrivers.toastLicenseApproved") : t("carrierDrivers.toastLicenseRejected"));
     qc.invalidateQueries({ queryKey: ["carrier-drivers", carrier?.id] });
   };
 
@@ -197,16 +199,16 @@ function DriversPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-graphite-50">Motoristas</h1>
-          <p className="text-graphite-200 mt-1">Vínculo, convites e revisão de licenças</p>
+          <h1 className="text-2xl font-bold text-graphite-50">{t("carrierDrivers.title")}</h1>
+          <p className="text-graphite-200 mt-1">{t("carrierDrivers.subtitle")}</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> Adicionar motorista</Button>
+        <Button onClick={() => setOpen(true)}><Plus className="w-4 h-4" /> {t("carrierDrivers.addDriver")}</Button>
       </div>
 
       <div className="flex gap-2 flex-wrap">
-        {renderTabButton("drivers", "Motoristas")}
-        {renderTabButton("invitations", "Convites")}
-        {renderTabButton("requests", "Solicitações")}
+        {renderTabButton("drivers", t("carrierDrivers.tabDrivers"))}
+        {renderTabButton("invitations", t("carrierDrivers.tabInvitations"))}
+        {renderTabButton("requests", t("carrierDrivers.tabRequests"))}
       </div>
 
       {tab === "drivers" && (
@@ -214,18 +216,25 @@ function DriversPage() {
           {driversLoading ? (
             <div className="flex justify-center p-12"><Spinner /></div>
           ) : !drivers.length ? (
-            <EmptyState icon={UserIcon} title="Nenhum motorista" description="Adicione seu primeiro motorista." action={<Button onClick={() => setOpen(true)}>Adicionar motorista</Button>} />
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
+                <UserIcon className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-[#10274A]">{t("carrierDrivers.emptyDriversTitle")}</h3>
+              <p className="max-w-md text-sm text-[#5B6B80]">{t("carrierDrivers.emptyDriversDesc")}</p>
+              <Button onClick={() => setOpen(true)}>{t("carrierDrivers.addDriver")}</Button>
+            </div>
           ) : (
             <Card className="overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-bg-elevated text-graphite-400 text-xs uppercase">
                   <tr>
-                    <th className="text-left px-4 py-2">Nome</th>
-                    <th className="text-left px-4 py-2">CPF</th>
-                    <th className="text-left px-4 py-2">CNH</th>
-                    <th className="text-left px-4 py-2">Licença</th>
-                    <th className="text-left px-4 py-2">Status</th>
-                    <th className="text-left px-4 py-2">Ações</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colName")}</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colCpf")}</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colCnh")}</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colLicense")}</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colStatus")}</th>
+                    <th className="text-left px-4 py-2">{t("carrierDrivers.colActions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -246,11 +255,11 @@ function DriversPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-2 flex-wrap">
-                          <Button variant="ghost" onClick={() => setInviteDriverId(d.id)}>Convidar</Button>
+                          <Button variant="ghost" onClick={() => setInviteDriverId(d.id)}>{t("carrierDrivers.invite")}</Button>
                           {d.license_number && (
                             <>
-                              <Button variant="ghost" onClick={() => void reviewLicense(d.id, "approved")}>Aprovar</Button>
-                              <Button variant="ghost" onClick={() => void reviewLicense(d.id, "rejected")}>Rejeitar</Button>
+                              <Button variant="ghost" onClick={() => void reviewLicense(d.id, "approved")}>{t("carrierDrivers.approve")}</Button>
+                              <Button variant="ghost" onClick={() => void reviewLicense(d.id, "rejected")}>{t("carrierDrivers.reject")}</Button>
                             </>
                           )}
                         </div>
@@ -267,7 +276,13 @@ function DriversPage() {
       {tab === "invitations" && (
         <Card>
           {invitations.length === 0 ? (
-            <EmptyState icon={FileCheck2} title="Nenhum convite" description="Ainda não há convites ativos para este carrier." />
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
+                <FileCheck2 className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-[#10274A]">{t("carrierDrivers.emptyInvitationsTitle")}</h3>
+              <p className="max-w-md text-sm text-[#5B6B80]">{t("carrierDrivers.emptyInvitationsDesc")}</p>
+            </div>
           ) : (
             <div className="space-y-3 p-4">
               {invitations.map((inv) => {
@@ -276,12 +291,12 @@ function DriversPage() {
                   <div key={inv.id} className="rounded-[12px] border border-[#30363D] bg-[#0D1117] p-3">
                     <div className="flex justify-between gap-2">
                       <div>
-                        <div className="font-medium text-[#E6EDF3]">{driver?.full_name ?? "Motorista"}</div>
-                        <div className="text-xs text-[#8B949E]">{inv.invited_email ?? inv.invited_phone ?? "Contato informado no convite"}</div>
+                        <div className="font-medium text-[#E6EDF3]">{driver?.full_name ?? t("carrierDrivers.driverFallback")}</div>
+                        <div className="text-xs text-[#8B949E]">{inv.invited_email ?? inv.invited_phone ?? t("carrierDrivers.contactInInvite")}</div>
                       </div>
                       <span className="text-xs px-2 py-1 rounded-full bg-[#0D2744] text-[#5CB0FF]">{inv.status}</span>
                     </div>
-                    <div className="mt-2 text-xs text-[#8B949E]">expira em {inv.expires_at ? new Date(inv.expires_at).toLocaleString("pt-BR") : "—"}</div>
+                    <div className="mt-2 text-xs text-[#8B949E]">{t("carrierDrivers.expiresIn")} {inv.expires_at ? new Date(inv.expires_at).toLocaleString("pt-BR") : "—"}</div>
                   </div>
                 );
               })}
@@ -293,22 +308,28 @@ function DriversPage() {
       {tab === "requests" && (
         <Card>
           {requests.length === 0 ? (
-            <EmptyState icon={ShieldCheck} title="Sem solicitações" description="Nenhuma solicitação de vínculo pendente no momento." />
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
+                <ShieldCheck className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-[#10274A]">{t("carrierDrivers.emptyRequestsTitle")}</h3>
+              <p className="max-w-md text-sm text-[#5B6B80]">{t("carrierDrivers.emptyRequestsDesc")}</p>
+            </div>
           ) : (
             <div className="space-y-3 p-4">
               {requests.map((req) => (
                 <div key={req.id} className="rounded-[12px] border border-[#30363D] bg-[#0D1117] p-3">
                   <div className="flex justify-between items-start gap-3">
                     <div>
-                      <div className="font-medium text-[#E6EDF3]">{req.profiles?.full_name ?? "Motorista"}</div>
+                      <div className="font-medium text-[#E6EDF3]">{req.profiles?.full_name ?? t("carrierDrivers.driverFallback")}</div>
                       <div className="text-xs text-[#8B949E]">{req.submitted_license_number ?? "—"} · {req.submitted_license_country ?? "BR"}</div>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-[#1B6CB8]/20 text-[#64B5FF]">{req.status}</span>
                   </div>
                   {req.message && <div className="mt-2 text-sm text-[#C6CFD8]">{req.message}</div>}
                   <div className="mt-3 flex flex-wrap gap-2">
-                    <Button variant="ghost" onClick={() => { setDecision({ id: req.id, type: "approved" }); setRejectReason(""); }}>Aprovar</Button>
-                    <Button variant="ghost" onClick={() => { setDecision({ id: req.id, type: "rejected" }); setRejectReason(""); }}>Rejeitar</Button>
+                    <Button variant="ghost" onClick={() => { setDecision({ id: req.id, type: "approved" }); setRejectReason(""); }}>{t("carrierDrivers.approve")}</Button>
+                    <Button variant="ghost" onClick={() => { setDecision({ id: req.id, type: "rejected" }); setRejectReason(""); }}>{t("carrierDrivers.reject")}</Button>
                   </div>
                 </div>
               ))}
@@ -317,76 +338,76 @@ function DriversPage() {
         </Card>
       )}
 
-      <Modal open={!!inviteDriverId} onClose={() => setInviteDriverId(null)} title="Criar convite de vínculo">
+      <Modal open={!!inviteDriverId} onClose={() => setInviteDriverId(null)} title={t("carrierDrivers.createInvitationModalTitle")}>
         <div className="space-y-3">
-          <Input value={inviteForm.email} onChange={(e) => setInviteForm((s) => ({ ...s, email: e.target.value }))} placeholder="email@transportadora.com" />
-          <Input value={inviteForm.phone} onChange={(e) => setInviteForm((s) => ({ ...s, phone: e.target.value }))} placeholder="(11) 99999-9999" />
+          <Input value={inviteForm.email} onChange={(e) => setInviteForm((s) => ({ ...s, email: e.target.value }))} placeholder={t("carrierDrivers.emailPlaceholder")} />
+          <Input value={inviteForm.phone} onChange={(e) => setInviteForm((s) => ({ ...s, phone: e.target.value }))} placeholder={t("carrierDrivers.phonePlaceholder")} />
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setInviteDriverId(null)}>Cancelar</Button>
-            <Button onClick={() => inviteDriverId && void createInvitation(inviteDriverId)}>Gerar convite</Button>
+            <Button variant="ghost" onClick={() => setInviteDriverId(null)}>{t("common.cancel")}</Button>
+            <Button onClick={() => inviteDriverId && void createInvitation(inviteDriverId)}>{t("carrierDrivers.generateInvite")}</Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={!!inviteToken} onClose={() => setInviteToken(null)} title="Token do convite">
+      <Modal open={!!inviteToken} onClose={() => setInviteToken(null)} title={t("carrierDrivers.invitationTokenModalTitle")}>
         <div className="space-y-3">
           <div className="rounded-[12px] border border-[#2F6BFF] bg-[#101827] p-3 font-mono text-xs break-all text-[#DDE8FF]">{inviteToken}</div>
           <Button
             onClick={() => {
               if (!inviteToken) return;
-              void navigator.clipboard.writeText(inviteToken).catch(() => toast.error("Não foi possível copiar o token"));
+              void navigator.clipboard.writeText(inviteToken).catch(() => toast.error(t("carrierDrivers.toastCopyFail")));
             }}
           >
-            <Copy className="w-4 h-4" /> Copiar token
+            <Copy className="w-4 h-4" /> {t("carrierDrivers.copyToken")}
           </Button>
         </div>
       </Modal>
 
-      <Modal open={!!decision} onClose={() => setDecision(null)} title={decision?.type === "approved" ? "Aprovar solicitação" : "Rejeitar solicitação"}>
+      <Modal open={!!decision} onClose={() => setDecision(null)} title={decision?.type === "approved" ? t("carrierDrivers.approveRequestModalTitle") : t("carrierDrivers.rejectRequestModalTitle")}>
         <div className="space-y-3">
           {decision?.type === "rejected" && (
-            <Input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder="Motivo da rejeição" />
+            <Input value={rejectReason} onChange={(e) => setRejectReason(e.target.value)} placeholder={t("carrierDrivers.rejectReasonPlaceholder")} />
           )}
           <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setDecision(null)}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => setDecision(null)}>{t("common.cancel")}</Button>
             <Button onClick={() => { if (!decision) return; void reviewRequest(decision.id, decision.type); }}>
-              {decision?.type === "approved" ? "Confirmar" : "Rejeitar"}
+              {decision?.type === "approved" ? t("common.confirm") : t("carrierDrivers.reject")}
             </Button>
           </div>
         </div>
       </Modal>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Adicionar motorista">
+      <Modal open={open} onClose={() => setOpen(false)} title={t("carrierDrivers.addDriverModalTitle")}>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
-            <label className="text-xs text-graphite-200 block mb-1">Nome completo</label>
+            <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.fullName")}</label>
             <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">CPF</label>
+            <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.colCpf")}</label>
             <Input value={form.cpf} onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })} placeholder="000.000.000-00" />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">CNH</label>
+            <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.colCnh")}</label>
             <Input value={form.cnh_number} onChange={(e) => setForm({ ...form, cnh_number: e.target.value.replace(/\D/g, "") })} />
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Categoria</label>
+            <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.category")}</label>
             <Select value={form.cnh_category} onChange={(e) => setForm({ ...form, cnh_category: e.target.value })}>
               {CNH_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
           </div>
           <div>
-            <label className="text-xs text-graphite-200 block mb-1">Validade CNH</label>
+            <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.cnhExpiry")}</label>
             <Input type="date" value={form.cnh_expiry} onChange={(e) => setForm({ ...form, cnh_expiry: e.target.value })} />
           </div>
           <label className="col-span-2 flex items-center gap-2 text-sm text-graphite-100">
             <input type="checkbox" checked={form.has_mopp} onChange={(e) => setForm({ ...form, has_mopp: e.target.checked })} />
-            Possui certificação MOPP (cargas perigosas)
+            {t("carrierDrivers.moppLabel")}
           </label>
           <div className="col-span-2 flex justify-end gap-2 pt-2">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button onClick={() => void save()}>Salvar</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>{t("common.cancel")}</Button>
+            <Button onClick={() => void save()}>{t("common.save")}</Button>
           </div>
         </div>
       </Modal>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, MapPin, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/lib/i18n";
 import { Button, Card, EmptyState, Spinner } from "@/components/steel";
 import { GreenFreightTag } from "@/components/steel/GreenFreightTag";
 import { StatusPill } from "@/components/steel/StatusPill";
@@ -11,6 +12,7 @@ import { OperationsBoard } from "@/components/operations/OperationsBoard";
 
 export function CarrierDashboardPage() {
   const { profile, company } = useAuth();
+  const { t } = useLanguage();
   const firstName = profile?.full_name?.split(" ")[0] ?? "transportadora";
 
   const { data: carrier } = useQuery({
@@ -134,58 +136,58 @@ export function CarrierDashboardPage() {
         : "text-[#F0A500]";
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-[#F4F7FB]">
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-[#E6EDF3]">
-            Olá, {firstName}!
+          <h1 className="text-2xl font-bold text-[#10274A]">
+            {t("carrierDashboard.greeting")} {firstName}!
           </h1>
-          <p className="text-sm text-[#8B949E] mt-1">
-            Encontre fretes para sua frota
+          <p className="mt-1 text-sm text-[#5B6B80]">
+            {t("carrierDashboard.subtitle")}
           </p>
         </div>
         <Link to="/carrier/marketplace">
           <Button>
-            Ver marketplace <ArrowRight className="w-4 h-4" />
+            {t("carrierDashboard.viewMarketplace")} <ArrowRight className="w-4 h-4" />
           </Button>
         </Link>
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <Card className="p-5">
-          <div className="text-xs uppercase text-[#484F58] tracking-wide mb-2">
-            Propostas enviadas
+        <Card className="border border-[#E3EAF3] bg-white p-5 shadow-sm">
+          <div className="mb-2 text-xs uppercase tracking-wide text-[#5B6B80]">
+            {t("carrierDashboard.bidsSent")}
           </div>
-          <div className="text-3xl font-bold tabular-nums text-[#79B8F8]">
+          <div className="text-3xl font-bold tabular-nums text-[#1B6CB8]">
             {formatNum(metrics?.bidsCount ?? 0)}
           </div>
         </Card>
-        <Card className="p-5">
-          <div className="text-xs uppercase text-[#484F58] tracking-wide mb-2">
-            Fretes em andamento
+        <Card className="border border-[#E3EAF3] bg-white p-5 shadow-sm">
+          <div className="mb-2 text-xs uppercase tracking-wide text-[#5B6B80]">
+            {t("carrierDashboard.activeFreights")}
           </div>
-          <div className="text-3xl font-bold tabular-nums text-[#F0A500]">
+          <div className="text-3xl font-bold tabular-nums text-[#E0A23A]">
             {formatNum(metrics?.activeCount ?? 0)}
           </div>
         </Card>
-        <Card className="p-5">
-          <div className="text-xs uppercase text-[#484F58] tracking-wide mb-2">
-            A receber
+        <Card className="border border-[#E3EAF3] bg-white p-5 shadow-sm">
+          <div className="mb-2 text-xs uppercase tracking-wide text-[#5B6B80]">
+            {t("carrierDashboard.receivable")}
           </div>
-          <div className="text-3xl font-bold tabular-nums text-[#2ECC8A]">
+          <div className="text-3xl font-bold tabular-nums text-[#1A9B5E]">
             {formatBRL(metrics?.payout ?? 0)}
           </div>
         </Card>
-        <Card className="p-5">
-          <div className="text-xs uppercase text-[#484F58] tracking-wide mb-2">
-            Meu score
+        <Card className="border border-[#E3EAF3] bg-white p-5 shadow-sm">
+          <div className="mb-2 text-xs uppercase tracking-wide text-[#5B6B80]">
+            {t("carrierDashboard.myScore")}
           </div>
           <div className={`text-3xl font-bold tabular-nums ${scoreColor}`}>
             {score ? overall.toFixed(1) : "—"}
           </div>
-          <div className="text-xs text-[#8B949E] mt-1 capitalize">
+          <div className="mt-1 text-xs capitalize text-[#5B6B80]">
             {score?.badge_tier ?? "standard"}
           </div>
         </Card>
@@ -196,14 +198,14 @@ export function CarrierDashboardPage() {
       {/* Available Freights */}
       <section>
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-base font-semibold text-[#E6EDF3]">
-            Fretes disponíveis para você
+          <h2 className="text-base font-semibold text-[#10274A]">
+            {t("carrierDashboard.availableFreightsHeading")}
           </h2>
           <Link
             to="/carrier/marketplace"
             className="text-xs text-[#3B89D4] hover:underline"
           >
-            Ver todos →
+            {t("carrierDashboard.viewAll")}
           </Link>
         </div>
         {loadingFreights ? (
@@ -211,14 +213,14 @@ export function CarrierDashboardPage() {
             <Spinner />
           </div>
         ) : !availableFreights?.length ? (
-          <Card className="p-6">
+          <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
               icon={Truck}
-              title="Nenhum frete disponível para sua frota agora"
-              description="Confira o marketplace para mais opções."
+              title={t("carrierDashboard.emptyFreightsTitle")}
+              description={t("carrierDashboard.emptyFreightsDesc")}
               action={
                 <Link to="/carrier/marketplace">
-                  <Button>Ir ao marketplace</Button>
+                  <Button>{t("carrierDashboard.goToMarketplace")}</Button>
                 </Link>
               }
             />
@@ -229,23 +231,23 @@ export function CarrierDashboardPage() {
               <Link
                 key={f.id}
                 to="/carrier/marketplace"
-                className="block bg-[#161B22] border border-[#30363D] hover:border-[#484F58] rounded-[12px] p-4 transition"
+                className="block bg-white border border-[#E3EAF3] hover:border-[#B7C6DA] rounded-[12px] p-4 transition"
               >
                 <div className="flex justify-between items-center gap-3 flex-wrap">
                   <div className="min-w-0">
-                    <div className="font-medium text-[#E6EDF3] flex items-center gap-2">
+                    <div className="font-medium text-[#10274A] flex items-center gap-2">
                       <MapPin className="w-3.5 h-3.5 text-[#3B89D4]" />
                       {f.origin_state ?? "—"} → {f.dest_state ?? "—"}
                     </div>
-                    <div className="text-xs text-[#8B949E] mt-1">
+                    <div className="text-xs text-[#5B6B80] mt-1">
                       {steelLabel(f.steel_type)} · {formatNum(f.weight_tons)} t
                     </div>
                   </div>
                   <div className="flex flex-col items-center gap-1">
                     <GreenFreightTag category={f.category} />
                     {f.pickup_date && (
-                      <div className="text-xs text-[#484F58]">
-                        Coleta:{" "}
+                      <div className="text-xs text-[#5B6B80]">
+                        {t("carrierDashboard.collectDate")}{" "}
                         {new Date(f.pickup_date).toLocaleDateString("pt-BR")}
                       </div>
                     )}
@@ -255,11 +257,11 @@ export function CarrierDashboardPage() {
                       <div className="font-medium text-[#2ECC8A] tabular-nums">
                         {f.budget_brl
                           ? formatBRL(f.budget_brl)
-                          : "Aberto"}
+                          : t("carrierDashboard.open")}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm">
-                      Ver →
+                      {t("carrierDashboard.view")}
                     </Button>
                   </div>
                 </div>
@@ -271,15 +273,15 @@ export function CarrierDashboardPage() {
 
       {/* Active Deliveries */}
       <section>
-        <h2 className="text-base font-semibold text-[#E6EDF3] mb-3">
-          Entregas em andamento
+        <h2 className="text-base font-semibold text-[#10274A] mb-3">
+          {t("carrierDashboard.activeDeliveriesHeading")}
         </h2>
         {!activeDeliveries?.length ? (
-          <Card className="p-6">
+          <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
               icon={CheckCircle2}
-              title="Nenhuma entrega em andamento"
-              description="Suas entregas ativas aparecerão aqui."
+              title={t("carrierDashboard.emptyDeliveriesTitle")}
+              description={t("carrierDashboard.emptyDeliveriesDesc")}
             />
           </Card>
         ) : (
@@ -299,25 +301,25 @@ export function CarrierDashboardPage() {
               return (
                 <Card
                   key={c.id}
-                  className="p-4 flex items-center gap-4 flex-wrap"
+                  className="p-4 flex items-center gap-4 flex-wrap border-[#E3EAF3] bg-white"
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium text-[#E6EDF3]">
+                    <div className="font-medium text-[#10274A]">
                       {f?.origin_city ?? "—"} → {f?.dest_city ?? "—"}
                     </div>
-                    <div className="text-xs text-[#8B949E] mt-1 flex items-center gap-2">
+                    <div className="text-xs text-[#5B6B80] mt-1 flex items-center gap-2">
                       {steelLabel(f?.steel_type)}
                       <StatusPill status={c.status ?? "active"} />
                     </div>
                   </div>
-                  <div className="text-xs text-[#8B949E]">
+                  <div className="text-xs text-[#5B6B80]">
                     <div>{d?.full_name ?? "—"}</div>
                   </div>
                   <Link
                     to="/carrier/trips/$id"
                     params={{ id: String(c.id) }}
                   >
-                    <Button size="sm">Rastrear</Button>
+                    <Button size="sm">{t("carrierDashboard.track")}</Button>
                   </Link>
                 </Card>
               );
@@ -328,30 +330,30 @@ export function CarrierDashboardPage() {
 
       {/* Recent Payouts */}
       <section>
-        <h2 className="text-base font-semibold text-[#E6EDF3] mb-3">
-          Últimos recebimentos
+        <h2 className="text-base font-semibold text-[#10274A] mb-3">
+          {t("carrierDashboard.recentPayoutsHeading")}
         </h2>
         {!recentPayouts?.length ? (
-          <Card className="p-6">
+          <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
-              title="Nenhum recebimento ainda"
-              description="Quando suas entregas forem liberadas, aparecerão aqui."
+              title={t("carrierDashboard.emptyPayoutsTitle")}
+              description={t("carrierDashboard.emptyPayoutsDesc")}
             />
           </Card>
         ) : (
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden border-[#E3EAF3] bg-white">
             {recentPayouts.map((p, i) => (
               <div
                 key={p.id}
                 className={`flex justify-between items-center px-4 py-3 ${
-                  i > 0 ? "border-t border-[#30363D]" : ""
+                  i > 0 ? "border-t border-[#E3EAF3]" : ""
                 }`}
               >
                 <div>
-                  <div className="font-mono text-xs text-[#79B8F8]">
+                  <div className="font-mono text-xs text-[#1B6CB8]">
                     #{String(p.contract_id).slice(0, 8).toUpperCase()}
                   </div>
-                  <div className="text-xs text-[#484F58] mt-0.5">
+                  <div className="text-xs text-[#5B6B80] mt-0.5">
                     {p.released_at
                       ? new Date(p.released_at).toLocaleDateString("pt-BR")
                       : "—"}

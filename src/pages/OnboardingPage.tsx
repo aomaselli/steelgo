@@ -150,7 +150,7 @@ export function OnboardingPage() {
   // Show spinner only briefly. After 3s, render the page regardless.
   if (!bypassTimeout && (isLoading || !user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1628]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB]">
         <Loader2 className="h-8 w-8 animate-spin text-[#1B6CB8]" />
       </div>
     );
@@ -164,10 +164,10 @@ export function OnboardingPage() {
 
   if ((role === "shipper" || role === "carrier") && !company && companyBootstrapState === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1628] text-[#E6EDF3]">
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] text-[#10274A]">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-[#1B6CB8]" />
-          <p className="text-sm text-[#8B949E]">Concluindo cadastro da empresa...</p>
+          <p className="text-sm text-[#5B6B80]">Concluindo cadastro da empresa...</p>
         </div>
       </div>
     );
@@ -175,10 +175,10 @@ export function OnboardingPage() {
 
   if ((role === "shipper" || role === "carrier") && !company && companyBootstrapState === "error") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B1628] p-6 text-center">
-        <div className="max-w-md rounded-[16px] border border-red-500/40 bg-[#111E33] p-6">
-          <h1 className="mb-2 text-xl font-bold text-[#E6EDF3]">Não foi possível concluir o cadastro</h1>
-          <p className="text-sm text-[#F85149]">{companyBootstrapError ?? "Erro desconhecido ao concluir a empresa."}</p>
+      <div className="flex min-h-screen items-center justify-center bg-[#F4F7FB] p-6 text-center">
+        <div className="max-w-md rounded-[16px] border border-red-200 bg-white p-6 shadow-sm">
+          <h1 className="mb-2 text-xl font-bold text-[#10274A]">Não foi possível concluir o cadastro</h1>
+          <p className="text-sm text-[#D94B5C]">{companyBootstrapError ?? "Erro desconhecido ao concluir a empresa."}</p>
         </div>
       </div>
     );
@@ -193,11 +193,11 @@ export function OnboardingPage() {
   const goNext = () => setStep((s) => Math.min(s + 1, lastStep));
 
   return (
-    <div className="flex min-h-screen bg-[#0B1628] text-[#E6EDF3]">
+    <div className="flex min-h-screen bg-[#F4F7FB] text-[#10274A]">
       {/* Sidebar */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-[#29405F] bg-[#111E33] p-8 md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-[#22334A] bg-[#111E33] p-8 md:flex">
         <BrandLogo surface="dark" className="h-8 w-auto" />
-        <div className="mt-8 mb-4 text-xs uppercase tracking-widest text-[#484F58]">
+        <div className="mt-8 mb-4 text-xs uppercase tracking-widest text-[#B8C6D6]">
           Configuração inicial
         </div>
         <ol className="flex flex-col gap-1">
@@ -212,21 +212,21 @@ export function OnboardingPage() {
                     "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
                     done && "bg-[#1A9B5E]",
                     active && "bg-[#1B6CB8]",
-                    !done && !active && "bg-[#21262D]",
+                    !done && !active && "bg-[#E8EEF6]",
                   )}
                 >
                   {done ? (
                     <Check className="h-3.5 w-3.5 text-white" />
                   ) : (
-                    <Icon className={cn("h-3.5 w-3.5", active ? "text-white" : "text-[#484F58]")} />
+                    <Icon className={cn("h-3.5 w-3.5", active ? "text-white" : "text-[#5B6B80]")} />
                   )}
                 </div>
                 <span
                   className={cn(
                     "text-sm",
-                    done && "text-[#2ECC8A]",
-                    active && "font-medium text-[#E6EDF3]",
-                    !done && !active && "text-[#484F58]",
+                    done && "text-[#1A9B5E]",
+                    active && "font-medium text-white",
+                    !done && !active && "text-[#5B6B80]",
                   )}
                 >
                   {s.label}
@@ -235,13 +235,13 @@ export function OnboardingPage() {
             );
           })}
         </ol>
-        <div className="mt-auto pt-8 text-xs text-[#484F58]">
+        <div className="mt-auto pt-8 text-xs text-[#B8C6D6]">
           Precisa de ajuda?{" "}
           <a
             href="https://wa.me/5511000000000"
             target="_blank"
             rel="noreferrer"
-            className="text-[#3B89D4] hover:underline"
+            className="text-[#8AB7E8] hover:underline"
           >
             WhatsApp
           </a>
@@ -249,8 +249,8 @@ export function OnboardingPage() {
       </aside>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto p-8 md:p-12">
-        <div className="mx-auto max-w-[560px]">
+      <main className="flex-1 overflow-y-auto bg-[#F4F7FB] p-8 md:p-12">
+        <div className="mx-auto max-w-[560px] rounded-[24px] border border-[#E3EAF3] bg-white p-6 shadow-[0_12px_32px_rgba(16,39,74,0.06)] md:p-8">
           {effectiveRole === "shipper" && (
             <>
               {step === 0 && <ShipperVerify userId={user.id} companyId={company?.id ?? null} onNext={goNext} />}
@@ -314,29 +314,29 @@ function UploadArea({
     <div
       onClick={() => ref.current?.click()}
       className={cn(
-        "cursor-pointer rounded-[16px] border-2 border-dashed border-[#29405F] text-center transition hover:border-[#484F58]",
+        "cursor-pointer rounded-[16px] border-2 border-dashed border-[#E3EAF3] bg-[#F8FBFF] text-center transition hover:border-[#1B6CB8]",
         compact ? "p-4" : "p-8",
       )}
     >
       {selected ? (
         <div className="flex items-center justify-center gap-2 text-sm">
-          <Check className="h-4 w-4 text-[#2ECC8A]" />
-          <span className="text-[#C9D1D9]">{selected.name}</span>
-          <span className="text-xs text-[#484F58]">({(selected.size / 1024).toFixed(0)} KB)</span>
+          <Check className="h-4 w-4 text-[#1A9B5E]" />
+          <span className="text-[#10274A]">{selected.name}</span>
+          <span className="text-xs text-[#5B6B80]">({(selected.size / 1024).toFixed(0)} KB)</span>
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); ref.current?.click(); }}
-            className="ml-2 text-xs text-[#3B89D4] hover:underline"
+            className="ml-2 text-xs text-[#1B6CB8] hover:underline"
           >
             Trocar arquivo
           </button>
         </div>
       ) : (
         <>
-          <UploadCloud className="mx-auto mb-3 h-10 w-10 text-[#484F58]" />
-          <div className="text-sm text-[#C9D1D9]">{label}</div>
-          <div className="mt-1 text-xs text-[#484F58]">ou clique para selecionar</div>
-          <div className="mt-2 text-xs text-[#484F58]">{hint}</div>
+          <UploadCloud className="mx-auto mb-3 h-10 w-10 text-[#5B6B80]" />
+          <div className="text-sm text-[#10274A]">{label}</div>
+          <div className="mt-1 text-xs text-[#5B6B80]">ou clique para selecionar</div>
+          <div className="mt-2 text-xs text-[#5B6B80]">{hint}</div>
         </>
       )}
       <input
@@ -359,8 +359,8 @@ function Pill({ active, onClick, children }: { active: boolean; onClick: () => v
       className={cn(
         "cursor-pointer rounded-[6px] border px-2 py-1 text-xs transition",
         active
-          ? "border-[#1B6CB8] bg-[#1B6CB8]/20 text-[#3B89D4]"
-          : "border-[#29405F] bg-transparent text-[#484F58] hover:border-[#484F58]",
+          ? "border-[#1B6CB8] bg-[#EAF4FF] text-[#1B6CB8]"
+          : "border-[#E3EAF3] bg-white text-[#5B6B80] hover:border-[#C7D4E4] hover:text-[#10274A]",
       )}
     >
       {children}
@@ -377,7 +377,7 @@ function PrimaryBtn({ children, onClick, disabled, full, className }: {
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "rounded-[10px] bg-[#1B6CB8] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#1E7AC6] disabled:cursor-not-allowed disabled:opacity-50",
+        "rounded-[10px] bg-[#1B6CB8] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#155EA8] disabled:cursor-not-allowed disabled:opacity-50",
         full && "w-full",
         className,
       )}
@@ -393,7 +393,7 @@ function GhostBtn({ children, onClick, full }: { children: React.ReactNode; onCl
       type="button"
       onClick={onClick}
       className={cn(
-        "rounded-[10px] border border-[#29405F] bg-transparent px-6 py-3 text-sm font-medium text-[#C9D1D9] transition hover:border-[#484F58] hover:bg-[#111E33]",
+        "rounded-[10px] border border-[#E3EAF3] bg-white px-6 py-3 text-sm font-medium text-[#10274A] transition hover:border-[#C7D4E4] hover:bg-[#F4F7FB]",
         full && "w-full",
       )}
     >
@@ -409,7 +409,7 @@ function GreenBtn({ children, onClick, disabled, full }: { children: React.React
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "rounded-[10px] bg-[#1A9B5E] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#22B870] disabled:cursor-not-allowed disabled:opacity-50",
+        "rounded-[10px] bg-[#1A9B5E] px-6 py-3 text-sm font-medium text-white transition hover:bg-[#16885A] disabled:cursor-not-allowed disabled:opacity-50",
         full && "w-full",
       )}
     >
@@ -422,11 +422,11 @@ function TextInput(props: React.InputHTMLAttributes<HTMLInputElement> & { leftIc
   const { leftIcon: Icon, className, ...rest } = props;
   return (
     <div className="relative">
-      {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#484F58]" />}
+      {Icon && <Icon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5B6B80]" />}
       <input
         {...rest}
         className={cn(
-          "w-full rounded-[10px] border border-[#29405F] bg-[#0B1628] py-2.5 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:border-[#1B6CB8] focus:outline-none",
+          "w-full rounded-[10px] border border-[#E3EAF3] bg-white py-2.5 text-sm text-[#10274A] placeholder:text-[#5B6B80] focus:border-[#1B6CB8] focus:outline-none",
           Icon ? "pl-9 pr-3" : "px-3",
           className,
         )}
@@ -457,13 +457,13 @@ function ShipperVerify({ userId, companyId, onNext }: { userId: string; companyI
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Verifique sua empresa</h1>
-      <p className="mb-8 text-sm text-[#8B949E]">Envie o documento do CNPJ para liberar todos os recursos.</p>
+      <h1 className="mb-2 text-2xl font-bold text-[#10274A]">Verifique sua empresa</h1>
+      <p className="mb-8 text-sm text-[#5B6B80]">Envie o documento do CNPJ para liberar todos os recursos.</p>
 
       <UploadArea onFile={setFile} selected={file} label="Arraste o Cartão CNPJ aqui" />
 
       {done && (
-        <div className="mt-4 flex items-center gap-2 text-sm text-[#2ECC8A]">
+        <div className="mt-4 flex items-center gap-2 text-sm text-[#1A9B5E]">
           <CheckCircle className="h-4 w-4" /> Documento enviado! Verificação em até 24h.
         </div>
       )}
@@ -477,7 +477,7 @@ function ShipperVerify({ userId, companyId, onNext }: { userId: string; companyI
       <button
         type="button"
         onClick={onNext}
-        className="mt-4 block w-full cursor-pointer text-center text-sm text-[#484F58] hover:text-[#8B949E]"
+        className="mt-4 block w-full cursor-pointer text-center text-sm text-[#5B6B80] hover:text-[#10274A]"
       >
         Pular por agora
       </button>
@@ -516,19 +516,19 @@ function ShipperPreferences({ userId, onNext }: { userId: string; onNext: () => 
 
   return (
     <div>
-      <h1 className="mb-8 text-2xl font-bold text-[#E6EDF3]">Configure suas preferências</h1>
+      <h1 className="mb-8 text-2xl font-bold text-[#10274A]">Configure suas preferências</h1>
 
-      <div className="mb-3 text-sm text-[#8B949E]">Estados de origem habituais:</div>
+      <div className="mb-3 text-sm text-[#5B6B80]">Estados de origem habituais:</div>
       <div className="grid grid-cols-9 gap-2">
         {UFS.map((u) => <Pill key={u} active={states.includes(u)} onClick={() => setStates(toggle(states, u))}>{u}</Pill>)}
       </div>
 
-      <div className="mb-3 mt-6 text-sm text-[#8B949E]">Tipos de aço mais usados:</div>
+      <div className="mb-3 mt-6 text-sm text-[#5B6B80]">Tipos de aço mais usados:</div>
       <div className="flex flex-wrap gap-2">
         {STEEL_TYPES.map((s) => <Pill key={s} active={steels.includes(s)} onClick={() => setSteels(toggle(steels, s))}>{s}</Pill>)}
       </div>
 
-      <div className="mb-3 mt-6 text-sm text-[#8B949E]">Meta de logística verde:</div>
+      <div className="mb-3 mt-6 text-sm text-[#5B6B80]">Meta de logística verde:</div>
       <input
         type="range"
         min={0}
@@ -538,12 +538,12 @@ function ShipperPreferences({ userId, onNext }: { userId: string; onNext: () => 
         onChange={(e) => setGreenTarget(+e.target.value)}
         className="w-full accent-[#1A9B5E]"
       />
-      <div className="mt-2 text-sm text-[#E6EDF3]">Meta: {greenTarget}% de fretes com logística verde</div>
-      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#21262D]">
+      <div className="mt-2 text-sm text-[#10274A]">Meta: {greenTarget}% de fretes com logística verde</div>
+      <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[#E3EAF3]">
         <div className="h-full bg-[#1A9B5E] transition-all" style={{ width: `${greenTarget}%` }} />
       </div>
 
-      <div className="mb-3 mt-6 text-sm text-[#8B949E]">Alertas preferidos:</div>
+      <div className="mb-3 mt-6 text-sm text-[#5B6B80]">Alertas preferidos:</div>
       <div className="flex gap-2">
         {(["whatsapp","push","email","sms"] as const).map((k) => (
           <button
@@ -567,20 +567,20 @@ function ShipperPreferences({ userId, onNext }: { userId: string; onNext: () => 
 function ShipperFirstFreight({ onPost, onExplore }: { onPost: () => void; onExplore: () => void }) {
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Tudo pronto!</h1>
-      <p className="mb-8 text-sm text-[#8B949E]">Você pode publicar seu primeiro frete agora ou explorar a plataforma.</p>
+      <h1 className="mb-2 text-2xl font-bold text-[#10274A]">Tudo pronto!</h1>
+      <p className="mb-8 text-sm text-[#5B6B80]">Você pode publicar seu primeiro frete agora ou explorar a plataforma.</p>
 
       <div className="flex flex-col gap-4">
-        <div className="rounded-[16px] border-2 border-[#1B6CB8] bg-[#1B6CB8]/5 p-6">
-          <Rocket className="mb-3 h-8 w-8 text-[#3B89D4]" />
-          <div className="mb-2 text-lg font-bold text-[#E6EDF3]">Publicar meu primeiro frete →</div>
-          <div className="text-sm text-[#8B949E]">Receba propostas de transportadoras verificadas em minutos.</div>
+        <div className="rounded-[16px] border-2 border-[#1B6CB8] bg-[#EAF4FF] p-6">
+          <Rocket className="mb-3 h-8 w-8 text-[#1B6CB8]" />
+          <div className="mb-2 text-lg font-bold text-[#10274A]">Publicar meu primeiro frete →</div>
+          <div className="text-sm text-[#5B6B80]">Receba propostas de transportadoras verificadas em minutos.</div>
           <PrimaryBtn full className="mt-4" onClick={onPost}>Publicar agora</PrimaryBtn>
         </div>
-        <div className="rounded-[16px] border border-[#29405F] bg-[#111E33] p-6">
-          <LayoutDashboard className="mb-3 h-8 w-8 text-[#484F58]" />
-          <div className="mb-2 text-lg font-bold text-[#E6EDF3]">Explorar a plataforma primeiro</div>
-          <div className="text-sm text-[#8B949E]">Conheça o dashboard antes de publicar seu frete.</div>
+        <div className="rounded-[16px] border border-[#E3EAF3] bg-[#F8FBFF] p-6">
+          <LayoutDashboard className="mb-3 h-8 w-8 text-[#5B6B80]" />
+          <div className="mb-2 text-lg font-bold text-[#10274A]">Explorar a plataforma primeiro</div>
+          <div className="text-sm text-[#5B6B80]">Conheça o dashboard antes de publicar seu frete.</div>
           <GhostBtn full onClick={onExplore}>Ver o dashboard</GhostBtn>
         </div>
       </div>
@@ -643,26 +643,26 @@ function CarrierCompany({ userId, companyId, onNext }: { userId: string; company
 
   return (
     <div>
-      <h1 className="mb-8 text-2xl font-bold text-[#E6EDF3]">Dados da transportadora</h1>
+      <h1 className="mb-8 text-2xl font-bold text-[#10274A]">Dados da transportadora</h1>
 
       <div className="flex flex-col gap-4">
         <div>
-          <div className="mb-1.5 text-sm text-[#8B949E]">RNTRC/ANTT</div>
+          <div className="mb-1.5 text-sm text-[#5B6B80]">RNTRC/ANTT</div>
           <TextInput leftIcon={FileText} placeholder="BR-0000000" value={antt} onChange={(e) => setAntt(e.target.value)} />
         </div>
 
         <div>
-          <div className="mb-1.5 text-sm text-[#8B949E]">Apólice RCTR-C (PDF)</div>
+          <div className="mb-1.5 text-sm text-[#5B6B80]">Apólice RCTR-C (PDF)</div>
           <UploadArea onFile={setPolicy} selected={policy} accept=".pdf" label="Envie a apólice em PDF" hint="PDF — máx. 10MB" />
         </div>
 
         <div>
-          <div className="mb-1.5 text-sm text-[#8B949E]">Vencimento da apólice</div>
+          <div className="mb-1.5 text-sm text-[#5B6B80]">Vencimento da apólice</div>
           <TextInput type="date" leftIcon={Calendar} value={expiry} onChange={(e) => setExpiry(e.target.value)} />
         </div>
 
         <div>
-          <div className="mb-3 text-sm text-[#8B949E]">Estados onde opera:</div>
+          <div className="mb-3 text-sm text-[#5B6B80]">Estados onde opera:</div>
           <div className="grid grid-cols-9 gap-2">
             {UFS.map((u) => (
               <Pill key={u} active={states.includes(u)} onClick={() => setStates((s) => s.includes(u) ? s.filter((x) => x !== u) : [...s, u])}>{u}</Pill>
@@ -671,7 +671,7 @@ function CarrierCompany({ userId, companyId, onNext }: { userId: string; company
         </div>
 
         <div>
-          <div className="mb-3 text-sm text-[#8B949E]">Tem caminhões elétricos?</div>
+          <div className="mb-3 text-sm text-[#5B6B80]">Tem caminhões elétricos?</div>
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -685,7 +685,7 @@ function CarrierCompany({ userId, companyId, onNext }: { userId: string; company
             </button>
             {hasEv && (
               <div className="flex items-center gap-2">
-                <span className="text-sm text-[#8B949E]">Quantos?</span>
+                <span className="text-sm text-[#5B6B80]">Quantos?</span>
                 <TextInput
                   type="number"
                   min={1}
@@ -733,18 +733,18 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Cadastre sua frota</h1>
-      <p className="mb-8 text-sm text-[#8B949E]">Você pode adicionar mais caminhões depois.</p>
+      <h1 className="mb-2 text-2xl font-bold text-[#10274A]">Cadastre sua frota</h1>
+      <p className="mb-8 text-sm text-[#5B6B80]">Você pode adicionar mais caminhões depois.</p>
 
       <div className="flex flex-col gap-3">
         {trucks.map((t, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
+          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#E3EAF3] bg-[#F8FBFF] p-4">
             <div>
-              <div className="font-semibold text-[#E6EDF3]">{t.plate}</div>
-              <div className="text-xs text-[#8B949E]">{t.type} • {t.capacity || "?"}t {t.is_ev && "• EV"}</div>
+              <div className="font-semibold text-[#10274A]">{t.plate}</div>
+              <div className="text-xs text-[#5B6B80]">{t.type} • {t.capacity || "?"}t {t.is_ev && "• EV"}</div>
             </div>
             <button type="button" onClick={() => setTrucks(trucks.filter((_, j) => j !== i))}>
-              <Trash2 className="h-4 w-4 text-[#484F58] hover:text-red-400" />
+              <Trash2 className="h-4 w-4 text-[#5B6B80] hover:text-[#D94B5C]" />
             </button>
           </div>
         ))}
@@ -773,7 +773,7 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
               >
                 <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white transition", form.is_ev ? "left-[22px]" : "left-0.5")} />
               </button>
-              <span className="text-sm text-[#8B949E]">É elétrico?</span>
+              <span className="text-sm text-[#5B6B80]">É elétrico?</span>
               {form.is_ev && (
                 <TextInput type="number" placeholder="Autonomia (km)" value={form.autonomy} onChange={(e) => setForm({ ...form, autonomy: e.target.value })} className="w-40" />
               )}
@@ -828,18 +828,18 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Cadastre seus motoristas</h1>
-      <p className="mb-8 text-sm text-[#8B949E]">Você pode adicionar mais motoristas depois.</p>
+      <h1 className="mb-2 text-2xl font-bold text-[#10274A]">Cadastre seus motoristas</h1>
+      <p className="mb-8 text-sm text-[#5B6B80]">Você pode adicionar mais motoristas depois.</p>
 
       <div className="flex flex-col gap-3">
         {drivers.map((d, i) => (
-          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#29405F] bg-[#111E33] p-4">
+          <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#E3EAF3] bg-[#F8FBFF] p-4">
             <div>
-              <div className="font-semibold text-[#E6EDF3]">{d.full_name}</div>
-              <div className="text-xs text-[#8B949E]">CNH {d.cnh_category} • {d.cnh_number} {d.has_mopp && "• MOPP"}</div>
+              <div className="font-semibold text-[#10274A]">{d.full_name}</div>
+              <div className="text-xs text-[#5B6B80]">CNH {d.cnh_category} • {d.cnh_number} {d.has_mopp && "• MOPP"}</div>
             </div>
             <button type="button" onClick={() => setDrivers(drivers.filter((_, j) => j !== i))}>
-              <Trash2 className="h-4 w-4 text-[#484F58] hover:text-red-400" />
+              <Trash2 className="h-4 w-4 text-[#5B6B80] hover:text-[#D94B5C]" />
             </button>
           </div>
         ))}
@@ -913,20 +913,20 @@ function DriverDocs({ userId, onNext }: { userId: string; onNext: () => void }) 
 
   return (
     <div>
-      <h1 className="mb-2 text-2xl font-bold text-[#E6EDF3]">Envie seus documentos</h1>
-      <p className="mb-6 text-sm text-[#8B949E]">Para liberar suas entregas precisamos verificar sua CNH.</p>
+      <h1 className="mb-2 text-2xl font-bold text-[#10274A]">Envie seus documentos</h1>
+      <p className="mb-6 text-sm text-[#5B6B80]">Para liberar suas entregas precisamos verificar sua CNH.</p>
 
-      <div className="mb-6 flex gap-3 rounded-[14px] border border-[#29405F] bg-[#111E33] p-4">
-        <Info className="h-5 w-5 shrink-0 text-[#3B89D4]" />
-        <p className="text-sm text-[#8B949E]">
-          <strong className="text-[#C9D1D9]">Por que precisamos da sua CNH?</strong> Para confirmar que você é um motorista habilitado e proteger sua segurança nas entregas.
+      <div className="mb-6 flex gap-3 rounded-[14px] border border-[#E3EAF3] bg-[#F8FBFF] p-4">
+        <Info className="h-5 w-5 shrink-0 text-[#1B6CB8]" />
+        <p className="text-sm text-[#5B6B80]">
+          <strong className="text-[#10274A]">Por que precisamos da sua CNH?</strong> Para confirmar que você é um motorista habilitado e proteger sua segurança nas entregas.
         </p>
       </div>
 
-      <div className="mb-3 text-sm text-[#8B949E]">Foto da CNH (frente)</div>
+      <div className="mb-3 text-sm text-[#5B6B80]">Foto da CNH (frente)</div>
       <UploadArea onFile={setCnh} selected={cnh} accept="image/*" capture="environment" label="Foto da CNH" hint="JPG ou PNG" />
 
-      <div className="mb-3 mt-4 text-sm text-[#8B949E]">Selfie segurando a CNH</div>
+      <div className="mb-3 mt-4 text-sm text-[#5B6B80]">Selfie segurando a CNH</div>
       <UploadArea onFile={setSelfie} selected={selfie} accept="image/*" capture="user" label="Selfie com a CNH" hint="JPG ou PNG" />
 
       <GreenBtn full onClick={() => void submit()} disabled={!cnh || uploading}>
@@ -936,7 +936,7 @@ function DriverDocs({ userId, onNext }: { userId: string; onNext: () => void }) 
       <button
         type="button"
         onClick={onNext}
-        className="mt-3 block w-full cursor-pointer text-center text-sm text-[#484F58] hover:text-[#8B949E]"
+        className="mt-3 block w-full cursor-pointer text-center text-sm text-[#5B6B80] hover:text-[#10274A]"
       >
         Enviar depois
       </button>
@@ -960,9 +960,9 @@ function Completion({ onFinish }: { onFinish: () => void | Promise<void> }) {
         opacity: shown ? 1 : 0,
       }}
     >
-      <CheckCircle className="mx-auto mb-6 h-[72px] w-[72px] text-[#2ECC8A]" />
-      <h1 className="mb-3 text-2xl font-bold text-[#E6EDF3]">Você está pronto para usar a SteelGo!</h1>
-      <p className="mb-8 text-sm text-[#8B949E]">
+      <CheckCircle className="mx-auto mb-6 h-[72px] w-[72px] text-[#1A9B5E]" />
+      <h1 className="mb-3 text-2xl font-bold text-[#10274A]">Você está pronto para usar a SteelGo!</h1>
+      <p className="mb-8 text-sm text-[#5B6B80]">
         Sua conta está sendo verificada. Te avisamos por WhatsApp em até 24h.
       </p>
       <PrimaryBtn full onClick={() => void onFinish()}>Ir para o dashboard →</PrimaryBtn>
