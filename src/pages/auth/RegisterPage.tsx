@@ -76,8 +76,11 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
     }
   }, [initialRole]);
 
-  const handleFinish = async (company: CompanyData | null) => {
-    if (!personal || !role) return;
+  const handleFinish = async (
+    personalData: PersonalData,
+    company: CompanyData | null,
+  ) => {
+    if (!personalData || !role) return;
     setSubmitting(true);
     setAuthError(null);
 
@@ -94,14 +97,14 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
         : null;
 
     const { data, error } = await supabase.auth.signUp({
-      email: personal.email,
-      password: personal.password,
+      email: personalData.email,
+      password: personalData.password,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
         data: {
-          full_name: personal.full_name,
+          full_name: personalData.full_name,
           role,
-          phone: personal.phone,
+          phone: personalData.phone,
           pending_company: pendingCompany,
         },
       },
@@ -149,17 +152,20 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
             onBack={() => setStep(1)}
             onSubmit={(d) => {
               setPersonal(d);
-              if (role === "driver") void handleFinish(null);
+              if (role === "driver") void handleFinish(d, null);
               else setStep(3);
             }}
             submitting={submitting && role === "driver"}
+            authError={role === "driver" ? authError : null}
           />
         )}
         {step === 3 && role && role !== "driver" && (
           <StepCompany
             role={role}
             onBack={() => setStep(2)}
-            onSubmit={(d) => void handleFinish(d)}
+            onSubmit={(d) => {
+              if (personal) void handleFinish(personal, d);
+            }}
             submitting={submitting}
             authError={authError}
           />
@@ -341,11 +347,13 @@ function StepPersonal({
   onBack,
   onSubmit,
   submitting,
+  authError,
 }: {
   initial: PersonalData | null;
   onBack: () => void;
   onSubmit: (d: PersonalData) => void;
   submitting: boolean;
+  authError: string | null;
 }) {
   const [showPwd, setShowPwd] = useState(false);
   const { language } = useLanguage();
@@ -479,6 +487,12 @@ function StepPersonal({
         </span>
       </label>
       {errors.terms && <p className="text-xs text-red-400">{errors.terms.message}</p>}
+
+      {authError && (
+        <div className="text-sm text-red-400 bg-red-900/20 border border-red-700/30 rounded-[8px] px-3 py-2">
+          {authError}
+        </div>
+      )}
 
       <div className="flex gap-3 mt-6">
         <button
