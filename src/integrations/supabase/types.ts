@@ -967,6 +967,68 @@ export type Database = {
           },
         ]
       }
+      driver_verifications: {
+        Row: {
+          completed_at: string
+          created_at: string
+          decided_by: string
+          decision: string | null
+          driver_id: string
+          expires_at: string | null
+          id: string
+          internal_reason_code: string | null
+          provider: string
+          provider_reference: string | null
+          requested_at: string
+          result_code: string | null
+          rule_version: string | null
+          status: string
+          verification_type: string
+        }
+        Insert: {
+          completed_at?: string
+          created_at?: string
+          decided_by?: string
+          decision?: string | null
+          driver_id: string
+          expires_at?: string | null
+          id?: string
+          internal_reason_code?: string | null
+          provider: string
+          provider_reference?: string | null
+          requested_at?: string
+          result_code?: string | null
+          rule_version?: string | null
+          status: string
+          verification_type: string
+        }
+        Update: {
+          completed_at?: string
+          created_at?: string
+          decided_by?: string
+          decision?: string | null
+          driver_id?: string
+          expires_at?: string | null
+          id?: string
+          internal_reason_code?: string | null
+          provider?: string
+          provider_reference?: string | null
+          requested_at?: string
+          result_code?: string | null
+          rule_version?: string | null
+          status?: string
+          verification_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_verifications_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           carrier_id: string | null
@@ -2074,6 +2136,19 @@ export type Database = {
           radius_band_km: number
           total_score: number
           truck_type: Database["public"]["Enums"]["truck_type"]
+        }[]
+      }
+      my_driver_verifications: {
+        Args: { p_limit?: number }
+        Returns: {
+          completed_at: string
+          decision: string
+          expires_at: string
+          id: string
+          internal_reason_code: string
+          requested_at: string
+          status: string
+          verification_type: string
         }[]
       }
       normalize_identity_document: {
