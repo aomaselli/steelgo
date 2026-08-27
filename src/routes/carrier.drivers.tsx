@@ -20,11 +20,10 @@ type DriverRow = {
   id: string;
   full_name: string;
   cpf?: string | null;
-  cnh_number?: string | null;
-  cnh_category?: string | null;
-  cnh_expiry?: string | null;
   has_mopp?: boolean | null;
   license_number?: string | null;
+  license_category?: string | null;
+  license_expiry?: string | null;
   license_issuer_country?: string | null;
   license_verification_status?: string | null;
 };
@@ -58,7 +57,7 @@ function DriversPage() {
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [decision, setDecision] = useState<{ id: string; type: "approved" | "rejected" } | null>(null);
   const [rejectReason, setRejectReason] = useState("");
-  const [form, setForm] = useState({ full_name: "", cpf: "", cnh_number: "", cnh_category: "C", cnh_expiry: "", has_mopp: false });
+  const [form, setForm] = useState({ full_name: "", cpf: "", license_number: "", license_category: "C", license_expiry: "", has_mopp: false });
 
   const { data: carrier } = useQuery({
     queryKey: ["carrier-self", company?.id],
@@ -108,9 +107,10 @@ function DriversPage() {
       carrier_id: carrier.id,
       full_name: form.full_name,
       cpf: form.cpf || null,
-      cnh_number: form.cnh_number || null,
-      cnh_category: form.cnh_category,
-      cnh_expiry: form.cnh_expiry || null,
+      license_number: form.license_number || null,
+      license_category: form.license_category,
+      license_expiry: form.license_expiry || null,
+      license_issuer_country: "BR",
       has_mopp: form.has_mopp,
     } as never);
     if (error) {
@@ -119,7 +119,7 @@ function DriversPage() {
     }
     toast.success(t("carrierDrivers.toastDriverCreated"));
     setOpen(false);
-    setForm({ full_name: "", cpf: "", cnh_number: "", cnh_category: "C", cnh_expiry: "", has_mopp: false });
+    setForm({ full_name: "", cpf: "", license_number: "", license_category: "C", license_expiry: "", has_mopp: false });
     qc.invalidateQueries({ queryKey: ["carrier-drivers", carrier.id] });
   };
 
@@ -231,7 +231,6 @@ function DriversPage() {
                   <tr>
                     <th className="text-left px-4 py-2">{t("carrierDrivers.colName")}</th>
                     <th className="text-left px-4 py-2">{t("carrierDrivers.colCpf")}</th>
-                    <th className="text-left px-4 py-2">{t("carrierDrivers.colCnh")}</th>
                     <th className="text-left px-4 py-2">{t("carrierDrivers.colLicense")}</th>
                     <th className="text-left px-4 py-2">{t("carrierDrivers.colStatus")}</th>
                     <th className="text-left px-4 py-2">{t("carrierDrivers.colActions")}</th>
@@ -242,7 +241,6 @@ function DriversPage() {
                     <tr key={d.id} className="border-t border-graphite-700 align-top">
                       <td className="px-4 py-3 text-graphite-100">{d.full_name}</td>
                       <td className="px-4 py-3 font-mono text-xs text-graphite-200">{d.cpf ?? "—"}</td>
-                      <td className="px-4 py-3 font-mono text-xs text-graphite-200">{d.cnh_number ?? "—"}</td>
                       <td className="px-4 py-3 text-xs text-graphite-200">{d.license_number ? `${d.license_number} · ${d.license_issuer_country ?? "BR"}` : "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-1 rounded-full ${
@@ -389,17 +387,17 @@ function DriversPage() {
           </div>
           <div>
             <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.colCnh")}</label>
-            <Input value={form.cnh_number} onChange={(e) => setForm({ ...form, cnh_number: e.target.value.replace(/\D/g, "") })} />
+            <Input value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value.replace(/\D/g, "") })} />
           </div>
           <div>
             <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.category")}</label>
-            <Select value={form.cnh_category} onChange={(e) => setForm({ ...form, cnh_category: e.target.value })}>
+            <Select value={form.license_category} onChange={(e) => setForm({ ...form, license_category: e.target.value })}>
               {CNH_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </Select>
           </div>
           <div>
             <label className="text-xs text-graphite-200 block mb-1">{t("carrierDrivers.cnhExpiry")}</label>
-            <Input type="date" value={form.cnh_expiry} onChange={(e) => setForm({ ...form, cnh_expiry: e.target.value })} />
+            <Input type="date" value={form.license_expiry} onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} />
           </div>
           <label className="col-span-2 flex items-center gap-2 text-sm text-graphite-100">
             <input type="checkbox" checked={form.has_mopp} onChange={(e) => setForm({ ...form, has_mopp: e.target.checked })} />

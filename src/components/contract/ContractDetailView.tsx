@@ -79,7 +79,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
         c.shipper_company_id ? supabase.from("companies").select("id, name, trade_name, cnpj").eq("id", c.shipper_company_id).maybeSingle() : Promise.resolve({ data: null }),
         c.carrier_company_id ? supabase.from("companies").select("id, name, trade_name, cnpj").eq("id", c.carrier_company_id).maybeSingle() : Promise.resolve({ data: null }),
         c.truck_id ? supabase.from("trucks").select("plate, type, capacity_tons").eq("id", c.truck_id).maybeSingle() : Promise.resolve({ data: null }),
-        c.driver_id ? supabase.from("drivers").select("full_name, cpf, cnh_number, cnh_category").eq("id", c.driver_id).maybeSingle() : Promise.resolve({ data: null }),
+        c.driver_id ? supabase.from("drivers").select("full_name, cpf, license_number, license_category").eq("id", c.driver_id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
 
       return {
@@ -164,7 +164,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
             <div className="border-t border-graphite-700/40 mt-4 pt-2">
               <Row label="Embarcador">{shipper?.name ?? "—"} • CNPJ {shipper?.cnpj ?? "—"}</Row>
               <Row label="Transportadora">{carrier?.name ?? "—"} • CNPJ {carrier?.cnpj ?? "—"} • ANTT {carrierMeta?.antt_rntrc ?? "—"}</Row>
-              <Row label="Motorista">{driver?.full_name ?? "—"}{driver?.cpf ? ` • CPF ${driver.cpf}` : ""}{driver?.cnh_number ? ` • CNH ${driver.cnh_number}` : ""}{driver?.cnh_category ? ` (${driver.cnh_category})` : ""}</Row>
+              <Row label="Motorista">{driver?.full_name ?? "—"}{driver?.cpf ? ` • CPF ${driver.cpf}` : ""}{driver?.license_number ? ` • CNH ${driver.license_number}` : ""}{driver?.license_category ? ` (${driver.license_category})` : ""}</Row>
               <Row label="Caminhão">{truck?.plate ?? "—"}{truck?.type ? ` • ${truck.type}` : ""}{truck?.capacity_tons ? ` • ${formatNum(truck.capacity_tons)} t` : ""}</Row>
               <Row label="Tipo de aço">{steelLabel(f?.steel_type)} • {formatNum(f?.weight_tons)} t</Row>
               <Row label="Valor da carga">{formatBRL(f?.cargo_value_brl)}</Row>

@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   graphql_public: {
     Tables: {
@@ -969,11 +969,7 @@ export type Database = {
       }
       drivers: {
         Row: {
-          carrier_id: string
-          cnh_category: string | null
-          cnh_doc_url: string | null
-          cnh_expiry: string | null
-          cnh_number: string | null
+          carrier_id: string | null
           country_code: string
           cpf: string | null
           created_at: string
@@ -983,6 +979,7 @@ export type Database = {
           is_active: boolean | null
           is_verified: boolean
           license_category: string | null
+          license_doc_url: string | null
           license_expiry: string | null
           license_issuer_country: string
           license_number: string | null
@@ -995,11 +992,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          carrier_id: string
-          cnh_category?: string | null
-          cnh_doc_url?: string | null
-          cnh_expiry?: string | null
-          cnh_number?: string | null
+          carrier_id?: string | null
           country_code?: string
           cpf?: string | null
           created_at?: string
@@ -1009,6 +1002,7 @@ export type Database = {
           is_active?: boolean | null
           is_verified?: boolean
           license_category?: string | null
+          license_doc_url?: string | null
           license_expiry?: string | null
           license_issuer_country?: string
           license_number?: string | null
@@ -1021,11 +1015,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          carrier_id?: string
-          cnh_category?: string | null
-          cnh_doc_url?: string | null
-          cnh_expiry?: string | null
-          cnh_number?: string | null
+          carrier_id?: string | null
           country_code?: string
           cpf?: string | null
           created_at?: string
@@ -1035,6 +1025,7 @@ export type Database = {
           is_active?: boolean | null
           is_verified?: boolean
           license_category?: string | null
+          license_doc_url?: string | null
           license_expiry?: string | null
           license_issuer_country?: string
           license_number?: string | null
@@ -2004,6 +1995,18 @@ export type Database = {
           linked_at: string
         }[]
       }
+      admin_set_profile_status: {
+        Args: {
+          p_is_active?: boolean
+          p_is_verified?: boolean
+          p_profile_id: string
+        }
+        Returns: {
+          id: string
+          is_active: boolean
+          is_verified: boolean
+        }[]
+      }
       can_manage_capacity: {
         Args: { p_carrier_id: string; p_driver_id?: string }
         Returns: boolean
@@ -2024,6 +2027,15 @@ export type Database = {
           expires_at: string
           invitation_id: string
           invitation_token: string
+        }[]
+      }
+      ensure_driver_record: {
+        Args: never
+        Returns: {
+          carrier_id: string
+          id: string
+          license_verification_status: string
+          profile_id: string
         }[]
       }
       get_user_role: {

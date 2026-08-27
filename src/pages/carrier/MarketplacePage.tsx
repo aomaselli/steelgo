@@ -811,7 +811,7 @@ export function MarketplacePage() {
                     <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
                     {(drivers ?? []).map((d) => (
                       <option key={d.id} value={d.id}>
-                        {d.full_name} {d.cnh_category ? `· ${d.cnh_category}` : ""}
+                        {d.full_name} {d.license_category ? `· ${d.license_category}` : ""}
                       </option>
                     ))}
                   </Select>

@@ -81,20 +81,45 @@ function UsersPage() {
           ? "danger"
           : "gray";
 
-  async function suspend(id: string) {
-    await supabase.from("profiles").update({ is_active: false }).eq("id", id);
-    toast.success("Conta suspensa");
+  async function setProfileStatus(
+    id: string,
+    changes: { is_verified?: boolean; is_active?: boolean },
+    successMessage: string,
+  ) {
+    const { data, error } = await supabase.rpc("admin_set_profile_status", {
+      p_profile_id: id,
+      p_is_verified: changes.is_verified,
+      p_is_active: changes.is_active,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const updated = data?.[0];
+    if (!updated) {
+      toast.error("Nenhum perfil foi alterado. Verifique suas permissões.");
+      return;
+    }
+
+    toast.success(successMessage);
+    setSelected((prev) =>
+      prev && prev.id === updated.id
+        ? { ...prev, is_verified: updated.is_verified, is_active: updated.is_active }
+        : prev,
+    );
     qc.invalidateQueries({ queryKey: ["admin-users"] });
+  }
+
+  async function suspend(id: string) {
+    await setProfileStatus(id, { is_active: false }, "Conta suspensa");
   }
   async function reactivate(id: string) {
-    await supabase.from("profiles").update({ is_active: true }).eq("id", id);
-    toast.success("Conta reativada");
-    qc.invalidateQueries({ queryKey: ["admin-users"] });
+    await setProfileStatus(id, { is_active: true }, "Conta reativada");
   }
   async function verify(id: string) {
-    await supabase.from("profiles").update({ is_verified: true }).eq("id", id);
-    toast.success("Usuário verificado");
-    qc.invalidateQueries({ queryKey: ["admin-users"] });
+    await setProfileStatus(id, { is_verified: true }, "Usuário verificado");
   }
 
   return (

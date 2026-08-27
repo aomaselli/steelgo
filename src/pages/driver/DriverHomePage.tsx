@@ -53,9 +53,6 @@ type DriverRecord = {
   profile_id: string | null;
   full_name: string | null;
   cpf: string | null;
-  cnh_number: string | null;
-  cnh_category: string | null;
-  cnh_expiry: string | null;
   license_number: string | null;
   license_category: string | null;
   license_expiry: string | null;
@@ -141,7 +138,15 @@ export default function DriverHomePage() {
     enabled: !!user,
     queryFn: async () => {
       const { data } = await supabase.from("drivers").select("*").eq("profile_id", user!.id).maybeSingle();
-      return (data as DriverRecord | null) ?? null;
+      if (data) return data as DriverRecord;
+
+      // Motorista sem linha em public.drivers: cria de forma idempotente.
+      // A RPC valida a role e nasce sem carrier_id (motorista independente).
+      const { error: ensureError } = await supabase.rpc("ensure_driver_record");
+      if (ensureError) return null;
+
+      const { data: created } = await supabase.from("drivers").select("*").eq("profile_id", user!.id).maybeSingle();
+      return (created as DriverRecord | null) ?? null;
     },
   });
 
@@ -280,7 +285,7 @@ export default function DriverHomePage() {
 
   const getIdentityForRequest = () => {
     const cpf = normalizeCpf((profile as { cpf?: string | null } | undefined)?.cpf ?? driverRecord?.cpf ?? prelinkCpf ?? "");
-    const rawLicenseNumber = (driverRecord?.license_number ?? driverRecord?.cnh_number ?? prelinkLicenseNumber ?? "").trim();
+    const rawLicenseNumber = (driverRecord?.license_number ?? prelinkLicenseNumber ?? "").trim();
     const licenseNumber = rawLicenseNumber.replace(/\s+/g, " ");
     const licenseCountry = driverRecord?.license_issuer_country ?? driverRecord?.country_code ?? (prelinkLicenseCountry || "BR");
     return { cpf, licenseNumber, licenseCountry };
@@ -355,8 +360,8 @@ export default function DriverHomePage() {
       p_cpf: payloadCpf,
       p_license_number: payloadLicenseNumber,
       p_license_country: payloadCountry,
-      p_license_category: driverRecord?.license_category ?? driverRecord?.cnh_category ?? undefined,
-      p_license_expiry: driverRecord?.license_expiry ?? driverRecord?.cnh_expiry ?? undefined,
+      p_license_category: driverRecord?.license_category ?? undefined,
+      p_license_expiry: driverRecord?.license_expiry ?? undefined,
       p_message: linkMessage.trim() || undefined,
     });
     if (error) {
@@ -580,7 +585,7 @@ export default function DriverHomePage() {
               {driverRecord.license_verification_status ?? "pending"}
             </div>
           </div>
-          <div className="text-sm text-[#8B949E]">CNH: {driverRecord.license_number ?? driverRecord.cnh_number ?? "—"} · {driverRecord.license_issuer_country ?? driverRecord.country_code ?? "BR"}</div>
+          <div className="text-sm text-[#8B949E]">CNH: {driverRecord.license_number ?? "—"} · {driverRecord.license_issuer_country ?? driverRecord.country_code ?? "BR"}</div>
           {hasCarrierLink && licenseApproved && (
             <div className="space-y-3 pt-2">
               <div className="text-sm text-[#8B949E]">Disponibilidade de capacidade</div>

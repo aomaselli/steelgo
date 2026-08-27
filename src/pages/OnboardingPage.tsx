@@ -804,11 +804,11 @@ function CarrierFleet({ companyId, onNext }: { companyId: string | null; onNext:
   );
 }
 
-interface DriverDraft { full_name: string; cpf: string; cnh_number: string; cnh_category: string; cnh_expiry: string; has_mopp: boolean }
+interface DriverDraft { full_name: string; cpf: string; license_number: string; license_category: string; license_expiry: string; has_mopp: boolean }
 
 function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNext: () => void }) {
   const [drivers, setDrivers] = useState<DriverDraft[]>([]);
-  const blank: DriverDraft = { full_name: "", cpf: "", cnh_number: "", cnh_category: "E", cnh_expiry: "", has_mopp: false };
+  const blank: DriverDraft = { full_name: "", cpf: "", license_number: "", license_category: "E", license_expiry: "", has_mopp: false };
   const [form, setForm] = useState<DriverDraft>(blank);
   const [open, setOpen] = useState(false);
 
@@ -817,7 +817,16 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
     if (companyId) {
       const { data: carrier } = await supabase.from("carriers").select("id").eq("company_id", companyId).maybeSingle();
       if (carrier) {
-        await (supabase.from("drivers") as any).insert({ ...form, carrier_id: carrier.id, cnh_expiry: form.cnh_expiry || null });
+        await (supabase.from("drivers") as any).insert({
+          carrier_id: carrier.id,
+          full_name: form.full_name,
+          cpf: form.cpf || null,
+          license_number: form.license_number || null,
+          license_category: form.license_category,
+          license_expiry: form.license_expiry || null,
+          license_issuer_country: "BR",
+          has_mopp: form.has_mopp,
+        });
       }
     }
     setDrivers([...drivers, form]);
@@ -836,7 +845,7 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
           <div key={i} className="flex items-center justify-between rounded-[10px] border border-[#E3EAF3] bg-[#F8FBFF] p-4">
             <div>
               <div className="font-semibold text-[#10274A]">{d.full_name}</div>
-              <div className="text-xs text-[#5B6B80]">CNH {d.cnh_category} • {d.cnh_number} {d.has_mopp && "• MOPP"}</div>
+              <div className="text-xs text-[#5B6B80]">CNH {d.license_category} • {d.license_number} {d.has_mopp && "• MOPP"}</div>
             </div>
             <button type="button" onClick={() => setDrivers(drivers.filter((_, j) => j !== i))}>
               <Trash2 className="h-4 w-4 text-[#5B6B80] hover:text-[#D94B5C]" />
@@ -849,15 +858,15 @@ function CarrierDrivers({ companyId, onNext }: { companyId: string | null; onNex
             <div className="grid grid-cols-2 gap-3">
               <TextInput placeholder="Nome completo" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
               <TextInput placeholder="CPF" value={form.cpf} onChange={(e) => setForm({ ...form, cpf: maskCPF(e.target.value) })} />
-              <TextInput placeholder="Número CNH" value={form.cnh_number} onChange={(e) => setForm({ ...form, cnh_number: e.target.value })} />
+              <TextInput placeholder="Número CNH" value={form.license_number} onChange={(e) => setForm({ ...form, license_number: e.target.value })} />
               <select
-                value={form.cnh_category}
-                onChange={(e) => setForm({ ...form, cnh_category: e.target.value })}
+                value={form.license_category}
+                onChange={(e) => setForm({ ...form, license_category: e.target.value })}
                 className="rounded-[10px] border border-[#29405F] bg-[#0B1628] px-3 py-2.5 text-sm text-[#E6EDF3]"
               >
                 {["C","D","E"].map((c) => <option key={c} value={c}>Categoria {c}</option>)}
               </select>
-              <TextInput type="date" value={form.cnh_expiry} onChange={(e) => setForm({ ...form, cnh_expiry: e.target.value })} />
+              <TextInput type="date" value={form.license_expiry} onChange={(e) => setForm({ ...form, license_expiry: e.target.value })} />
               <label className="flex items-center gap-2 text-sm text-[#C9D1D9]">
                 <input type="checkbox" checked={form.has_mopp} onChange={(e) => setForm({ ...form, has_mopp: e.target.checked })} />
                 Tem MOPP?

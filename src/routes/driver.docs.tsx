@@ -31,8 +31,8 @@ function DocsPage() {
     },
   });
 
-  const daysToExpiry = driver?.cnh_expiry
-    ? Math.ceil((new Date(driver.cnh_expiry).getTime() - Date.now()) / 86400000)
+  const daysToExpiry = driver?.license_expiry
+    ? Math.ceil((new Date(driver.license_expiry).getTime() - Date.now()) / 86400000)
     : null;
   const expiring = daysToExpiry != null && daysToExpiry < 30 && daysToExpiry > 0;
 
@@ -84,8 +84,8 @@ function DocsPage() {
       <div className="mt-3 mx-4 rounded-[14px] bg-bg-surface overflow-hidden">
         <DocRow
           label="CNH"
-          subtitle={driver?.cnh_category ? `${driver.cnh_category} · vence ${driver?.cnh_expiry ?? "—"}` : "Não cadastrada"}
-          status={driver?.cnh_doc_url ? "ok" : "missing"}
+          subtitle={driver?.license_category ? `${driver.license_category} · vence ${driver?.license_expiry ?? "—"}` : "Não cadastrada"}
+          status={driver?.license_doc_url ? "ok" : "missing"}
           color="#1B6CB8"
           icon={<BadgeCheck size={22} className="text-white" />}
         />
