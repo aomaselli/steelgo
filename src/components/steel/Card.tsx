@@ -1,14 +1,27 @@
 import { forwardRef, type HTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-export const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  ({ className, ...props }, ref) => (
+/**
+ * `variant` é OPT-IN. O padrão continua "dark" — nenhum dos 61 usos existentes
+ * de <Card> muda de aparência. A variante "light" reproduz o padrão visual já
+ * aprovado nas telas carrier (branco, borda #DDE7F2, sombra discreta).
+ */
+export type CardVariant = "dark" | "light";
+
+export interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  variant?: CardVariant;
+}
+
+const CARD_VARIANTS: Record<CardVariant, string> = {
+  dark: "border-graphite-700 bg-bg-surface text-graphite-100 shadow-sm",
+  light: "border-[#DDE7F2] bg-white text-[#10274A] shadow-[0_8px_18px_rgba(16,39,74,0.04)]",
+};
+
+export const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant = "dark", ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        "rounded-lg border border-graphite-700 bg-bg-surface p-6 text-graphite-100 shadow-sm",
-        className,
-      )}
+      className={cn("rounded-lg border p-6", CARD_VARIANTS[variant], className)}
       {...props}
     />
   ),

@@ -82,34 +82,34 @@ function AuditPage() {
   }
 
   const actionBadge = {
-    INSERT: "bg-esg-green/20 text-esg-green-400",
-    UPDATE: "bg-steel-blue/20 text-steel-blue-200",
-    DELETE: "bg-red-900/30 text-red-400",
+    INSERT: "bg-[#EAF7F1] text-[#14603F]",
+    UPDATE: "bg-[#E8F1FB] text-[#1B4F86]",
+    DELETE: "bg-[#FDF3F3] text-[#8A2B2B]",
   };
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-graphite-50">Log de auditoria</h1>
+        <h1 className="text-2xl font-bold text-[#10274A]">Log de auditoria</h1>
         <Button variant="ghost" size="sm" onClick={exportCsv}>
           <Download className="mr-2 h-4 w-4" /> Exportar CSV
         </Button>
       </div>
 
-      <div className="flex items-start gap-2 rounded-md border border-amber-700/40 bg-amber-900/10 p-3 text-xs text-amber-300">
+      <div className="flex items-start gap-2 rounded-md border border-[#F5D9A8] bg-[#FDF6E9] p-3 text-xs text-[#8A5A12]">
         <ShieldAlert className="mt-0.5 h-4 w-4" />
         Este log é imutável. Registros não podem ser alterados ou excluídos.
       </div>
 
-      <div className="flex flex-wrap gap-3 rounded-[12px] border border-graphite-600 bg-bg-surface p-4">
-        <Select value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
+      <div className="flex flex-wrap gap-3 rounded-[12px] border border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)] p-4">
+        <Select className="border-[#DDE7F2] bg-white text-[#10274A] placeholder:text-[#7A8AA0]" value={tableFilter} onChange={(e) => setTableFilter(e.target.value)}>
           <option value="all">Todas as tabelas</option>
           <option value="contracts">contracts</option>
           <option value="freights">freights</option>
           <option value="companies">companies</option>
           <option value="user_roles">user_roles</option>
         </Select>
-        <Select value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
+        <Select className="border-[#DDE7F2] bg-white text-[#10274A] placeholder:text-[#7A8AA0]" value={actionFilter} onChange={(e) => setActionFilter(e.target.value)}>
           <option value="all">Todas as ações</option>
           <option value="INSERT">INSERT</option>
           <option value="UPDATE">UPDATE</option>
@@ -119,14 +119,14 @@ function AuditPage() {
           placeholder="Buscar usuário..."
           value={userSearch}
           onChange={(e) => setUserSearch(e.target.value)}
-          className="min-w-[200px]"
+          className="min-w-[200px] border-[#DDE7F2] bg-white text-[#10274A] placeholder:text-[#7A8AA0]"
         />
       </div>
 
-      <div className="overflow-x-auto rounded-[12px] border border-graphite-600 bg-bg-surface">
+      <div className="overflow-x-auto rounded-[12px] border border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)]">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs uppercase text-graphite-400">
+            <tr className="text-left text-xs uppercase text-[#54657C]">
               <th className="px-3 py-3">Timestamp</th>
               <th className="px-3 py-3">Tabela</th>
               <th className="px-3 py-3">Ação</th>
@@ -135,14 +135,14 @@ function AuditPage() {
               <th className="px-3 py-3 text-right">Alterações</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-graphite-800">
+          <tbody className="divide-y divide-[#E6EDF3]">
             {filtered.map((r) => (
-              <tr key={r.id} className="hover:bg-bg-elevated">
-                <td className="px-3 py-3 font-mono text-xs text-graphite-300">
+              <tr key={r.id} className="hover:bg-[#EEF3F8]">
+                <td className="px-3 py-3 font-mono text-xs text-[#54657C]">
                   {new Date(r.ts).toLocaleString("pt-BR")}
                 </td>
                 <td className="px-3 py-3">
-                  <span className="rounded bg-bg-elevated px-2 py-0.5 font-mono text-xs">{r.table}</span>
+                  <span className="rounded bg-[#EEF3F8] px-2 py-0.5 font-mono text-xs">{r.table}</span>
                 </td>
                 <td className="px-3 py-3">
                   <span className={cn("rounded px-2 py-0.5 text-xs font-bold", actionBadge[r.action])}>
@@ -152,10 +152,10 @@ function AuditPage() {
                 <td className="px-3 py-3">
                   <div className="flex items-center gap-2">
                     <Avatar name={r.user} size="sm" />
-                    <span className="text-xs text-graphite-200">{r.user}</span>
+                    <span className="text-xs text-[#54657C]">{r.user}</span>
                   </div>
                 </td>
-                <td className="px-3 py-3 font-mono text-xs text-graphite-400">{r.ip}</td>
+                <td className="px-3 py-3 font-mono text-xs text-[#54657C]">{r.ip}</td>
                 <td className="px-3 py-3 text-right">
                   <Button variant="ghost" size="sm" onClick={() => setDiff(r)}>
                     Ver diff →
@@ -171,14 +171,14 @@ function AuditPage() {
         {diff && (
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase text-red-400">Antes</h4>
-              <pre className="rounded border border-red-900/40 bg-red-950/20 p-3 text-xs text-graphite-200">
+              <h4 className="mb-2 text-xs font-semibold uppercase text-[#8A2B2B]">Antes</h4>
+              <pre className="rounded border border-[#F0C9C9] bg-[#FDF3F3] p-3 text-xs text-[#54657C]">
                 {JSON.stringify(diff.old_data, null, 2)}
               </pre>
             </div>
             <div>
-              <h4 className="mb-2 text-xs font-semibold uppercase text-esg-green-400">Depois</h4>
-              <pre className="rounded border border-esg-green/40 bg-esg-green/10 p-3 text-xs text-graphite-200">
+              <h4 className="mb-2 text-xs font-semibold uppercase text-[#14603F]">Depois</h4>
+              <pre className="rounded border border-[#BFE6D2] bg-[#EAF7F1] p-3 text-xs text-[#54657C]">
                 {JSON.stringify(diff.new_data, null, 2)}
               </pre>
             </div>

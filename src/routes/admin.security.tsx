@@ -31,28 +31,28 @@ function SecurityPage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-2xl font-bold text-graphite-50">Segurança</h1>
+      <h1 className="text-2xl font-bold text-[#10274A]">Segurança</h1>
 
       <div className="space-y-2">
         {data.length === 0 && (
-          <div className="rounded-[12px] border border-graphite-600 bg-bg-surface p-8 text-center text-graphite-400">
+          <div className="rounded-[12px] border border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)] p-8 text-center text-[#54657C]">
             Nenhum alerta registrado.
           </div>
         )}
         {data.map((a) => (
           <div
             key={a.id}
-            className="flex items-start gap-3 rounded-[12px] border border-graphite-600 bg-bg-surface p-4"
+            className="flex items-start gap-3 rounded-[12px] border border-[#DDE7F2] bg-white shadow-[0_8px_18px_rgba(16,39,74,0.04)] p-4"
           >
-            <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-400" />
+            <ShieldAlert className="mt-0.5 h-5 w-5 text-[#B45309]" />
             <div className="flex-1">
               <div className="flex items-center gap-2">
                 <Badge variant={a.severity === "critical" ? "danger" : "amber"}>{a.severity}</Badge>
-                <span className="text-sm font-medium text-graphite-50">{a.title ?? a.type}</span>
+                <span className="text-sm font-medium text-[#10274A]">{a.title ?? a.type}</span>
                 {a.resolved_at && <Badge variant="green">Resolvido</Badge>}
               </div>
-              {a.description && <p className="mt-1 text-xs text-graphite-400">{a.description}</p>}
-              <p className="mt-1 text-[10px] text-graphite-500">
+              {a.description && <p className="mt-1 text-xs text-[#54657C]">{a.description}</p>}
+              <p className="mt-1 text-[10px] text-[#7A8AA0]">
                 {a.created_at && new Date(a.created_at).toLocaleString("pt-BR")}
               </p>
             </div>
