@@ -1,4 +1,3 @@
-import { AppShell } from "@/components/layout/AppShell";
 import { ContractDetailView } from "@/components/contract/ContractDetailView";
 
 interface Props {
@@ -8,8 +7,9 @@ interface Props {
 
 export function ContractDetailPage({ contractId, viewerRole }: Props) {
   return (
-    <AppShell title="Detalhe do Contrato">
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold text-[#10274A]">Detalhe do Contrato</h1>
       <ContractDetailView contractId={contractId} viewerRole={viewerRole} />
-    </AppShell>
+    </div>
   );
 }

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FileText } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
@@ -41,8 +40,9 @@ export function CarrierContractsPage() {
   });
 
   return (
-    <AppShell title={t("carrierContracts.pageTitle")}>
-      <div className="p-6 space-y-6 bg-[#F4F7FB]">
+    <div className="p-6 space-y-6 bg-[#F4F7FB]">
+      <h1 className="text-2xl font-bold text-[#10274A]">{t("carrierContracts.pageTitle")}</h1>
+      <div className="space-y-6">
         <div className="flex gap-2 flex-wrap">
           {FILTERS.map((x) => (
             <button
@@ -108,6 +108,6 @@ export function CarrierContractsPage() {
           )}
         </Card>
       </div>
-    </AppShell>
+    </div>
   );
 }
