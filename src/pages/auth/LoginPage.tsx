@@ -11,122 +11,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
+/**
+ * Acesso rapido de desenvolvimento -- OPT-IN, nunca no bundle de producao.
+ *
+ * Correcao de seguranca P0:
+ *   - todo o bloco vive sob `import.meta.env.DEV`; no build de producao o Vite
+ *     substitui por `false` e o dead-code elimination remove tudo;
+ *   - NENHUMA credencial no codigo: e-mails e senha vem de variaveis de
+ *     ambiente locais (.env.local), que nao sao versionadas;
+ *   - so autentica (signInWithPassword). Nunca cria usuario, perfil, empresa,
+ *     vinculo ou transportadora, e nunca cria conta no Supabase Auth;
+ *   - sem as variaveis definidas, os botoes nao aparecem nem em dev.
+ */
 type DevRole = "shipper" | "carrier" | "driver";
-// Preview-only test accounts. These addresses are intentionally safe/test-only.
-// If the account is not already present in Supabase Auth for preview, create it manually there before using this helper.
-const DEV_ACCOUNTS: { role: DevRole; emoji: string; label: string; email: string }[] = [
-  { role: "shipper", emoji: "🏭", label: "Embarcador", email: "shipper.test@steelgobr.com.br" },
-  { role: "carrier", emoji: "🚛", label: "Transportadora", email: "carrier.test@steelgobr.com.br" },
-  { role: "driver", emoji: "👤", label: "Motorista", email: "driver.test@steelgobr.com.br" },
-];
-const DEV_PASSWORD = "DevTest123!";
 
-async function ensureDevAccount(role: DevRole, email: string, index: number) {
-  const log = (step: string, extra?: unknown) =>
-    console.log(`[devLogin:${role}] ${step}`, extra ?? "");
-
-  log("step 1: try signInWithPassword");
-  const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
-    email,
-    password: DEV_PASSWORD,
-  });
-
-  if (signInErr || !signInData.session) {
-    log("step 2: signIn failed; preview dev accounts must already exist in Supabase Auth", signInErr?.message);
-    throw new Error(
-      `Preview dev login requires a Supabase Auth test account for ${email}. Create it manually in Supabase Auth before using this helper.`,
-    );
-  }
-
-  const userId = signInData.user?.id;
-  if (!userId) throw new Error("signIn não retornou user.id");
-  log("step 2: signIn ok", userId);
-
-  await new Promise((r) => setTimeout(r, 800));
-
-  log("step 3: upsert profile");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: profileErr } = await (supabase.from("profiles") as any).upsert(
-    {
-      id: userId,
-      full_name: `Dev ${role.charAt(0).toUpperCase() + role.slice(1)}`,
-      email,
-      is_verified: true,
-      is_onboarded: true,
-      language: "pt-BR",
-      is_active: true,
-    },
-    { onConflict: "id" },
-  );
-  if (profileErr) {
-    console.error("[devLogin] profile upsert error:", profileErr);
-    alert(`Erro ao criar profile:\n${profileErr.message}\n\nDetalhes: ${profileErr.details ?? "—"}\nHint: ${profileErr.hint ?? "—"}\nCode: ${profileErr.code ?? "—"}`);
-    throw new Error(`profile upsert: ${profileErr.message}`);
-  }
-
-  log("step 4: ensure user_roles");
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: roleErr } = await (supabase.from("user_roles") as any).insert({
-    user_id: userId,
-    role,
-  });
-  if (roleErr && !String(roleErr.message).toLowerCase().includes("duplicate")) {
-    console.error("[devLogin] user_roles insert error:", roleErr);
-    // Non-fatal if trigger already created it
-  }
-
-  if (role !== "driver") {
-    const companyType = role === "shipper" ? "steel_company" : "carrier_company";
-    log("step 5: insert company", companyType);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: company, error: companyErr } = await (supabase.from("companies") as any)
-      .insert({
-        name: "Empresa Dev",
-        cnpj: `00.000.000/0001-0${index}`,
-        type: companyType,
-        owner_id: userId,
-      })
-      .select("id")
-      .single();
-    if (companyErr) {
-      console.error("[devLogin] company insert error:", companyErr);
-      alert(`Erro ao criar empresa:\n${companyErr.message}\nDetails: ${companyErr.details ?? "—"}`);
-      throw new Error(`company insert: ${companyErr.message}`);
-    }
-    log("step 5b: company ok", company.id);
-
-    log("step 6: insert company_members");
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { error: memberErr } = await (supabase.from("company_members") as any).insert({
-      company_id: company.id,
-      user_id: userId,
-      member_role: "owner",
-    });
-    if (memberErr) {
-      console.error("[devLogin] company_members error:", memberErr);
-      alert(`Erro company_members:\n${memberErr.message}`);
-      throw new Error(`company_members: ${memberErr.message}`);
-    }
-
-    if (role === "carrier") {
-      log("step 7: insert carrier");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: carrierErr } = await (supabase.from("carriers") as any).insert({
-        company_id: company.id,
-        antt_rntrc: "BR-0000001",
-        fleet_size: 1,
-        truck_types: ["carreta"],
-      });
-      if (carrierErr) {
-        console.error("[devLogin] carrier insert error:", carrierErr);
-        alert(`Erro carrier:\n${carrierErr.message}`);
-        throw new Error(`carrier: ${carrierErr.message}`);
-      }
-    }
-  }
-
-  return signInData;
+interface DevAccount {
+  role: DevRole;
+  emoji: string;
+  label: string;
+  email: string;
 }
+
+const DEV_LOGIN_PASSWORD: string = import.meta.env.DEV
+  ? (import.meta.env.VITE_DEV_LOGIN_PASSWORD ?? "")
+  : "";
+
+const DEV_ACCOUNTS: DevAccount[] = import.meta.env.DEV
+  ? (
+      [
+        { role: "shipper", emoji: "\u{1F3ED}", label: "Embarcador", email: import.meta.env.VITE_DEV_LOGIN_SHIPPER },
+        { role: "carrier", emoji: "\u{1F69B}", label: "Transportadora", email: import.meta.env.VITE_DEV_LOGIN_CARRIER },
+        { role: "driver", emoji: "\u{1F464}", label: "Motorista", email: import.meta.env.VITE_DEV_LOGIN_DRIVER },
+      ] as { role: DevRole; emoji: string; label: string; email?: string }[]
+    ).filter((a): a is DevAccount => Boolean(a.email) && DEV_LOGIN_PASSWORD !== "")
+  : [];
 
 const schema = z.object({
   email: z.string().trim().email("E-mail inválido").max(255),
@@ -158,20 +76,20 @@ export function LoginPage() {
     }
   }, []);
 
-  const onDevLogin = async (role: DevRole, email: string, index: number) => {
+  const onDevLogin = async (role: DevRole, email: string) => {
     setDevLoading(role);
     setAuthError(null);
     try {
-      await ensureDevAccount(role, email, index);
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: DEV_LOGIN_PASSWORD,
+      });
+      if (error) throw error;
       void navigate({ to: `/${role}` });
     } catch (e) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const err = e as any;
-      const msg = err?.message ?? String(e);
-      console.error("[devLogin] FAILED:", err);
-      toast.error(msg);
+      const msg = e instanceof Error ? e.message : String(e);
       setAuthError(msg);
-      alert(`Dev login falhou:\n${msg}\n\nVer console para detalhes.`);
+      toast.error(msg);
     } finally {
       setDevLoading(null);
     }
@@ -416,19 +334,20 @@ export function LoginPage() {
             Continuar com Google
           </button>
 
-          <>
+          {import.meta.env.DEV && DEV_ACCOUNTS.length > 0 && (
+            <>
             <div className="text-xs text-[#484F58] text-center my-4">
               — Acesso rápido (dev only) —
             </div>
             <div className="grid grid-cols-3 gap-2">
-              {DEV_ACCOUNTS.map((acc, i) => {
+              {DEV_ACCOUNTS.map((acc) => {
                 const busy = devLoading === acc.role;
                 return (
                   <button
                     key={acc.role}
                     type="button"
                     disabled={devLoading !== null}
-                    onClick={() => void onDevLogin(acc.role, acc.email, i + 1)}
+                    onClick={() => void onDevLogin(acc.role, acc.email)}
                     className="w-full h-9 flex items-center justify-center gap-1 text-xs text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#1C2128] rounded-[8px] transition-colors disabled:opacity-50"
                   >
                     {busy ? (
@@ -443,7 +362,8 @@ export function LoginPage() {
                 );
               })}
             </div>
-          </>
+            </>
+          )}
 
           <p className="text-sm text-[#8B949E] text-center mt-8">
             Não tem uma conta?{" "}
