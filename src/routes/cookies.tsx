@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { LegalPage } from "@/components/legal/LegalPage";
+import { ConsentPreferences } from "@/components/legal/ConsentPreferences";
 import { useLanguage } from "@/lib/i18n";
 
 const CONTENT = {
@@ -25,7 +26,7 @@ const CONTENT = {
       {
         title: "Analytics e consentimento",
         body: [
-          "Analytics ou cookies adicionais podem ser implementados no futuro apenas com aviso adequado e, quando exigido, com consentimento do usuário. Nenhuma prática de rastreamento adicional deve ser assumida neste momento sem a devida notificação e revisão legal.",
+          "A SteelGo utiliza o Google Analytics (GA4) para medir visitantes, páginas acessadas, origem do acesso e localização aproximada (cidade/região). Esses cookies só são carregados após o usuário aceitar no banner de consentimento exibido na primeira visita, podendo ser recusados a qualquer momento. Não enviamos nome, e-mail, CPF, telefone, placa, identificador de usuário ou qualquer outro dado pessoal identificável ao Google Analytics.",
         ],
       },
       {
@@ -60,7 +61,7 @@ const CONTENT = {
       {
         title: "Analytics and consent",
         body: [
-          "Analytics or additional cookies may be implemented later only with appropriate notice and, where required, with user consent. No additional tracking practices should be assumed at this stage without proper notification and legal review.",
+          "SteelGo uses Google Analytics (GA4) to measure visitors, pages visited, traffic source and approximate location (city/region). These cookies are only loaded after the user accepts the consent banner shown on first visit, and can be declined at any time. We do not send name, email, national ID, phone, plate, user identifier or any other personally identifiable data to Google Analytics.",
         ],
       },
       {
@@ -95,7 +96,7 @@ const CONTENT = {
       {
         title: "Analytics y consentimiento",
         body: [
-          "Los analytics o cookies adicionales pueden implementarse en el futuro solo con aviso adecuado y, cuando sea requerido, con consentimiento del usuario. No se debe asumir ninguna práctica de seguimiento adicional en este momento sin la notificación adecuada y la revisión legal correspondiente.",
+          "SteelGo utiliza Google Analytics (GA4) para medir visitantes, páginas visitadas, origen del acceso y ubicación aproximada (ciudad/región). Estas cookies solo se cargan después de que el usuario acepte el banner de consentimiento mostrado en la primera visita, y pueden rechazarse en cualquier momento. No enviamos nombre, correo electrónico, documento, teléfono, placa, identificador de usuario ni ningún otro dato personal identificable a Google Analytics.",
         ],
       },
       {
@@ -127,6 +128,8 @@ function CookiesPage() {
       note={c.note}
       icon="cookies"
       language={language}
-    />
+    >
+      <ConsentPreferences language={language} />
+    </LegalPage>
   );
 }

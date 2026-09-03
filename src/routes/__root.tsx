@@ -11,6 +11,8 @@ import { Analytics } from "@vercel/analytics/react";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/lib/i18n";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
+import { ConsentBanner } from "@/components/legal/ConsentBanner";
 
 import appCss from "../styles.css?url";
 
@@ -97,10 +99,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
     ],
     scripts: [
-      { src: "https://www.googletagmanager.com/gtag/js?id=G-8WT9JGB5Q5", async: true },
-      {
-        children: `window.dataLayer = window.dataLayer || [];\nfunction gtag(){dataLayer.push(arguments);}\ngtag('js', new Date());\ngtag('config', 'G-8WT9JGB5Q5');`,
-      },
         ...(import.meta.env.VITE_GOOGLE_MAPS_KEY
                       ? [{ src: `https://maps.googleapis.com/maps/api/js?key=${import.meta.env.VITE_GOOGLE_MAPS_KEY}&libraries=maps,marker&loading=async`, async: true, defer: true }]
                       : (typeof console !== 'undefined' && console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set — Google Maps will not load'), []))
@@ -137,6 +135,8 @@ function RootComponent() {
         <AuthProvider>
           <Outlet />
           <Toaster theme="dark" position="top-right" richColors />
+          <GoogleAnalytics />
+          <ConsentBanner />
         </AuthProvider>
       </LanguageProvider>
     </QueryClientProvider>

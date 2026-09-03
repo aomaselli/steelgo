@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowLeft, ShieldCheck, Scale, Cookie } from "lucide-react";
+import type { ReactNode } from "react";
 import type { Language } from "@/lib/i18n";
 
 type Section = {
@@ -16,11 +17,12 @@ type LegalPageProps = {
   note: string;
   icon: "privacy" | "terms" | "cookies";
   language: Language;
+  children?: ReactNode;
 };
 
 const iconClasses = "h-12 w-12 rounded-2xl bg-[#1B6CB8]/10 text-[#1B6CB8] flex items-center justify-center";
 
-export function LegalPage({ title, intro, sections, lastUpdated, note, icon, language }: LegalPageProps) {
+export function LegalPage({ title, intro, sections, lastUpdated, note, icon, language, children }: LegalPageProps) {
   const Icon = icon === "privacy" ? ShieldCheck : icon === "terms" ? Scale : Cookie;
 
   return (
@@ -80,6 +82,7 @@ export function LegalPage({ title, intro, sections, lastUpdated, note, icon, lan
               </section>
             ))}
           </div>
+          {children}
         </div>
       </div>
     </div>
