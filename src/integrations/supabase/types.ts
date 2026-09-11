@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.17"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -102,6 +97,120 @@ export type Database = {
             columns: ["truck_id"]
             isOneToOne: false
             referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_withdrawal_preview_items: {
+        Row: {
+          budget_amount_at_preview: number | null
+          budget_brl_at_preview: number | null
+          created_at: string
+          freight_id: string
+          id: string
+          is_legacy_at_preview: boolean
+          last_publication_event_id_at_preview: string | null
+          preview_id: string
+          published_at_at_preview: string | null
+          status_at_preview: Database["public"]["Enums"]["freight_status"]
+        }
+        Insert: {
+          budget_amount_at_preview?: number | null
+          budget_brl_at_preview?: number | null
+          created_at?: string
+          freight_id: string
+          id?: string
+          is_legacy_at_preview: boolean
+          last_publication_event_id_at_preview?: string | null
+          preview_id: string
+          published_at_at_preview?: string | null
+          status_at_preview: Database["public"]["Enums"]["freight_status"]
+        }
+        Update: {
+          budget_amount_at_preview?: number | null
+          budget_brl_at_preview?: number | null
+          created_at?: string
+          freight_id?: string
+          id?: string
+          is_legacy_at_preview?: boolean
+          last_publication_event_id_at_preview?: string | null
+          preview_id?: string
+          published_at_at_preview?: string | null
+          status_at_preview?: Database["public"]["Enums"]["freight_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_withdrawal_preview_items_freight_fk"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bulk_withdrawal_preview_items_pointer_fk"
+            columns: ["last_publication_event_id_at_preview", "freight_id"]
+            isOneToOne: false
+            referencedRelation: "freight_publication_events"
+            referencedColumns: ["id", "freight_id"]
+          },
+          {
+            foreignKeyName: "bulk_withdrawal_preview_items_preview_fk"
+            columns: ["preview_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_withdrawal_previews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bulk_withdrawal_previews: {
+        Row: {
+          created_at: string
+          created_by: string
+          expires_at: string
+          filter_reason: string
+          filter_snapshot: Json | null
+          id: string
+          item_count: number
+          legacy_count: number
+          params_fingerprint: string
+          request_id: string
+          rpc_name: string
+          scope_company_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expires_at: string
+          filter_reason: string
+          filter_snapshot?: Json | null
+          id?: string
+          item_count: number
+          legacy_count: number
+          params_fingerprint: string
+          request_id: string
+          rpc_name: string
+          scope_company_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          filter_reason?: string
+          filter_snapshot?: Json | null
+          id?: string
+          item_count?: number
+          legacy_count?: number
+          params_fingerprint?: string
+          request_id?: string
+          rpc_name?: string
+          scope_company_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bulk_withdrawal_previews_company_fk"
+            columns: ["scope_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -615,6 +724,108 @@ export type Database = {
           },
         ]
       }
+      contract_lifecycle_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          amount_brl: number | null
+          contract_id: string
+          created_at: string
+          delivery_completed_at: string | null
+          dispute_case_id: string | null
+          escrow_confirmed_at: string | null
+          id: string
+          new_escrow_status: string
+          new_status: Database["public"]["Enums"]["contract_status"]
+          params_fingerprint: string
+          payment_intent_id: string | null
+          previous_escrow_status: string | null
+          previous_event_id: string | null
+          previous_status: Database["public"]["Enums"]["contract_status"] | null
+          reason: string | null
+          request_id: string
+          rpc_name: string
+          transition: Database["public"]["Enums"]["contract_lifecycle_transition"]
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          amount_brl?: number | null
+          contract_id: string
+          created_at?: string
+          delivery_completed_at?: string | null
+          dispute_case_id?: string | null
+          escrow_confirmed_at?: string | null
+          id?: string
+          new_escrow_status: string
+          new_status: Database["public"]["Enums"]["contract_status"]
+          params_fingerprint: string
+          payment_intent_id?: string | null
+          previous_escrow_status?: string | null
+          previous_event_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["contract_status"]
+            | null
+          reason?: string | null
+          request_id: string
+          rpc_name: string
+          transition: Database["public"]["Enums"]["contract_lifecycle_transition"]
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          amount_brl?: number | null
+          contract_id?: string
+          created_at?: string
+          delivery_completed_at?: string | null
+          dispute_case_id?: string | null
+          escrow_confirmed_at?: string | null
+          id?: string
+          new_escrow_status?: string
+          new_status?: Database["public"]["Enums"]["contract_status"]
+          params_fingerprint?: string
+          payment_intent_id?: string | null
+          previous_escrow_status?: string | null
+          previous_event_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["contract_status"]
+            | null
+          reason?: string | null
+          request_id?: string
+          rpc_name?: string
+          transition?: Database["public"]["Enums"]["contract_lifecycle_transition"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_lifecycle_events_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_lifecycle_events_dispute_fk"
+            columns: ["dispute_case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_lifecycle_events_intent_fk"
+            columns: ["payment_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_lifecycle_events_previous_fk"
+            columns: ["previous_event_id", "contract_id"]
+            isOneToOne: false
+            referencedRelation: "contract_lifecycle_events"
+            referencedColumns: ["id", "contract_id"]
+          },
+        ]
+      }
       contracts: {
         Row: {
           activated_at: string | null
@@ -626,17 +837,24 @@ export type Database = {
           carrier_signed_at: string | null
           carrier_signed_ip: string | null
           completed_at: string | null
+          completion_reason: string | null
           contract_number: string | null
           created_at: string | null
+          delivery_completed_at: string | null
+          delivery_completed_by: string | null
           driver_id: string | null
+          escrow_external_ref: string | null
           escrow_held_at: string | null
+          escrow_provider: string | null
           escrow_released_at: string | null
           escrow_status: string
           freight_id: string
           id: string
+          last_lifecycle_event_id: string | null
           pdf_url: string | null
           pickup_window: string | null
           platform_fee_brl: number | null
+          pricing_rule_id: string | null
           shipper_company_id: string
           shipper_signature_hash: string | null
           shipper_signature_url: string | null
@@ -657,17 +875,24 @@ export type Database = {
           carrier_signed_at?: string | null
           carrier_signed_ip?: string | null
           completed_at?: string | null
+          completion_reason?: string | null
           contract_number?: string | null
           created_at?: string | null
+          delivery_completed_at?: string | null
+          delivery_completed_by?: string | null
           driver_id?: string | null
+          escrow_external_ref?: string | null
           escrow_held_at?: string | null
+          escrow_provider?: string | null
           escrow_released_at?: string | null
           escrow_status?: string
           freight_id: string
           id?: string
+          last_lifecycle_event_id?: string | null
           pdf_url?: string | null
           pickup_window?: string | null
           platform_fee_brl?: number | null
+          pricing_rule_id?: string | null
           shipper_company_id: string
           shipper_signature_hash?: string | null
           shipper_signature_url?: string | null
@@ -688,17 +913,24 @@ export type Database = {
           carrier_signed_at?: string | null
           carrier_signed_ip?: string | null
           completed_at?: string | null
+          completion_reason?: string | null
           contract_number?: string | null
           created_at?: string | null
+          delivery_completed_at?: string | null
+          delivery_completed_by?: string | null
           driver_id?: string | null
+          escrow_external_ref?: string | null
           escrow_held_at?: string | null
+          escrow_provider?: string | null
           escrow_released_at?: string | null
           escrow_status?: string
           freight_id?: string
           id?: string
+          last_lifecycle_event_id?: string | null
           pdf_url?: string | null
           pickup_window?: string | null
           platform_fee_brl?: number | null
+          pricing_rule_id?: string | null
           shipper_company_id?: string
           shipper_signature_hash?: string | null
           shipper_signature_url?: string | null
@@ -732,6 +964,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "contracts_last_lifecycle_event_fk"
+            columns: ["last_lifecycle_event_id", "id"]
+            isOneToOne: false
+            referencedRelation: "contract_lifecycle_events"
+            referencedColumns: ["id", "contract_id"]
+          },
+          {
+            foreignKeyName: "contracts_pricing_rule_fk"
+            columns: ["pricing_rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "contracts_shipper_company_id_fkey"
             columns: ["shipper_company_id"]
             isOneToOne: false
@@ -743,6 +989,486 @@ export type Database = {
             columns: ["truck_id"]
             isOneToOne: false
             referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_allocations: {
+        Row: {
+          amount: number
+          company_id: string | null
+          created_at: string
+          decision_id: string
+          id: string
+          note: string | null
+          party_kind: Database["public"]["Enums"]["payment_party_kind"]
+          percentage: number | null
+        }
+        Insert: {
+          amount: number
+          company_id?: string | null
+          created_at?: string
+          decision_id: string
+          id?: string
+          note?: string | null
+          party_kind: Database["public"]["Enums"]["payment_party_kind"]
+          percentage?: number | null
+        }
+        Update: {
+          amount?: number
+          company_id?: string | null
+          created_at?: string
+          decision_id?: string
+          id?: string
+          note?: string | null
+          party_kind?: Database["public"]["Enums"]["payment_party_kind"]
+          percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_allocations_company_fk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_allocations_decision_fk"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_cases: {
+        Row: {
+          assigned_at: string | null
+          assigned_to: string | null
+          case_number: string
+          closed_at: string | null
+          closed_by: string | null
+          contract_id: string
+          created_at: string
+          currency_code: string
+          description: string
+          disputed_amount: number
+          due_at: string | null
+          freight_id: string
+          id: string
+          last_event_id: string | null
+          opened_at: string
+          opened_by: string
+          opened_by_role: Database["public"]["Enums"]["dispute_party_role"]
+          payment_intent_id: string | null
+          priority: Database["public"]["Enums"]["dispute_priority"]
+          reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          status: Database["public"]["Enums"]["dispute_status"]
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          case_number: string
+          closed_at?: string | null
+          closed_by?: string | null
+          contract_id: string
+          created_at?: string
+          currency_code: string
+          description: string
+          disputed_amount: number
+          due_at?: string | null
+          freight_id: string
+          id?: string
+          last_event_id?: string | null
+          opened_at?: string
+          opened_by: string
+          opened_by_role: Database["public"]["Enums"]["dispute_party_role"]
+          payment_intent_id?: string | null
+          priority?: Database["public"]["Enums"]["dispute_priority"]
+          reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_to?: string | null
+          case_number?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          contract_id?: string
+          created_at?: string
+          currency_code?: string
+          description?: string
+          disputed_amount?: number
+          due_at?: string | null
+          freight_id?: string
+          id?: string
+          last_event_id?: string | null
+          opened_at?: string
+          opened_by?: string
+          opened_by_role?: Database["public"]["Enums"]["dispute_party_role"]
+          payment_intent_id?: string | null
+          priority?: Database["public"]["Enums"]["dispute_priority"]
+          reason_code?: Database["public"]["Enums"]["dispute_reason_code"]
+          status?: Database["public"]["Enums"]["dispute_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_cases_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_cases_freight_fk"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_cases_intent_fk"
+            columns: ["payment_intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_cases_last_event_fk"
+            columns: ["last_event_id", "id"]
+            isOneToOne: false
+            referencedRelation: "dispute_events"
+            referencedColumns: ["id", "case_id"]
+          },
+        ]
+      }
+      dispute_claims: {
+        Row: {
+          case_id: string
+          claimed_amount: number | null
+          claimed_by: string
+          claimed_by_role: Database["public"]["Enums"]["dispute_party_role"]
+          created_at: string
+          currency_code: string | null
+          id: string
+          reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          statement: string
+        }
+        Insert: {
+          case_id: string
+          claimed_amount?: number | null
+          claimed_by: string
+          claimed_by_role: Database["public"]["Enums"]["dispute_party_role"]
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          statement: string
+        }
+        Update: {
+          case_id?: string
+          claimed_amount?: number | null
+          claimed_by?: string
+          claimed_by_role?: Database["public"]["Enums"]["dispute_party_role"]
+          created_at?: string
+          currency_code?: string | null
+          id?: string
+          reason_code?: Database["public"]["Enums"]["dispute_reason_code"]
+          statement?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_claims_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_comments: {
+        Row: {
+          author_id: string
+          author_role: Database["public"]["Enums"]["dispute_party_role"]
+          body: string
+          case_id: string
+          created_at: string
+          id: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          author_role: Database["public"]["Enums"]["dispute_party_role"]
+          body: string
+          case_id: string
+          created_at?: string
+          id?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          author_role?: Database["public"]["Enums"]["dispute_party_role"]
+          body?: string
+          case_id?: string
+          created_at?: string
+          id?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_comments_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_decisions: {
+        Row: {
+          case_id: string
+          currency_code: string
+          decided_amount: number
+          decided_at: string
+          decided_by: string
+          id: string
+          is_current: boolean
+          outcome: Database["public"]["Enums"]["dispute_decision_outcome"]
+          rationale: string
+          supersedes_decision_id: string | null
+        }
+        Insert: {
+          case_id: string
+          currency_code: string
+          decided_amount: number
+          decided_at?: string
+          decided_by: string
+          id?: string
+          is_current?: boolean
+          outcome: Database["public"]["Enums"]["dispute_decision_outcome"]
+          rationale: string
+          supersedes_decision_id?: string | null
+        }
+        Update: {
+          case_id?: string
+          currency_code?: string
+          decided_amount?: number
+          decided_at?: string
+          decided_by?: string
+          id?: string
+          is_current?: boolean
+          outcome?: Database["public"]["Enums"]["dispute_decision_outcome"]
+          rationale?: string
+          supersedes_decision_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_decisions_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_decisions_supersedes_fk"
+            columns: ["supersedes_decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          case_id: string
+          claim_id: string | null
+          created_at: string
+          decision_id: string | null
+          event_type: string
+          evidence_id: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["dispute_status"]
+          note: string | null
+          params_fingerprint: string
+          previous_event_id: string | null
+          previous_status: Database["public"]["Enums"]["dispute_status"] | null
+          request_id: string
+          rpc_name: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          case_id: string
+          claim_id?: string | null
+          created_at?: string
+          decision_id?: string | null
+          event_type: string
+          evidence_id?: string | null
+          id?: string
+          new_status: Database["public"]["Enums"]["dispute_status"]
+          note?: string | null
+          params_fingerprint: string
+          previous_event_id?: string | null
+          previous_status?: Database["public"]["Enums"]["dispute_status"] | null
+          request_id: string
+          rpc_name: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          case_id?: string
+          claim_id?: string | null
+          created_at?: string
+          decision_id?: string | null
+          event_type?: string
+          evidence_id?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["dispute_status"]
+          note?: string | null
+          params_fingerprint?: string
+          previous_event_id?: string | null
+          previous_status?: Database["public"]["Enums"]["dispute_status"] | null
+          request_id?: string
+          rpc_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_events_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_events_claim_fk"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_events_decision_fk"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_events_evidence_fk"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_events_previous_fk"
+            columns: ["previous_event_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_events"
+            referencedColumns: ["id", "case_id"]
+          },
+        ]
+      }
+      dispute_evidence: {
+        Row: {
+          artifact_ref: string | null
+          case_id: string
+          claim_id: string | null
+          content_hash: string
+          description: string
+          id: string
+          kind: string
+          submitted_at: string
+          submitted_by: string
+          submitted_by_role: Database["public"]["Enums"]["dispute_party_role"]
+        }
+        Insert: {
+          artifact_ref?: string | null
+          case_id: string
+          claim_id?: string | null
+          content_hash: string
+          description: string
+          id?: string
+          kind: string
+          submitted_at?: string
+          submitted_by: string
+          submitted_by_role: Database["public"]["Enums"]["dispute_party_role"]
+        }
+        Update: {
+          artifact_ref?: string | null
+          case_id?: string
+          claim_id?: string | null
+          content_hash?: string
+          description?: string
+          id?: string
+          kind?: string
+          submitted_at?: string
+          submitted_by?: string
+          submitted_by_role?: Database["public"]["Enums"]["dispute_party_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_evidence_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_evidence_claim_fk"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispute_parties: {
+        Row: {
+          added_at: string
+          added_by: string
+          case_id: string
+          company_id: string | null
+          id: string
+          role: Database["public"]["Enums"]["dispute_party_role"]
+          user_id: string
+        }
+        Insert: {
+          added_at?: string
+          added_by: string
+          case_id: string
+          company_id?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["dispute_party_role"]
+          user_id: string
+        }
+        Update: {
+          added_at?: string
+          added_by?: string
+          case_id?: string
+          company_id?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["dispute_party_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_parties_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_parties_company_fk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
             referencedColumns: ["id"]
           },
         ]
@@ -1213,6 +1939,298 @@ export type Database = {
           },
         ]
       }
+      external_reconciliation: {
+        Row: {
+          currency_code: string
+          expected_amount: number
+          id: string
+          intent_id: string
+          observed_amount: number | null
+          opened_at: string
+          opened_by: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          source: string
+          statement_ref: string | null
+          status: string
+          transaction_id: string | null
+        }
+        Insert: {
+          currency_code: string
+          expected_amount: number
+          id?: string
+          intent_id: string
+          observed_amount?: number | null
+          opened_at?: string
+          opened_by?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source: string
+          statement_ref?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Update: {
+          currency_code?: string
+          expected_amount?: number
+          id?: string
+          intent_id?: string
+          observed_amount?: number | null
+          opened_at?: string
+          opened_by?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          source?: string
+          statement_ref?: string | null
+          status?: string
+          transaction_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_reconciliation_intent_fk"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "external_reconciliation_transaction_fk"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      freight_offer_versions: {
+        Row: {
+          budget_amount: number | null
+          budget_brl: number | null
+          created_at: string
+          created_by: string
+          currency_code: string
+          distance_km: number | null
+          freight_id: string
+          id: string
+          offer_snapshot: Json
+          params_fingerprint: string
+          provenance: string
+          request_id: string
+          rpc_name: string
+          snapshot_basis: string
+          supersedes_offer_version_id: string | null
+          value_basis: string
+          weight_tons: number | null
+        }
+        Insert: {
+          budget_amount?: number | null
+          budget_brl?: number | null
+          created_at?: string
+          created_by: string
+          currency_code: string
+          distance_km?: number | null
+          freight_id: string
+          id?: string
+          offer_snapshot: Json
+          params_fingerprint: string
+          provenance: string
+          request_id: string
+          rpc_name: string
+          snapshot_basis: string
+          supersedes_offer_version_id?: string | null
+          value_basis: string
+          weight_tons?: number | null
+        }
+        Update: {
+          budget_amount?: number | null
+          budget_brl?: number | null
+          created_at?: string
+          created_by?: string
+          currency_code?: string
+          distance_km?: number | null
+          freight_id?: string
+          id?: string
+          offer_snapshot?: Json
+          params_fingerprint?: string
+          provenance?: string
+          request_id?: string
+          rpc_name?: string
+          snapshot_basis?: string
+          supersedes_offer_version_id?: string | null
+          value_basis?: string
+          weight_tons?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freight_offer_versions_freight_fk"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_offer_versions_supersedes_fk"
+            columns: ["supersedes_offer_version_id", "freight_id"]
+            isOneToOne: false
+            referencedRelation: "freight_offer_versions"
+            referencedColumns: ["id", "freight_id"]
+          },
+        ]
+      }
+      freight_publication_events: {
+        Row: {
+          actor_company_id: string
+          actor_id: string
+          actor_was_admin: boolean
+          bulk_withdrawal_preview_id: string | null
+          created_at: string
+          freight_id: string
+          id: string
+          new_budget_amount: number | null
+          new_budget_brl: number | null
+          new_final_price_amount: number | null
+          new_final_price_brl: number | null
+          new_matched_carrier_id: string | null
+          new_matched_driver_id: string | null
+          new_matched_truck_id: string | null
+          new_published_at: string | null
+          new_status: Database["public"]["Enums"]["freight_status"]
+          offer_version_id: string | null
+          params_fingerprint: string
+          previous_budget_amount: number | null
+          previous_budget_brl: number | null
+          previous_event_id: string | null
+          previous_final_price_amount: number | null
+          previous_final_price_brl: number | null
+          previous_matched_carrier_id: string | null
+          previous_matched_driver_id: string | null
+          previous_matched_truck_id: string | null
+          previous_published_at: string | null
+          previous_status: Database["public"]["Enums"]["freight_status"] | null
+          reason: string | null
+          request_id: string
+          rpc_name: string
+          source_bid_id: string | null
+          transition: Database["public"]["Enums"]["freight_lifecycle_transition"]
+        }
+        Insert: {
+          actor_company_id: string
+          actor_id: string
+          actor_was_admin: boolean
+          bulk_withdrawal_preview_id?: string | null
+          created_at?: string
+          freight_id: string
+          id?: string
+          new_budget_amount?: number | null
+          new_budget_brl?: number | null
+          new_final_price_amount?: number | null
+          new_final_price_brl?: number | null
+          new_matched_carrier_id?: string | null
+          new_matched_driver_id?: string | null
+          new_matched_truck_id?: string | null
+          new_published_at?: string | null
+          new_status: Database["public"]["Enums"]["freight_status"]
+          offer_version_id?: string | null
+          params_fingerprint: string
+          previous_budget_amount?: number | null
+          previous_budget_brl?: number | null
+          previous_event_id?: string | null
+          previous_final_price_amount?: number | null
+          previous_final_price_brl?: number | null
+          previous_matched_carrier_id?: string | null
+          previous_matched_driver_id?: string | null
+          previous_matched_truck_id?: string | null
+          previous_published_at?: string | null
+          previous_status?: Database["public"]["Enums"]["freight_status"] | null
+          reason?: string | null
+          request_id: string
+          rpc_name: string
+          source_bid_id?: string | null
+          transition: Database["public"]["Enums"]["freight_lifecycle_transition"]
+        }
+        Update: {
+          actor_company_id?: string
+          actor_id?: string
+          actor_was_admin?: boolean
+          bulk_withdrawal_preview_id?: string | null
+          created_at?: string
+          freight_id?: string
+          id?: string
+          new_budget_amount?: number | null
+          new_budget_brl?: number | null
+          new_final_price_amount?: number | null
+          new_final_price_brl?: number | null
+          new_matched_carrier_id?: string | null
+          new_matched_driver_id?: string | null
+          new_matched_truck_id?: string | null
+          new_published_at?: string | null
+          new_status?: Database["public"]["Enums"]["freight_status"]
+          offer_version_id?: string | null
+          params_fingerprint?: string
+          previous_budget_amount?: number | null
+          previous_budget_brl?: number | null
+          previous_event_id?: string | null
+          previous_final_price_amount?: number | null
+          previous_final_price_brl?: number | null
+          previous_matched_carrier_id?: string | null
+          previous_matched_driver_id?: string | null
+          previous_matched_truck_id?: string | null
+          previous_published_at?: string | null
+          previous_status?: Database["public"]["Enums"]["freight_status"] | null
+          reason?: string | null
+          request_id?: string
+          rpc_name?: string
+          source_bid_id?: string | null
+          transition?: Database["public"]["Enums"]["freight_lifecycle_transition"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "freight_publication_events_actor_company_fk"
+            columns: ["actor_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_publication_events_freight_fk"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_publication_events_offer_version_fk"
+            columns: ["offer_version_id", "freight_id"]
+            isOneToOne: false
+            referencedRelation: "freight_offer_versions"
+            referencedColumns: ["id", "freight_id"]
+          },
+          {
+            foreignKeyName: "freight_publication_events_preview_fk"
+            columns: ["bulk_withdrawal_preview_id"]
+            isOneToOne: false
+            referencedRelation: "bulk_withdrawal_previews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freight_publication_events_previous_fk"
+            columns: ["previous_event_id", "freight_id"]
+            isOneToOne: false
+            referencedRelation: "freight_publication_events"
+            referencedColumns: ["id", "freight_id"]
+          },
+          {
+            foreignKeyName: "freight_publication_events_source_bid_fk"
+            columns: ["source_bid_id"]
+            isOneToOne: false
+            referencedRelation: "bids"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       freight_quotes: {
         Row: {
           accepted_at: string | null
@@ -1370,6 +2388,7 @@ export type Database = {
           handling_requirements: Json
           id: string
           internal_reference: string | null
+          last_publication_event_id: string | null
           matched_carrier_id: string | null
           matched_driver_id: string | null
           matched_truck_id: string | null
@@ -1430,6 +2449,7 @@ export type Database = {
           handling_requirements?: Json
           id?: string
           internal_reference?: string | null
+          last_publication_event_id?: string | null
           matched_carrier_id?: string | null
           matched_driver_id?: string | null
           matched_truck_id?: string | null
@@ -1490,6 +2510,7 @@ export type Database = {
           handling_requirements?: Json
           id?: string
           internal_reference?: string | null
+          last_publication_event_id?: string | null
           matched_carrier_id?: string | null
           matched_driver_id?: string | null
           matched_truck_id?: string | null
@@ -1527,6 +2548,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "companies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "freights_last_publication_event_fk"
+            columns: ["last_publication_event_id", "id"]
+            isOneToOne: false
+            referencedRelation: "freight_publication_events"
+            referencedColumns: ["id", "freight_id"]
           },
           {
             foreignKeyName: "freights_matched_carrier_id_fkey"
@@ -1575,6 +2603,453 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_accounts: {
+        Row: {
+          account_kind: string
+          company_id: string
+          created_at: string
+          created_by: string | null
+          external_account_ref: string | null
+          id: string
+          provider_code: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          account_kind: string
+          company_id: string
+          created_at?: string
+          created_by?: string | null
+          external_account_ref?: string | null
+          id?: string
+          provider_code: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          account_kind?: string
+          company_id?: string
+          created_at?: string
+          created_by?: string | null
+          external_account_ref?: string | null
+          id?: string
+          provider_code?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_accounts_company_fk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_accounts_provider_fk"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "payment_providers"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      payment_allocations: {
+        Row: {
+          amount: number
+          company_id: string | null
+          created_at: string
+          id: string
+          note: string | null
+          party_kind: Database["public"]["Enums"]["payment_party_kind"]
+          transaction_id: string
+        }
+        Insert: {
+          amount: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          party_kind: Database["public"]["Enums"]["payment_party_kind"]
+          transaction_id: string
+        }
+        Update: {
+          amount?: number
+          company_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          party_kind?: Database["public"]["Enums"]["payment_party_kind"]
+          transaction_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_allocations_company_fk"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_allocations_transaction_fk"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_events: {
+        Row: {
+          actor_id: string | null
+          actor_kind: string
+          amount: number | null
+          confirmation_method:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          created_at: string
+          currency_code: string | null
+          event_type: string
+          external_reference: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          intent_id: string
+          new_status: Database["public"]["Enums"]["payment_internal_status"]
+          note: string | null
+          params_fingerprint: string
+          previous_event_id: string | null
+          previous_status:
+            | Database["public"]["Enums"]["payment_internal_status"]
+            | null
+          request_id: string
+          rpc_name: string
+          source: string
+          transaction_id: string | null
+          webhook_event_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          amount?: number | null
+          confirmation_method?:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          created_at?: string
+          currency_code?: string | null
+          event_type: string
+          external_reference?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          intent_id: string
+          new_status: Database["public"]["Enums"]["payment_internal_status"]
+          note?: string | null
+          params_fingerprint: string
+          previous_event_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["payment_internal_status"]
+            | null
+          request_id: string
+          rpc_name: string
+          source: string
+          transaction_id?: string | null
+          webhook_event_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          amount?: number | null
+          confirmation_method?:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          created_at?: string
+          currency_code?: string | null
+          event_type?: string
+          external_reference?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          intent_id?: string
+          new_status?: Database["public"]["Enums"]["payment_internal_status"]
+          note?: string | null
+          params_fingerprint?: string
+          previous_event_id?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["payment_internal_status"]
+            | null
+          request_id?: string
+          rpc_name?: string
+          source?: string
+          transaction_id?: string | null
+          webhook_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_events_intent_fk"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_events_previous_fk"
+            columns: ["previous_event_id", "intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_events"
+            referencedColumns: ["id", "intent_id"]
+          },
+          {
+            foreignKeyName: "payment_events_transaction_fk"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      payment_intents: {
+        Row: {
+          carrier_net_amount: number
+          contract_id: string
+          created_at: string
+          currency_code: string
+          external_reference: string | null
+          external_status: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          funding_confirmed_at: string | null
+          gross_amount: number
+          id: string
+          internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          last_event_id: string | null
+          platform_fee_amount: number
+          pricing_rule_id: string | null
+          provider_code: string
+          reconciled_at: string | null
+          reconciled_by: string | null
+          release_blocked_by_dispute: boolean
+          release_requested_at: string | null
+          release_requested_by: string | null
+          released_confirmed_at: string | null
+          requested_at: string | null
+          requested_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          carrier_net_amount: number
+          contract_id: string
+          created_at?: string
+          currency_code: string
+          external_reference?: string | null
+          external_status?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          funding_confirmed_at?: string | null
+          gross_amount: number
+          id?: string
+          internal_status?: Database["public"]["Enums"]["payment_internal_status"]
+          last_event_id?: string | null
+          platform_fee_amount: number
+          pricing_rule_id?: string | null
+          provider_code: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          release_blocked_by_dispute?: boolean
+          release_requested_at?: string | null
+          release_requested_by?: string | null
+          released_confirmed_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          carrier_net_amount?: number
+          contract_id?: string
+          created_at?: string
+          currency_code?: string
+          external_reference?: string | null
+          external_status?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          funding_confirmed_at?: string | null
+          gross_amount?: number
+          id?: string
+          internal_status?: Database["public"]["Enums"]["payment_internal_status"]
+          last_event_id?: string | null
+          platform_fee_amount?: number
+          pricing_rule_id?: string | null
+          provider_code?: string
+          reconciled_at?: string | null
+          reconciled_by?: string | null
+          release_blocked_by_dispute?: boolean
+          release_requested_at?: string | null
+          release_requested_by?: string | null
+          released_confirmed_at?: string | null
+          requested_at?: string | null
+          requested_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_intents_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: true
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_last_event_fk"
+            columns: ["last_event_id", "id"]
+            isOneToOne: false
+            referencedRelation: "payment_events"
+            referencedColumns: ["id", "intent_id"]
+          },
+          {
+            foreignKeyName: "payment_intents_pricing_rule_fk"
+            columns: ["pricing_rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_intents_provider_fk"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "payment_providers"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      payment_providers: {
+        Row: {
+          adapter_kind: string
+          capabilities: Json
+          code: string
+          created_at: string
+          display_name: string
+          is_active: boolean
+          notes: string | null
+        }
+        Insert: {
+          adapter_kind: string
+          capabilities?: Json
+          code: string
+          created_at?: string
+          display_name: string
+          is_active?: boolean
+          notes?: string | null
+        }
+        Update: {
+          adapter_kind?: string
+          capabilities?: Json
+          code?: string
+          created_at?: string
+          display_name?: string
+          is_active?: boolean
+          notes?: string | null
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount: number
+          confirmation_evidence_hash: string | null
+          confirmation_evidence_ref: string | null
+          confirmation_method:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          confirmation_note: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          currency_code: string
+          external_reference: string | null
+          external_status: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          id: string
+          idempotency_key: string
+          intent_id: string
+          kind: Database["public"]["Enums"]["payment_transaction_kind"]
+          provider_code: string
+          requested_at: string
+          requested_by: string | null
+          status: Database["public"]["Enums"]["payment_transaction_status"]
+        }
+        Insert: {
+          amount: number
+          confirmation_evidence_hash?: string | null
+          confirmation_evidence_ref?: string | null
+          confirmation_method?:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency_code: string
+          external_reference?: string | null
+          external_status?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key: string
+          intent_id: string
+          kind: Database["public"]["Enums"]["payment_transaction_kind"]
+          provider_code: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["payment_transaction_status"]
+        }
+        Update: {
+          amount?: number
+          confirmation_evidence_hash?: string | null
+          confirmation_evidence_ref?: string | null
+          confirmation_method?:
+            | Database["public"]["Enums"]["payment_confirmation_method"]
+            | null
+          confirmation_note?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          currency_code?: string
+          external_reference?: string | null
+          external_status?: string | null
+          failure_code?: string | null
+          failure_reason?: string | null
+          id?: string
+          idempotency_key?: string
+          intent_id?: string
+          kind?: Database["public"]["Enums"]["payment_transaction_kind"]
+          provider_code?: string
+          requested_at?: string
+          requested_by?: string | null
+          status?: Database["public"]["Enums"]["payment_transaction_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_transactions_intent_fk"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_transactions_provider_fk"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "payment_providers"
+            referencedColumns: ["code"]
           },
         ]
       }
@@ -1632,12 +3107,94 @@ export type Database = {
         }
         Relationships: []
       }
-      pricing_rules: {
+      pricing_rule_events: {
         Row: {
+          actor_id: string | null
+          actor_kind: string
           carrier_id: string | null
           country_code: string
           created_at: string
+          currency_code: string
+          effective_from: string
+          effective_until: string | null
+          event_type: string
+          fee_percentage: number
+          id: string
+          is_active: boolean
+          params_fingerprint: string
+          previous_rule_id: string | null
+          pricing_rule_id: string
+          reason: string | null
+          request_id: string
+          rpc_name: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: string
+          carrier_id?: string | null
+          country_code: string
+          created_at?: string
+          currency_code: string
+          effective_from: string
+          effective_until?: string | null
+          event_type: string
+          fee_percentage: number
+          id?: string
+          is_active: boolean
+          params_fingerprint: string
+          previous_rule_id?: string | null
+          pricing_rule_id: string
+          reason?: string | null
+          request_id: string
+          rpc_name: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: string
+          carrier_id?: string | null
+          country_code?: string
+          created_at?: string
+          currency_code?: string
+          effective_from?: string
+          effective_until?: string | null
+          event_type?: string
+          fee_percentage?: number
+          id?: string
+          is_active?: boolean
+          params_fingerprint?: string
+          previous_rule_id?: string | null
+          pricing_rule_id?: string
+          reason?: string | null
+          request_id?: string
+          rpc_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pricing_rule_events_previous_fk"
+            columns: ["previous_rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rule_events_rule_fk"
+            columns: ["pricing_rule_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pricing_rules: {
+        Row: {
+          carrier_id: string | null
+          change_reason: string | null
+          closed_at: string | null
+          closed_by_admin: string | null
+          country_code: string
+          created_at: string
           created_by: string | null
+          created_by_admin: string | null
           currency_code: string
           destination_subdivision_code: string | null
           effective_from: string
@@ -1655,6 +3212,7 @@ export type Database = {
           rate_per_loaded_km: number | null
           rate_per_ton: number | null
           risk_percentage: number
+          supersedes_id: string | null
           truck_type: Database["public"]["Enums"]["truck_type"] | null
           updated_at: string
           version: number
@@ -1662,9 +3220,13 @@ export type Database = {
         }
         Insert: {
           carrier_id?: string | null
+          change_reason?: string | null
+          closed_at?: string | null
+          closed_by_admin?: string | null
           country_code: string
           created_at?: string
           created_by?: string | null
+          created_by_admin?: string | null
           currency_code: string
           destination_subdivision_code?: string | null
           effective_from?: string
@@ -1682,6 +3244,7 @@ export type Database = {
           rate_per_loaded_km?: number | null
           rate_per_ton?: number | null
           risk_percentage?: number
+          supersedes_id?: string | null
           truck_type?: Database["public"]["Enums"]["truck_type"] | null
           updated_at?: string
           version?: number
@@ -1689,9 +3252,13 @@ export type Database = {
         }
         Update: {
           carrier_id?: string | null
+          change_reason?: string | null
+          closed_at?: string | null
+          closed_by_admin?: string | null
           country_code?: string
           created_at?: string
           created_by?: string | null
+          created_by_admin?: string | null
           currency_code?: string
           destination_subdivision_code?: string | null
           effective_from?: string
@@ -1709,6 +3276,7 @@ export type Database = {
           rate_per_loaded_km?: number | null
           rate_per_ton?: number | null
           risk_percentage?: number
+          supersedes_id?: string | null
           truck_type?: Database["public"]["Enums"]["truck_type"] | null
           updated_at?: string
           version?: number
@@ -1727,6 +3295,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pricing_rules_supersedes_fk"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_rules"
             referencedColumns: ["id"]
           },
         ]
@@ -1781,6 +3356,818 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      provider_webhook_conflicts: {
+        Row: {
+          detected_at: string
+          existing_digest: string
+          existing_event_id: string
+          external_event_id: string
+          id: string
+          incoming_amount: number | null
+          incoming_digest: string
+          incoming_event_type: string | null
+          incoming_occurred_at: string | null
+          provider_code: string
+          review_note: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          signature_verified: boolean
+        }
+        Insert: {
+          detected_at?: string
+          existing_digest: string
+          existing_event_id: string
+          external_event_id: string
+          id?: string
+          incoming_amount?: number | null
+          incoming_digest: string
+          incoming_event_type?: string | null
+          incoming_occurred_at?: string | null
+          provider_code: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_verified: boolean
+        }
+        Update: {
+          detected_at?: string
+          existing_digest?: string
+          existing_event_id?: string
+          external_event_id?: string
+          id?: string
+          incoming_amount?: number | null
+          incoming_digest?: string
+          incoming_event_type?: string | null
+          incoming_occurred_at?: string | null
+          provider_code?: string
+          review_note?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          signature_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_webhook_conflicts_existing_fk"
+            columns: ["existing_event_id"]
+            isOneToOne: false
+            referencedRelation: "provider_webhook_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_webhook_conflicts_provider_fk"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "payment_providers"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      provider_webhook_events: {
+        Row: {
+          amount: number | null
+          currency_code: string | null
+          event_type: string
+          external_event_id: string
+          external_reference: string | null
+          id: string
+          intent_id: string | null
+          internal_seq: number
+          occurred_at: string
+          payload_digest: string
+          processed_at: string | null
+          processing_note: string | null
+          processing_outcome: string | null
+          provider_code: string
+          provider_sequence: number | null
+          received_at: string
+          signature_algorithm: string | null
+          signature_key_id: string | null
+          signature_verified: boolean
+        }
+        Insert: {
+          amount?: number | null
+          currency_code?: string | null
+          event_type: string
+          external_event_id: string
+          external_reference?: string | null
+          id?: string
+          intent_id?: string | null
+          internal_seq?: never
+          occurred_at: string
+          payload_digest: string
+          processed_at?: string | null
+          processing_note?: string | null
+          processing_outcome?: string | null
+          provider_code: string
+          provider_sequence?: number | null
+          received_at?: string
+          signature_algorithm?: string | null
+          signature_key_id?: string | null
+          signature_verified: boolean
+        }
+        Update: {
+          amount?: number | null
+          currency_code?: string | null
+          event_type?: string
+          external_event_id?: string
+          external_reference?: string | null
+          id?: string
+          intent_id?: string | null
+          internal_seq?: never
+          occurred_at?: string
+          payload_digest?: string
+          processed_at?: string | null
+          processing_note?: string | null
+          processing_outcome?: string | null
+          provider_code?: string
+          provider_sequence?: number | null
+          received_at?: string
+          signature_algorithm?: string | null
+          signature_key_id?: string | null
+          signature_verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_webhook_events_intent_fk"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "provider_webhook_events_provider_fk"
+            columns: ["provider_code"]
+            isOneToOne: false
+            referencedRelation: "payment_providers"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      regulatory_acts: {
+        Row: {
+          act_date: string | null
+          act_number: string
+          act_type: string
+          act_year: number
+          created_at: string
+          created_by: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          issuer: string
+          retention_policy: string
+          summary: string | null
+          superseded_by_act_id: string | null
+          title: string | null
+        }
+        Insert: {
+          act_date?: string | null
+          act_number: string
+          act_type: string
+          act_year: number
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          issuer: string
+          retention_policy?: string
+          summary?: string | null
+          superseded_by_act_id?: string | null
+          title?: string | null
+        }
+        Update: {
+          act_date?: string | null
+          act_number?: string
+          act_type?: string
+          act_year?: number
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          issuer?: string
+          retention_policy?: string
+          summary?: string | null
+          superseded_by_act_id?: string | null
+          title?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_acts_superseded_by_fk"
+            columns: ["superseded_by_act_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_acts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_assessment_findings: {
+        Row: {
+          assessment_id: string
+          created_at: string
+          id: string
+          insufficient_reason: string | null
+          offer_version_id: string | null
+          rationale: string | null
+          requirement_code: string
+          requires_human_review: boolean
+          state: string
+          transport_operation_id: string | null
+        }
+        Insert: {
+          assessment_id: string
+          created_at?: string
+          id?: string
+          insufficient_reason?: string | null
+          offer_version_id?: string | null
+          rationale?: string | null
+          requirement_code: string
+          requires_human_review?: boolean
+          state: string
+          transport_operation_id?: string | null
+        }
+        Update: {
+          assessment_id?: string
+          created_at?: string
+          id?: string
+          insufficient_reason?: string | null
+          offer_version_id?: string | null
+          rationale?: string | null
+          requirement_code?: string
+          requires_human_review?: boolean
+          state?: string
+          transport_operation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_assessment_findings_assessment_same_offer_fk"
+            columns: ["assessment_id", "offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "offer_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessment_findings_assessment_same_operation_fk"
+            columns: ["assessment_id", "transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+        ]
+      }
+      regulatory_assessments: {
+        Row: {
+          assessment_snapshot: Json | null
+          blocking_reasons: Json | null
+          coefficient_table_version: string | null
+          computed_floor_amount_raw: number | null
+          created_at: string
+          decided_at: string
+          decided_by: string | null
+          decision_mode: string
+          floor_applicability: string | null
+          floor_currency: string | null
+          id: string
+          inputs_snapshot: Json | null
+          offer_version_id: string | null
+          operation_type_at_assessment: string | null
+          pending_items: Json | null
+          result: string
+          retention_policy: string
+          rounding_policy: string
+          rule_id: string
+          rule_version: string
+          stage: string
+          transport_operation_id: string | null
+        }
+        Insert: {
+          assessment_snapshot?: Json | null
+          blocking_reasons?: Json | null
+          coefficient_table_version?: string | null
+          computed_floor_amount_raw?: number | null
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision_mode?: string
+          floor_applicability?: string | null
+          floor_currency?: string | null
+          id?: string
+          inputs_snapshot?: Json | null
+          offer_version_id?: string | null
+          operation_type_at_assessment?: string | null
+          pending_items?: Json | null
+          result: string
+          retention_policy?: string
+          rounding_policy?: string
+          rule_id: string
+          rule_version: string
+          stage: string
+          transport_operation_id?: string | null
+        }
+        Update: {
+          assessment_snapshot?: Json | null
+          blocking_reasons?: Json | null
+          coefficient_table_version?: string | null
+          computed_floor_amount_raw?: number | null
+          created_at?: string
+          decided_at?: string
+          decided_by?: string | null
+          decision_mode?: string
+          floor_applicability?: string | null
+          floor_currency?: string | null
+          id?: string
+          inputs_snapshot?: Json | null
+          offer_version_id?: string | null
+          operation_type_at_assessment?: string | null
+          pending_items?: Json | null
+          result?: string
+          retention_policy?: string
+          rounding_policy?: string
+          rule_id?: string
+          rule_version?: string
+          stage?: string
+          transport_operation_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_assessments_offer_version_fk"
+            columns: ["offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "freight_offer_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessments_operation_fk"
+            columns: ["transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "transport_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_assessments_rule_version_matches_fk"
+            columns: ["rule_id", "rule_version"]
+            isOneToOne: false
+            referencedRelation: "regulatory_rule_sets"
+            referencedColumns: ["id", "rule_version"]
+          },
+        ]
+      }
+      regulatory_finding_evidence: {
+        Row: {
+          created_at: string
+          evidence_id: string
+          finding_id: string
+          offer_version_id: string | null
+          transport_operation_id: string | null
+          weight: string | null
+        }
+        Insert: {
+          created_at?: string
+          evidence_id: string
+          finding_id: string
+          offer_version_id?: string | null
+          transport_operation_id?: string | null
+          weight?: string | null
+        }
+        Update: {
+          created_at?: string
+          evidence_id?: string
+          finding_id?: string
+          offer_version_id?: string | null
+          transport_operation_id?: string | null
+          weight?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_finding_evidence_evidence_same_offer_fk"
+            columns: ["evidence_id", "offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "offer_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_finding_evidence_evidence_same_operation_fk"
+            columns: ["evidence_id", "transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+          {
+            foreignKeyName: "regulatory_finding_evidence_finding_same_offer_fk"
+            columns: ["finding_id", "offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessment_findings"
+            referencedColumns: ["id", "offer_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_finding_evidence_finding_same_operation_fk"
+            columns: ["finding_id", "transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessment_findings"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+        ]
+      }
+      regulatory_requirement_evidence: {
+        Row: {
+          collected_at: string
+          collected_by: string | null
+          contains_personal_data: boolean
+          created_at: string
+          divergence_flag: boolean
+          divergence_note: string | null
+          document_hash: string | null
+          document_ref: string | null
+          evidence_strength: string
+          evidence_type: string
+          id: string
+          observed_value: Json | null
+          offer_version_id: string | null
+          requirement_code: string
+          resolves_divergence_of_id: string | null
+          retention_policy: string
+          source: string
+          supersedes_evidence_id: string | null
+          transport_operation_id: string | null
+          valid_from: string | null
+          valid_to: string | null
+        }
+        Insert: {
+          collected_at?: string
+          collected_by?: string | null
+          contains_personal_data?: boolean
+          created_at?: string
+          divergence_flag?: boolean
+          divergence_note?: string | null
+          document_hash?: string | null
+          document_ref?: string | null
+          evidence_strength: string
+          evidence_type: string
+          id?: string
+          observed_value?: Json | null
+          offer_version_id?: string | null
+          requirement_code: string
+          resolves_divergence_of_id?: string | null
+          retention_policy?: string
+          source: string
+          supersedes_evidence_id?: string | null
+          transport_operation_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Update: {
+          collected_at?: string
+          collected_by?: string | null
+          contains_personal_data?: boolean
+          created_at?: string
+          divergence_flag?: boolean
+          divergence_note?: string | null
+          document_hash?: string | null
+          document_ref?: string | null
+          evidence_strength?: string
+          evidence_type?: string
+          id?: string
+          observed_value?: Json | null
+          offer_version_id?: string | null
+          requirement_code?: string
+          resolves_divergence_of_id?: string | null
+          retention_policy?: string
+          source?: string
+          supersedes_evidence_id?: string | null
+          transport_operation_id?: string | null
+          valid_from?: string | null
+          valid_to?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_requirement_evidence_offer_version_fk"
+            columns: ["offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "freight_offer_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_operation_fk"
+            columns: ["transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "transport_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_resolves_same_offer_fk"
+            columns: ["resolves_divergence_of_id", "offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "offer_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_resolves_same_operation_fk"
+            columns: ["resolves_divergence_of_id", "transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_supersedes_same_offer_fk"
+            columns: ["supersedes_evidence_id", "offer_version_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "offer_version_id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_supersedes_same_operation_fk"
+            columns: ["supersedes_evidence_id", "transport_operation_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+        ]
+      }
+      regulatory_requirement_evidence_verifications: {
+        Row: {
+          created_at: string
+          evidence_id: string
+          id: string
+          method: string
+          notes: string | null
+          retention_policy: string
+          status: string
+          supersedes_verification_id: string | null
+          verified_at: string
+          verified_by: string | null
+          verified_by_process: string | null
+        }
+        Insert: {
+          created_at?: string
+          evidence_id: string
+          id?: string
+          method: string
+          notes?: string | null
+          retention_policy?: string
+          status: string
+          supersedes_verification_id?: string | null
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_process?: string | null
+        }
+        Update: {
+          created_at?: string
+          evidence_id?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          retention_policy?: string
+          status?: string
+          supersedes_verification_id?: string | null
+          verified_at?: string
+          verified_by?: string | null
+          verified_by_process?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_requirement_evidence_verifications_evidence_fk"
+            columns: ["evidence_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_requirement_evidence_verifications_supersedes_same_e"
+            columns: ["supersedes_verification_id", "evidence_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_requirement_evidence_verifications"
+            referencedColumns: ["id", "evidence_id"]
+          },
+        ]
+      }
+      regulatory_rule_set_acts: {
+        Row: {
+          act_id: string
+          citation_context: string | null
+          created_at: string
+          notes: string | null
+          rule_set_id: string
+        }
+        Insert: {
+          act_id: string
+          citation_context?: string | null
+          created_at?: string
+          notes?: string | null
+          rule_set_id: string
+        }
+        Update: {
+          act_id?: string
+          citation_context?: string | null
+          created_at?: string
+          notes?: string | null
+          rule_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_rule_set_acts_act_fk"
+            columns: ["act_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_acts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_rule_set_acts_rule_set_fk"
+            columns: ["rule_set_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_rule_sets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      regulatory_rule_set_artifacts: {
+        Row: {
+          act_id: string
+          artifact_id: string
+          created_at: string
+          notes: string | null
+          rule_set_id: string
+        }
+        Insert: {
+          act_id: string
+          artifact_id: string
+          created_at?: string
+          notes?: string | null
+          rule_set_id: string
+        }
+        Update: {
+          act_id?: string
+          artifact_id?: string
+          created_at?: string
+          notes?: string | null
+          rule_set_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_rule_set_artifacts_act_cited_fk"
+            columns: ["rule_set_id", "act_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_rule_set_acts"
+            referencedColumns: ["rule_set_id", "act_id"]
+          },
+          {
+            foreignKeyName: "regulatory_rule_set_artifacts_belongs_to_act_fk"
+            columns: ["artifact_id", "act_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_source_artifacts"
+            referencedColumns: ["id", "act_id"]
+          },
+        ]
+      }
+      regulatory_rule_sets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          effective_from: string | null
+          effective_to: string | null
+          id: string
+          parameters: Json | null
+          retention_policy: string
+          rule_version: string
+          scope: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          parameters?: Json | null
+          retention_policy?: string
+          rule_version: string
+          scope: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_from?: string | null
+          effective_to?: string | null
+          id?: string
+          parameters?: Json | null
+          retention_policy?: string
+          rule_version?: string
+          scope?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      regulatory_source_artifact_validations: {
+        Row: {
+          artifact_id: string
+          created_at: string
+          id: string
+          method: string
+          notes: string | null
+          retention_policy: string
+          status: string
+          supersedes_validation_id: string | null
+          validated_at: string
+          validated_by: string | null
+          validated_by_process: string | null
+        }
+        Insert: {
+          artifact_id: string
+          created_at?: string
+          id?: string
+          method: string
+          notes?: string | null
+          retention_policy?: string
+          status: string
+          supersedes_validation_id?: string | null
+          validated_at?: string
+          validated_by?: string | null
+          validated_by_process?: string | null
+        }
+        Update: {
+          artifact_id?: string
+          created_at?: string
+          id?: string
+          method?: string
+          notes?: string | null
+          retention_policy?: string
+          status?: string
+          supersedes_validation_id?: string | null
+          validated_at?: string
+          validated_by?: string | null
+          validated_by_process?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_source_artifact_validations_artifact_fk"
+            columns: ["artifact_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_source_artifacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "regulatory_source_artifact_validations_supersedes_same_artifact"
+            columns: ["supersedes_validation_id", "artifact_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_source_artifact_validations"
+            referencedColumns: ["id", "artifact_id"]
+          },
+        ]
+      }
+      regulatory_source_artifacts: {
+        Row: {
+          accessed_at: string | null
+          act_id: string
+          created_at: string
+          created_by: string | null
+          document_hash: string
+          document_ref: string
+          id: string
+          notes: string | null
+          origin_type: string
+          retention_policy: string
+          size_bytes: number | null
+        }
+        Insert: {
+          accessed_at?: string | null
+          act_id: string
+          created_at?: string
+          created_by?: string | null
+          document_hash: string
+          document_ref: string
+          id?: string
+          notes?: string | null
+          origin_type: string
+          retention_policy?: string
+          size_bytes?: number | null
+        }
+        Update: {
+          accessed_at?: string | null
+          act_id?: string
+          created_at?: string
+          created_by?: string | null
+          document_hash?: string
+          document_ref?: string
+          id?: string
+          notes?: string | null
+          origin_type?: string
+          retention_policy?: string
+          size_bytes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "regulatory_source_artifacts_act_fk"
+            columns: ["act_id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_acts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       route_estimates: {
         Row: {
@@ -1847,6 +4234,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rpc_call_log: {
+        Row: {
+          actor_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          outcome: string
+          params_fingerprint: string
+          request_id: string
+          rpc_name: string
+          target_id: string | null
+        }
+        Insert: {
+          actor_id: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          outcome: string
+          params_fingerprint: string
+          request_id: string
+          rpc_name: string
+          target_id?: string | null
+        }
+        Update: {
+          actor_id?: string
+          created_at?: string
+          detail?: string | null
+          id?: string
+          outcome?: string
+          params_fingerprint?: string
+          request_id?: string
+          rpc_name?: string
+          target_id?: string | null
+        }
+        Relationships: []
       }
       security_alerts: {
         Row: {
@@ -1934,6 +4357,152 @@ export type Database = {
           recorded_at?: string
         }
         Relationships: []
+      }
+      transport_operations: {
+        Row: {
+          actual_end_at: string | null
+          actual_start_at: string | null
+          carrier_company_id: string | null
+          classification_version: number | null
+          contract_id: string | null
+          created_at: string
+          destination_location: Json | null
+          driver_id: string | null
+          external_reference: string | null
+          external_system: string | null
+          floor_applicability: string | null
+          floor_applicability_assessment_id: string | null
+          freight_id: string | null
+          id: string
+          intermediate_points: Json | null
+          location_specificity: Json | null
+          operation_state: string
+          operation_type: string | null
+          operation_type_rule_version: string | null
+          origin_kind: string
+          origin_location: Json | null
+          planned_end_at: string | null
+          planned_start_at: string | null
+          registered_by: string | null
+          registration_note: string | null
+          retention_policy: string
+          shipper_company_id: string
+          truck_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          carrier_company_id?: string | null
+          classification_version?: number | null
+          contract_id?: string | null
+          created_at?: string
+          destination_location?: Json | null
+          driver_id?: string | null
+          external_reference?: string | null
+          external_system?: string | null
+          floor_applicability?: string | null
+          floor_applicability_assessment_id?: string | null
+          freight_id?: string | null
+          id?: string
+          intermediate_points?: Json | null
+          location_specificity?: Json | null
+          operation_state?: string
+          operation_type?: string | null
+          operation_type_rule_version?: string | null
+          origin_kind: string
+          origin_location?: Json | null
+          planned_end_at?: string | null
+          planned_start_at?: string | null
+          registered_by?: string | null
+          registration_note?: string | null
+          retention_policy?: string
+          shipper_company_id: string
+          truck_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_end_at?: string | null
+          actual_start_at?: string | null
+          carrier_company_id?: string | null
+          classification_version?: number | null
+          contract_id?: string | null
+          created_at?: string
+          destination_location?: Json | null
+          driver_id?: string | null
+          external_reference?: string | null
+          external_system?: string | null
+          floor_applicability?: string | null
+          floor_applicability_assessment_id?: string | null
+          freight_id?: string | null
+          id?: string
+          intermediate_points?: Json | null
+          location_specificity?: Json | null
+          operation_state?: string
+          operation_type?: string | null
+          operation_type_rule_version?: string | null
+          origin_kind?: string
+          origin_location?: Json | null
+          planned_end_at?: string | null
+          planned_start_at?: string | null
+          registered_by?: string | null
+          registration_note?: string | null
+          retention_policy?: string
+          shipper_company_id?: string
+          truck_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_operations_carrier_company_fk"
+            columns: ["carrier_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_operations_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_operations_driver_fk"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_operations_floor_assessment_same_operation_fk"
+            columns: ["floor_applicability_assessment_id", "id"]
+            isOneToOne: false
+            referencedRelation: "regulatory_assessments"
+            referencedColumns: ["id", "transport_operation_id"]
+          },
+          {
+            foreignKeyName: "transport_operations_freight_fk"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_operations_shipper_company_fk"
+            columns: ["shipper_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transport_operations_truck_fk"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trucks: {
         Row: {
@@ -2044,6 +4613,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_bid_and_create_contract: {
+        Args: { p_bid_id: string; p_freight_id: string; p_request_id: string }
+        Returns: string
+      }
       accept_driver_invitation: {
         Args: {
           p_cpf: string
@@ -2057,6 +4630,49 @@ export type Database = {
           linked_at: string
         }[]
       }
+      add_dispute_claim: {
+        Args: {
+          p_case_id: string
+          p_claimed_amount: number
+          p_reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          p_request_id: string
+          p_statement: string
+        }
+        Returns: string
+      }
+      add_dispute_evidence: {
+        Args: {
+          p_artifact_ref: string
+          p_case_id: string
+          p_content_hash: string
+          p_description: string
+          p_kind: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      admin_close_pricing_rule: {
+        Args: {
+          p_effective_until: string
+          p_reason: string
+          p_request_id: string
+          p_rule_id: string
+        }
+        Returns: string
+      }
+      admin_create_pricing_rule: {
+        Args: {
+          p_carrier_id: string
+          p_country_code: string
+          p_currency_code: string
+          p_effective_from: string
+          p_effective_until: string
+          p_fee_percentage: number
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: string
+      }
       admin_set_profile_status: {
         Args: {
           p_is_active?: boolean
@@ -2069,6 +4685,20 @@ export type Database = {
           is_verified: boolean
         }[]
       }
+      admin_supersede_pricing_rule: {
+        Args: {
+          p_effective_from: string
+          p_new_fee_percentage: number
+          p_reason: string
+          p_request_id: string
+          p_rule_id: string
+        }
+        Returns: string
+      }
+      can_govern_freight: {
+        Args: { p_company_id: string; p_created_by: string }
+        Returns: boolean
+      }
       can_manage_capacity: {
         Args: { p_carrier_id: string; p_driver_id?: string }
         Returns: boolean
@@ -2077,7 +4707,104 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: boolean
       }
+      cancel_freight: {
+        Args: { p_freight_id: string; p_reason: string; p_request_id: string }
+        Returns: string
+      }
+      close_dispute_case: {
+        Args: { p_case_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          case_id: string
+          dispute_state: Database["public"]["Enums"]["dispute_status"]
+          new_contract_status: Database["public"]["Enums"]["contract_status"]
+          was_replayed: boolean
+        }[]
+      }
       complete_company_registration: { Args: never; Returns: Json }
+      complete_contract_delivery: {
+        Args: { p_contract_id: string; p_request_id: string }
+        Returns: {
+          affected_contract_id: string
+          contract_completed: boolean
+          delivery_at: string
+          new_escrow_status: string
+          new_status: Database["public"]["Enums"]["contract_status"]
+          was_replayed: boolean
+        }[]
+      }
+      confirm_escrow_funding: {
+        Args: {
+          p_contract_id: string
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_external_reference: string
+          p_note: string
+          p_request_id: string
+        }
+        Returns: {
+          affected_contract_id: string
+          intent_id: string
+          new_escrow_status: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
+      }
+      confirm_escrow_release: {
+        Args: {
+          p_contract_id: string
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_external_reference: string
+          p_note: string
+          p_request_id: string
+        }
+        Returns: {
+          affected_contract_id: string
+          contract_completed: boolean
+          intent_id: string
+          new_contract_status: Database["public"]["Enums"]["contract_status"]
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
+      }
+      contract_dispute_role: {
+        Args: { p_contract_id: string }
+        Returns: string
+      }
+      contract_lifecycle_append: {
+        Args: {
+          p_actor_id: string
+          p_actor_kind: string
+          p_amount: number
+          p_contract_id: string
+          p_delivery_at: string
+          p_dispute_case_id: string
+          p_escrow_confirmed_at: string
+          p_fingerprint: string
+          p_intent_id: string
+          p_new_escrow: string
+          p_new_status: Database["public"]["Enums"]["contract_status"]
+          p_reason: string
+          p_request_id: string
+          p_rpc_name: string
+          p_transition: Database["public"]["Enums"]["contract_lifecycle_transition"]
+        }
+        Returns: string
+      }
+      contract_party_of: {
+        Args: { p_carrier_company_id: string; p_shipper_company_id: string }
+        Returns: string
+      }
+      create_and_publish_freight: {
+        Args: {
+          p_budget_brl: number
+          p_company_id: string
+          p_payload: Json
+          p_reason?: string
+          p_request_id: string
+        }
+        Returns: string
+      }
       create_driver_invitation: {
         Args: {
           p_driver_id: string
@@ -2091,6 +4818,65 @@ export type Database = {
           invitation_token: string
         }[]
       }
+      create_freight_draft: {
+        Args: { p_company_id: string; p_payload: Json; p_request_id: string }
+        Returns: string
+      }
+      create_freight_draft_core: {
+        Args: {
+          p_actor_id: string
+          p_company_id: string
+          p_fingerprint: string
+          p_payload: Json
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: string
+      }
+      decide_dispute_case: {
+        Args: {
+          p_carrier_amount: number
+          p_case_id: string
+          p_decided_amount: number
+          p_outcome: Database["public"]["Enums"]["dispute_decision_outcome"]
+          p_platform_amount: number
+          p_rationale: string
+          p_request_id: string
+          p_shipper_amount: number
+          p_supersedes_decision_id?: string
+        }
+        Returns: {
+          case_id: string
+          decision_id: string
+          dispute_state: Database["public"]["Enums"]["dispute_status"]
+          was_replayed: boolean
+        }[]
+      }
+      dispute_event_append: {
+        Args: {
+          p_actor_id: string
+          p_actor_kind: string
+          p_case_id: string
+          p_claim_id: string
+          p_decision_id: string
+          p_event_type: string
+          p_evidence_id: string
+          p_fingerprint: string
+          p_new_status: Database["public"]["Enums"]["dispute_status"]
+          p_note: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: string
+      }
+      emergency_withdraw_offers_by_ids: {
+        Args: {
+          p_freight_ids: string[]
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: number
+      }
       ensure_driver_record: {
         Args: never
         Returns: {
@@ -2099,6 +4885,80 @@ export type Database = {
           license_verification_status: string
           profile_id: string
         }[]
+      }
+      ensure_offer_version: {
+        Args: {
+          p_actor_id: string
+          p_fingerprint: string
+          p_freight_id: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: string
+      }
+      ensure_payment_intent: {
+        Args: {
+          p_actor_id: string
+          p_contract_id: string
+          p_fingerprint: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: {
+          carrier_net_amount: number
+          contract_id: string
+          created_at: string
+          currency_code: string
+          external_reference: string | null
+          external_status: string | null
+          failure_code: string | null
+          failure_reason: string | null
+          funding_confirmed_at: string | null
+          gross_amount: number
+          id: string
+          internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          last_event_id: string | null
+          platform_fee_amount: number
+          pricing_rule_id: string | null
+          provider_code: string
+          reconciled_at: string | null
+          reconciled_by: string | null
+          release_blocked_by_dispute: boolean
+          release_requested_at: string | null
+          release_requested_by: string | null
+          released_confirmed_at: string | null
+          requested_at: string | null
+          requested_by: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "payment_intents"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      execute_bulk_withdrawal: {
+        Args: { p_preview_id: string; p_request_id: string }
+        Returns: number
+      }
+      fail_payment_transaction: {
+        Args: {
+          p_contract_id: string
+          p_failure_code: string
+          p_failure_reason: string
+          p_request_id: string
+        }
+        Returns: {
+          affected_contract_id: string
+          intent_id: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
+      }
+      freight_offer_snapshot: {
+        Args: { p_f: Database["public"]["Tables"]["freights"]["Row"] }
+        Returns: Json
       }
       get_user_role: {
         Args: { _user_id: string }
@@ -2111,6 +4971,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_contract_visible: { Args: { p_contract_id: string }; Returns: boolean }
       is_current_user_company_member: {
         Args: { _company_id: string }
         Returns: boolean
@@ -2119,6 +4980,7 @@ export type Database = {
         Args: { _company_id: string }
         Returns: boolean
       }
+      is_dispute_visible: { Args: { p_case_id: string }; Returns: boolean }
       match_capacity_for_freight: {
         Args: {
           p_freight_id: string
@@ -2155,6 +5017,168 @@ export type Database = {
         Args: { p_value: string }
         Returns: string
       }
+      open_dispute_case: {
+        Args: {
+          p_contract_id: string
+          p_description: string
+          p_disputed_amount: number
+          p_reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          p_request_id: string
+          p_statement: string
+        }
+        Returns: {
+          case_id: string
+          case_number: string
+          dispute_state: Database["public"]["Enums"]["dispute_status"]
+          release_suspended: boolean
+          was_replayed: boolean
+        }[]
+      }
+      payment_event_append: {
+        Args: {
+          p_actor_id: string
+          p_actor_kind: string
+          p_amount: number
+          p_currency: string
+          p_event_type: string
+          p_external_ref: string
+          p_failure_code: string
+          p_failure_reason: string
+          p_fingerprint: string
+          p_intent_id: string
+          p_method: Database["public"]["Enums"]["payment_confirmation_method"]
+          p_new_status: Database["public"]["Enums"]["payment_internal_status"]
+          p_note: string
+          p_request_id: string
+          p_rpc_name: string
+          p_source: string
+          p_transaction_id: string
+          p_webhook_id: string
+        }
+        Returns: string
+      }
+      payment_status_rank: {
+        Args: {
+          p_status: Database["public"]["Enums"]["payment_internal_status"]
+        }
+        Returns: number
+      }
+      platform_pricing_rule_for: {
+        Args: {
+          p_carrier_id: string
+          p_country_code: string
+          p_currency_code: string
+        }
+        Returns: {
+          carrier_id: string | null
+          change_reason: string | null
+          closed_at: string | null
+          closed_by_admin: string | null
+          country_code: string
+          created_at: string
+          created_by: string | null
+          created_by_admin: string | null
+          currency_code: string
+          destination_subdivision_code: string | null
+          effective_from: string
+          effective_until: string | null
+          goods_type_code: string | null
+          id: string
+          insurance_percentage: number
+          is_active: boolean
+          minimum_freight_amount: number | null
+          origin_subdivision_code: string | null
+          parameters: Json
+          platform_fee_percentage: number
+          priority: number
+          rate_per_empty_km: number | null
+          rate_per_loaded_km: number | null
+          rate_per_ton: number | null
+          risk_percentage: number
+          supersedes_id: string | null
+          truck_type: Database["public"]["Enums"]["truck_type"] | null
+          updated_at: string
+          version: number
+          waiting_hour_amount: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "pricing_rules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      preview_bulk_withdrawal: {
+        Args: {
+          p_reason: string
+          p_request_id: string
+          p_scope_company_id: string
+          p_ttl_minutes?: number
+        }
+        Returns: string
+      }
+      pricing_rule_scope_lock_key: {
+        Args: {
+          p_carrier_id: string
+          p_country_code: string
+          p_currency_code: string
+        }
+        Returns: number
+      }
+      publish_freight: {
+        Args: {
+          p_budget_brl: number
+          p_freight_id: string
+          p_reason?: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      publish_freight_core: {
+        Args: {
+          p_actor_id: string
+          p_budget_brl: number
+          p_fingerprint: string
+          p_freight_id: string
+          p_is_admin: boolean
+          p_reason: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: string
+      }
+      record_provider_webhook: {
+        Args: {
+          p_amount: number
+          p_currency_code: string
+          p_event_type: string
+          p_external_event_id: string
+          p_external_reference: string
+          p_occurred_at: string
+          p_payload_digest: string
+          p_provider_code: string
+          p_provider_sequence: number
+          p_request_id: string
+          p_signature_algorithm: string
+          p_signature_key_id: string
+          p_signature_verified: boolean
+        }
+        Returns: {
+          intent_id: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          outcome: string
+          webhook_id: string
+        }[]
+      }
+      reprice_published_freight: {
+        Args: {
+          p_budget_brl: number
+          p_freight_id: string
+          p_reason: string
+          p_request_id: string
+        }
+        Returns: string
+      }
       request_driver_carrier_link: {
         Args: {
           p_carrier_id: string
@@ -2170,6 +5194,36 @@ export type Database = {
           request_id: string
           request_status: string
         }[]
+      }
+      request_escrow_funding: {
+        Args: { p_contract_id: string; p_request_id: string }
+        Returns: {
+          affected_contract_id: string
+          intent_id: string
+          new_escrow_status: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
+      }
+      request_escrow_release: {
+        Args: { p_contract_id: string; p_request_id: string }
+        Returns: {
+          affected_contract_id: string
+          intent_id: string
+          new_escrow_status: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
+      }
+      require_steelgo_admin: { Args: { p_rpc_name: string }; Returns: string }
+      resolve_payment_reconciliation: {
+        Args: {
+          p_note: string
+          p_reconciliation_id: string
+          p_request_id: string
+          p_status: string
+        }
+        Returns: string
       }
       review_driver_carrier_request: {
         Args: {
@@ -2193,6 +5247,34 @@ export type Database = {
           verified_at: string
         }[]
       }
+      rpc_idempotency_probe: {
+        Args: {
+          p_actor_id: string
+          p_fingerprint: string
+          p_request_id: string
+          p_rpc_name: string
+          p_target_id: string
+          p_target_is_output?: boolean
+        }
+        Returns: {
+          actor_id: string
+          created_at: string
+          detail: string | null
+          id: string
+          outcome: string
+          params_fingerprint: string
+          request_id: string
+          rpc_name: string
+          target_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "rpc_call_log"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      rpc_params_fingerprint: { Args: { p_params: Json }; Returns: string }
       search_carriers_for_driver: {
         Args: { p_country_code?: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -2239,6 +5321,33 @@ export type Database = {
           updated_at: string
         }[]
       }
+      sign_contract: {
+        Args: {
+          p_contract_id: string
+          p_request_id: string
+          p_signature_hash: string
+          p_signature_url: string
+        }
+        Returns: {
+          new_contract_status: Database["public"]["Enums"]["contract_status"]
+          new_freight_status: Database["public"]["Enums"]["freight_status"]
+          signed_contract_id: string
+          signed_freight_id: string
+          signed_party: string
+          was_replayed: boolean
+        }[]
+      }
+      try_complete_contract: {
+        Args: {
+          p_actor_id: string
+          p_actor_kind: string
+          p_contract_id: string
+          p_fingerprint: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: boolean
+      }
       update_capacity_location: {
         Args: {
           p_accuracy_m?: number
@@ -2251,6 +5360,23 @@ export type Database = {
           availability_status: string
           location_updated_at: string
         }[]
+      }
+      withdraw_freight: {
+        Args: { p_freight_id: string; p_reason: string; p_request_id: string }
+        Returns: string
+      }
+      withdraw_freight_core: {
+        Args: {
+          p_actor_id: string
+          p_fingerprint: string
+          p_freight_id: string
+          p_is_admin: boolean
+          p_preview_id: string
+          p_reason: string
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: string
       }
     }
     Enums: {
@@ -2278,6 +5404,21 @@ export type Database = {
         | "distributor"
         | "industry"
         | "carrier_company"
+      contract_lifecycle_transition:
+        | "shipper_signed"
+        | "carrier_signed"
+        | "activated"
+        | "delivery_completed"
+        | "escrow_funding_requested"
+        | "escrow_funding_confirmed"
+        | "escrow_release_requested"
+        | "escrow_release_confirmed"
+        | "payment_failed"
+        | "reconciliation_required"
+        | "completed"
+        | "disputed"
+        | "dispute_resolved"
+        | "cancelled"
       contract_status:
         | "draft"
         | "awaiting_shipper_signature"
@@ -2286,7 +5427,41 @@ export type Database = {
         | "completed"
         | "disputed"
         | "cancelled"
+      dispute_decision_outcome:
+        | "release_to_carrier"
+        | "refund_to_shipper"
+        | "split"
+        | "dismissed"
+      dispute_party_role:
+        | "claimant"
+        | "respondent"
+        | "driver"
+        | "admin_reviewer"
+      dispute_priority: "low" | "normal" | "high" | "critical"
+      dispute_reason_code:
+        | "cargo_damage"
+        | "delivery_delay"
+        | "quantity_mismatch"
+        | "documentation_issue"
+        | "payment_amount"
+        | "service_not_rendered"
+        | "route_deviation"
+        | "other"
+      dispute_status:
+        | "open"
+        | "under_review"
+        | "awaiting_evidence"
+        | "decided"
+        | "closed"
+        | "withdrawn"
       freight_category: "traditional" | "green_low_carbon" | "green_ev"
+      freight_lifecycle_transition:
+        | "publish"
+        | "withdraw"
+        | "reprice"
+        | "cancel"
+        | "contract_pending"
+        | "contracted"
       freight_status:
         | "draft"
         | "published"
@@ -2299,6 +5474,18 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "disputed"
+        | "withdrawn"
+      payment_confirmation_method: "provider_webhook" | "manual_admin"
+      payment_internal_status:
+        | "pending_provider"
+        | "awaiting_funding"
+        | "funding_confirmed"
+        | "release_requested"
+        | "released_confirmed"
+        | "failed"
+        | "cancelled"
+        | "reconciliation_required"
+      payment_party_kind: "platform" | "carrier" | "shipper"
       payment_status:
         | "pending"
         | "escrow_held"
@@ -2306,6 +5493,13 @@ export type Database = {
         | "refunded"
         | "disputed"
         | "failed"
+      payment_transaction_kind: "funding" | "release" | "refund" | "adjustment"
+      payment_transaction_status:
+        | "requested"
+        | "pending_provider"
+        | "confirmed"
+        | "failed"
+        | "cancelled"
       security_alert_type:
         | "route_deviation"
         | "panic_button"
@@ -2351,12 +5545,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2380,11 +5574,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2405,11 +5599,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2430,11 +5624,11 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2447,11 +5641,11 @@ export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -2493,6 +5687,22 @@ export const Constants = {
         "industry",
         "carrier_company",
       ],
+      contract_lifecycle_transition: [
+        "shipper_signed",
+        "carrier_signed",
+        "activated",
+        "delivery_completed",
+        "escrow_funding_requested",
+        "escrow_funding_confirmed",
+        "escrow_release_requested",
+        "escrow_release_confirmed",
+        "payment_failed",
+        "reconciliation_required",
+        "completed",
+        "disputed",
+        "dispute_resolved",
+        "cancelled",
+      ],
       contract_status: [
         "draft",
         "awaiting_shipper_signature",
@@ -2502,7 +5712,46 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      dispute_decision_outcome: [
+        "release_to_carrier",
+        "refund_to_shipper",
+        "split",
+        "dismissed",
+      ],
+      dispute_party_role: [
+        "claimant",
+        "respondent",
+        "driver",
+        "admin_reviewer",
+      ],
+      dispute_priority: ["low", "normal", "high", "critical"],
+      dispute_reason_code: [
+        "cargo_damage",
+        "delivery_delay",
+        "quantity_mismatch",
+        "documentation_issue",
+        "payment_amount",
+        "service_not_rendered",
+        "route_deviation",
+        "other",
+      ],
+      dispute_status: [
+        "open",
+        "under_review",
+        "awaiting_evidence",
+        "decided",
+        "closed",
+        "withdrawn",
+      ],
       freight_category: ["traditional", "green_low_carbon", "green_ev"],
+      freight_lifecycle_transition: [
+        "publish",
+        "withdraw",
+        "reprice",
+        "cancel",
+        "contract_pending",
+        "contracted",
+      ],
       freight_status: [
         "draft",
         "published",
@@ -2515,7 +5764,20 @@ export const Constants = {
         "completed",
         "cancelled",
         "disputed",
+        "withdrawn",
       ],
+      payment_confirmation_method: ["provider_webhook", "manual_admin"],
+      payment_internal_status: [
+        "pending_provider",
+        "awaiting_funding",
+        "funding_confirmed",
+        "release_requested",
+        "released_confirmed",
+        "failed",
+        "cancelled",
+        "reconciliation_required",
+      ],
+      payment_party_kind: ["platform", "carrier", "shipper"],
       payment_status: [
         "pending",
         "escrow_held",
@@ -2523,6 +5785,14 @@ export const Constants = {
         "refunded",
         "disputed",
         "failed",
+      ],
+      payment_transaction_kind: ["funding", "release", "refund", "adjustment"],
+      payment_transaction_status: [
+        "requested",
+        "pending_provider",
+        "confirmed",
+        "failed",
+        "cancelled",
       ],
       security_alert_type: [
         "route_deviation",

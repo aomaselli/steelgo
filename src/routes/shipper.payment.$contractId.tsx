@@ -1,6 +1,6 @@
 import { createFileRoute, useParams, useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Lock, Truck, Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,35 +30,59 @@ function PaymentCheckoutPage() {
     },
   });
 
+  // L2a revisao 7. Substitui dois UPDATE diretos por UMA RPC.
+  //
+  //   * o UPDATE em public.contracts foi revogado na migration 20260903100600.
+  //     request_escrow_funding autentica, trava o contrato, deriva no servidor
+  //     que o chamador e o embarcador, cria a intencao de pagamento e registra
+  //     uma SOLICITACAO de aporte - nunca uma confirmacao;
+  //   * o UPDATE em public.payments FOI REMOVIDO. Ele nunca funcionou para
+  //     embarcador comum: public.payments so tem policy de SELECT para a parte
+  //     e uma policy ALL restrita a admin. RLS filtrava a linha em vez de
+  //     recusar, entao o erro vinha nulo e o codigo seguia como se tivesse
+  //     gravado. Alem disso nenhum ponto do sistema INSERE em public.payments,
+  //     de modo que nao havia linha a atualizar;
+  //   * status="active" e activated_at NAO sao mais escritos aqui. Quem ativa o
+  //     contrato e a segunda assinatura, em public.sign_contract. Escrever isso
+  //     aqui era um caminho paralelo para o mesmo estado.
+  const requestIdRef = useRef<string | null>(null);
   const simulate = async () => {
     setError(null);
     setProcessing(true);
-    await new Promise((r) => setTimeout(r, 800));
-    const ts = new Date().toISOString();
+    if (requestIdRef.current === null) requestIdRef.current = crypto.randomUUID();
 
-    const { error: payErr } = await supabase
-      .from("payments")
-      .update({ status: "escrow_held", escrow_held_at: ts })
-      .eq("contract_id", contractId);
-
-    const { error: contractErr } = await supabase
-      .from("contracts")
-      .update({ status: "active", activated_at: ts, escrow_status: "escrow_held", escrow_held_at: ts })
-      .eq("id", contractId);
+    const { data, error: rpcErr } = await supabase.rpc("request_escrow_funding", {
+      p_contract_id: contractId,
+      p_request_id: requestIdRef.current,
+    });
 
     setProcessing(false);
 
-    if (payErr || contractErr) {
-      setError((payErr ?? contractErr)?.message ?? "Erro ao simular pagamento");
+    if (rpcErr) {
+      setError(`O aporte NÃO foi solicitado. ${rpcErr.message}`);
       return;
     }
 
-    toast.success("✅ Pagamento simulado! Contrato ativo.");
+    // HONESTIDADE DE ESTADO. Isto registra uma SOLICITAÇÃO. Nada foi retido:
+    // a confirmação depende do provedor ou de atestação de um administrador
+    // SteelGo, e só então o estado vira funding_confirmed.
+    const row = Array.isArray(data) ? data[0] : data;
+    toast.success(
+      row?.was_replayed
+        ? "Solicitação já registrada."
+        : "Aporte solicitado. Aguardando confirmação.",
+    );
     navigate({ to: "/shipper/contracts/$id", params: { id: contractId } });
   };
 
-  if (isLoading) return <div className="p-12 flex justify-center"><Spinner /></div>;
-  if (!contract) return <div className="p-12 text-center text-graphite-200">Contrato não encontrado.</div>;
+  if (isLoading)
+    return (
+      <div className="p-12 flex justify-center">
+        <Spinner />
+      </div>
+    );
+  if (!contract)
+    return <div className="p-12 text-center text-graphite-200">Contrato não encontrado.</div>;
 
   const f = contract.freights;
   const freightVal = (contract.total_amount_brl ?? 0) - (contract.platform_fee_brl ?? 0);
@@ -69,7 +93,8 @@ function PaymentCheckoutPage() {
       <div className="mb-6 rounded-[12px] bg-amber-500/10 border border-amber-500/30 px-4 py-3 flex items-center gap-2">
         <Info className="w-4 h-4 text-amber-400 flex-shrink-0" />
         <p className="text-sm text-amber-200">
-          Modo de demonstração — pagamentos reais serão ativados antes do lançamento.
+          Sem provedor de pagamento integrado. A solicitação fica registrada e a confirmação é feita
+          pela SteelGo, com comprovante.
         </p>
       </div>
 
@@ -81,10 +106,15 @@ function PaymentCheckoutPage() {
           <div className="mt-4 flex items-start gap-2 text-sm">
             <Truck className="w-4 h-4 mt-0.5 text-graphite-400" />
             <div>
-              <div className="text-graphite-100">Frete {contract.contract_number ?? String(contract.id).slice(0, 8)}</div>
-              <div className="text-xs text-graphite-400">{f?.origin_city} → {f?.dest_city}</div>
+              <div className="text-graphite-100">
+                Frete {contract.contract_number ?? String(contract.id).slice(0, 8)}
+              </div>
               <div className="text-xs text-graphite-400">
-                {f?.steel_type ? `${f.steel_type} · ` : ""}{f?.weight_tons ?? "—"} t
+                {f?.origin_city} → {f?.dest_city}
+              </div>
+              <div className="text-xs text-graphite-400">
+                {f?.steel_type ? `${f.steel_type} · ` : ""}
+                {f?.weight_tons ?? "—"} t
               </div>
             </div>
           </div>
@@ -96,11 +126,15 @@ function PaymentCheckoutPage() {
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-graphite-400">Taxa plataforma (3,5%)</span>
-              <span className="text-graphite-400 tabular-nums">{formatBRL(contract.platform_fee_brl)}</span>
+              <span className="text-graphite-400 tabular-nums">
+                {formatBRL(contract.platform_fee_brl)}
+              </span>
             </div>
             <div className="flex justify-between border-t border-graphite-700/40 pt-2 mt-2">
               <span className="text-graphite-100 font-medium">Total a pagar</span>
-              <span className="text-xl font-bold text-graphite-50 tabular-nums">{formatBRL(contract.total_amount_brl)}</span>
+              <span className="text-xl font-bold text-graphite-50 tabular-nums">
+                {formatBRL(contract.total_amount_brl)}
+              </span>
             </div>
           </div>
 
@@ -109,7 +143,8 @@ function PaymentCheckoutPage() {
             <div>
               <div className="text-sm font-medium text-esg-green-400">Pagamento garantido</div>
               <p className="text-xs text-graphite-200 mt-1">
-                Seu pagamento fica retido com segurança. A transportadora só recebe após você confirmar a entrega da carga.
+                Seu pagamento fica retido com segurança. A transportadora só recebe após você
+                confirmar a entrega da carga.
               </p>
             </div>
           </div>
@@ -119,20 +154,24 @@ function PaymentCheckoutPage() {
         <Card className="p-6">
           <h2 className="text-lg font-semibold text-graphite-50 mb-2">Confirmar pagamento</h2>
           <p className="text-sm text-graphite-300 mb-6">
-            Esta é uma simulação. Ao confirmar, o contrato será marcado como <strong className="text-graphite-100">ativo</strong> e o pagamento como <strong className="text-graphite-100">retido protegido</strong>, sem cobrança real.
+            Ao confirmar, o pagamento é <strong className="text-graphite-100">solicitado</strong> —
+            e fica assim até que a SteelGo confirme o recebimento. Nada é retido neste momento. O
+            contrato já está ativo desde a assinatura das duas partes.
           </p>
 
           <div className="rounded-[10px] bg-bg-elevated p-4 mb-4">
             <div className="flex justify-between text-sm">
-              <span className="text-graphite-300">Valor a bloquear</span>
-              <span className="text-graphite-50 font-semibold tabular-nums">{formatBRL(contract.total_amount_brl)}</span>
+              <span className="text-graphite-300">Valor a solicitar</span>
+              <span className="text-graphite-50 font-semibold tabular-nums">
+                {formatBRL(contract.total_amount_brl)}
+              </span>
             </div>
           </div>
 
           {error && <p className="text-sm text-red-400 mb-3">{error}</p>}
 
           <Button onClick={simulate} disabled={processing} className="w-full h-12">
-            {processing ? "Processando..." : "Simular pagamento protegido →"}
+            {processing ? "Enviando..." : "Solicitar pagamento protegido →"}
           </Button>
 
           <Link

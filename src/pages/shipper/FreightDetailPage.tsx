@@ -1,27 +1,13 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import {
-  Pencil,
-  Clock,
-  MapPin,
-  ShieldCheck,
-  Map as MapIcon,
-} from "lucide-react";
+import { Pencil, Clock, MapPin, ShieldCheck, Map as MapIcon } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Button,
-  Card,
-  EmptyState,
-  Spinner,
-  Modal,
-  Select,
-  Badge,
-} from "@/components/steel";
+import { Button, Card, EmptyState, Spinner, Modal, Select, Badge } from "@/components/steel";
 import { StatusPill } from "@/components/steel/StatusPill";
 import { GreenFreightTag } from "@/components/steel/GreenFreightTag";
 import { ScoreRing } from "@/components/steel/ScoreRing";
@@ -42,13 +28,15 @@ type BidRow = {
     id: string;
     company_id: string;
     companies: { name: string | null; trade_name: string | null } | null;
-    carrier_scores?: {
-      overall_score: number | null;
-      safety_score: number | null;
-      esg_score: number | null;
-      delivery_score: number | null;
-      is_verified: boolean | null;
-    }[] | null;
+    carrier_scores?:
+      | {
+          overall_score: number | null;
+          safety_score: number | null;
+          esg_score: number | null;
+          delivery_score: number | null;
+          is_verified: boolean | null;
+        }[]
+      | null;
   } | null;
 };
 
@@ -76,11 +64,7 @@ export function FreightDetailPage() {
   const { data: freight, isLoading } = useQuery({
     queryKey: ["freight", id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("freights")
-        .select("*")
-        .eq("id", id)
-        .single();
+      const { data, error } = await supabase.from("freights").select("*").eq("id", id).single();
       if (error) throw error;
       return data;
     },
@@ -132,7 +116,8 @@ export function FreightDetailPage() {
     else
       list.sort(
         (a, b) =>
-          Number(score(b)) * 1000 - Number(b.amount_brl) -
+          Number(score(b)) * 1000 -
+          Number(b.amount_brl) -
           (Number(score(a)) * 1000 - Number(a.amount_brl)),
       );
     return list;
@@ -140,10 +125,12 @@ export function FreightDetailPage() {
 
   const cancelMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("freights")
-        .update({ status: "cancelled" })
-        .eq("id", id);
+      // L2a: cancelamento passa por RPC. UPDATE direto de status foi revogado.
+      const { error } = await supabase.rpc("cancel_freight", {
+        p_freight_id: id,
+        p_reason: "Cancelado pelo embarcador",
+        p_request_id: crypto.randomUUID(),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -155,10 +142,14 @@ export function FreightDetailPage() {
 
   const publishMut = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase
-        .from("freights")
-        .update({ status: "published", published_at: new Date().toISOString() })
-        .eq("id", id);
+      // L2a: publicacao passa por RPC, que cria versao de oferta e evento.
+      const budget = Number(freight?.budget_brl);
+      if (!(budget > 0)) throw new Error("Informe o valor anunciado antes de publicar");
+      const { error } = await supabase.rpc("publish_freight", {
+        p_freight_id: id,
+        p_budget_brl: budget,
+        p_request_id: crypto.randomUUID(),
+      });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -168,56 +159,38 @@ export function FreightDetailPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // L2a: uma chave de idempotencia por proposta escolhida. Reaproveitada em
+  // retry e em duplo clique: a segunda chamada cai no replay da RPC e devolve o
+  // MESMO contrato, em vez de tentar contratar de novo.
+  const acceptRequestIds = useRef<Record<string, string>>({});
+
   const acceptMut = useMutation({
     mutationFn: async () => {
       if (!acceptBid || !freight || !company) throw new Error("Dados incompletos");
-      const amount = Number(acceptBid.amount_brl);
-      const fee = +(amount * 0.035).toFixed(2);
-      const payout = +(amount * 0.965).toFixed(2);
 
-      const { error: bidErr } = await supabase
-        .from("bids")
-        .update({ status: "accepted" })
-        .eq("id", acceptBid.id);
-      if (bidErr) throw bidErr;
+      // L2a: UMA chamada, UMA transacao. A RPC faz no servidor tudo o que esta
+      // tela fazia em quatro requisicoes separadas - marcar a proposta aceita,
+      // rejeitar as demais ainda pendentes, mover o frete para contract_pending
+      // e criar o contrato - e deriva preco, transportadora, motorista, veiculo,
+      // taxa e repasse da propria proposta e de public.pricing_rules. Nada de
+      // identidade nem de valor comercial sai daqui.
+      //
+      // Corrige dois bloqueios do desenho anterior: a tela marcava a proposta
+      // como accepted ANTES de chamar a RPC, que exigia pending - o fluxo real
+      // sempre falhava com 22023; e o INSERT direto em public.contracts
+      // esbarrava na policy contracts_insert_admin para embarcador comum.
+      const bidId = acceptBid.id as string;
+      if (!acceptRequestIds.current[bidId]) {
+        acceptRequestIds.current[bidId] = crypto.randomUUID();
+      }
 
-      await supabase
-        .from("bids")
-        .update({ status: "rejected" })
-        .eq("freight_id", id)
-        .neq("id", acceptBid.id);
-
-      await supabase
-        .from("freights")
-        .update({
-          status: "contract_pending",
-          matched_carrier_id: acceptBid.carrier_id,
-          matched_driver_id: acceptBid.driver_id,
-          matched_truck_id: acceptBid.truck_id,
-          final_price_brl: amount,
-        })
-        .eq("id", id);
-
-      const carrierCompanyId = acceptBid.carriers?.company_id;
-      if (!carrierCompanyId) throw new Error("Transportadora sem empresa vinculada");
-      const { data: newContract, error: cErr } = await supabase
-        .from("contracts")
-        .insert({
-          bid_id: acceptBid.id,
-          freight_id: id,
-          shipper_company_id: company.id,
-          carrier_company_id: carrierCompanyId,
-          driver_id: acceptBid.driver_id,
-          truck_id: acceptBid.truck_id,
-          total_amount_brl: amount,
-          platform_fee_brl: fee,
-          carrier_payout_brl: payout,
-          status: "awaiting_shipper_signature",
-        })
-        .select("id")
-        .single();
-      if (cErr) throw cErr;
-      return newContract.id as string;
+      const { data, error } = await supabase.rpc("accept_bid_and_create_contract", {
+        p_freight_id: id,
+        p_bid_id: bidId,
+        p_request_id: acceptRequestIds.current[bidId],
+      });
+      if (error) throw error;
+      return data as string;
     },
     onSuccess: (contractId) => {
       toast.success("Proposta aceita! Contrato gerado.");
@@ -231,21 +204,29 @@ export function FreightDetailPage() {
   if (isLoading) {
     return (
       <AppShell title="Detalhe do Frete">
-        <div className="p-8 flex justify-center"><Spinner /></div>
+        <div className="p-8 flex justify-center">
+          <Spinner />
+        </div>
       </AppShell>
     );
   }
   if (!freight) {
     return (
       <AppShell title="Detalhe do Frete">
-        <div className="p-8"><EmptyState title="Frete não encontrado" /></div>
+        <div className="p-8">
+          <EmptyState title="Frete não encontrado" />
+        </div>
       </AppShell>
     );
   }
 
-  const isLocked = freight.status === "matched" || freight.status === "contract_pending" ||
-    freight.status === "contracted" || freight.status === "in_transit" ||
-    freight.status === "delivered" || freight.status === "completed";
+  const isLocked =
+    freight.status === "matched" ||
+    freight.status === "contract_pending" ||
+    freight.status === "contracted" ||
+    freight.status === "in_transit" ||
+    freight.status === "delivered" ||
+    freight.status === "completed";
 
   return (
     <AppShell title="Detalhe do Frete">
@@ -276,11 +257,11 @@ export function FreightDetailPage() {
           <div className="lg:col-span-2 space-y-5">
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-base font-semibold text-[#E6EDF3]">
-                  Informações do frete
-                </h2>
+                <h2 className="text-base font-semibold text-[#E6EDF3]">Informações do frete</h2>
                 <Link to="/shipper/freights/new">
-                  <Button variant="ghost" size="sm"><Pencil className="w-4 h-4" /></Button>
+                  <Button variant="ghost" size="sm">
+                    <Pencil className="w-4 h-4" />
+                  </Button>
                 </Link>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -291,9 +272,18 @@ export function FreightDetailPage() {
                   label="Categoria"
                   value={freight.category?.startsWith("green") ? "Verde / Elétrico" : "Tradicional"}
                 />
-                <InfoRow label="Origem" value={`${freight.origin_city ?? "—"}, ${freight.origin_state ?? ""}`} />
-                <InfoRow label="Destino" value={`${freight.dest_city ?? "—"}, ${freight.dest_state ?? ""}`} />
-                <InfoRow label="Distância" value={freight.distance_km ? `${formatNum(freight.distance_km)} km` : "—"} />
+                <InfoRow
+                  label="Origem"
+                  value={`${freight.origin_city ?? "—"}, ${freight.origin_state ?? ""}`}
+                />
+                <InfoRow
+                  label="Destino"
+                  value={`${freight.dest_city ?? "—"}, ${freight.dest_state ?? ""}`}
+                />
+                <InfoRow
+                  label="Distância"
+                  value={freight.distance_km ? `${formatNum(freight.distance_km)} km` : "—"}
+                />
                 <InfoRow
                   label="Data de coleta"
                   value={`${freight.pickup_date ?? "—"}${freight.pickup_window ? " · " + freight.pickup_window : ""}`}
@@ -304,12 +294,18 @@ export function FreightDetailPage() {
                 />
                 <InfoRow
                   label="Prazo propostas"
-                  value={freight.bid_deadline ? new Date(freight.bid_deadline).toLocaleString("pt-BR") : "—"}
+                  value={
+                    freight.bid_deadline
+                      ? new Date(freight.bid_deadline).toLocaleString("pt-BR")
+                      : "—"
+                  }
                 />
               </div>
             </Card>
 
-            {(freight.status === "published" || freight.status === "bidding" || freight.status === "matched") && (
+            {(freight.status === "published" ||
+              freight.status === "bidding" ||
+              freight.status === "matched") && (
               <Card className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <div className="flex items-center gap-3">
@@ -333,7 +329,10 @@ export function FreightDetailPage() {
                   <div className="flex flex-col gap-3">
                     {sortedBids.map((b) => {
                       const sc = b.carriers?.carrier_scores?.[0];
-                      const name = b.carriers?.companies?.trade_name ?? b.carriers?.companies?.name ?? "Transportadora";
+                      const name =
+                        b.carriers?.companies?.trade_name ??
+                        b.carriers?.companies?.name ??
+                        "Transportadora";
                       return (
                         <div
                           key={b.id}
@@ -372,18 +371,21 @@ export function FreightDetailPage() {
                               Enviada {timeAgo(b.submitted_at)}
                             </span>
                             <div className="flex gap-2">
-                              <Button variant="ghost" size="sm">Ver perfil</Button>
-                              {freight.status !== "matched" && freight.status !== "contract_pending" && (
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    setAcceptBid(b);
-                                    setConfirmChecked(false);
-                                  }}
-                                >
-                                  Aceitar proposta
-                                </Button>
-                              )}
+                              <Button variant="ghost" size="sm">
+                                Ver perfil
+                              </Button>
+                              {freight.status !== "matched" &&
+                                freight.status !== "contract_pending" && (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setAcceptBid(b);
+                                      setConfirmChecked(false);
+                                    }}
+                                  >
+                                    Aceitar proposta
+                                  </Button>
+                                )}
                             </div>
                           </div>
                         </div>
@@ -410,7 +412,9 @@ export function FreightDetailPage() {
                   </p>
                 )}
                 <p className="text-xs text-[#484F58] mt-1">ETA: —</p>
-                <Button variant="ghost" size="sm" className="w-full mt-3">Ver mapa completo</Button>
+                <Button variant="ghost" size="sm" className="w-full mt-3">
+                  Ver mapa completo
+                </Button>
               </Card>
             )}
 
@@ -418,14 +422,24 @@ export function FreightDetailPage() {
               <h3 className="text-sm font-semibold text-[#E6EDF3] mb-3">Linha do tempo</h3>
               <ol className="space-y-3">
                 <TimelineDot done={!!freight.created_at} label="Criado" ts={freight.created_at} />
-                <TimelineDot done={!!freight.published_at} label="Publicado" ts={freight.published_at} />
+                <TimelineDot
+                  done={!!freight.published_at}
+                  label="Publicado"
+                  ts={freight.published_at}
+                />
                 <TimelineDot
                   done={(bids?.length ?? 0) > 0}
                   label={`Propostas (${bids?.length ?? 0})`}
                 />
                 <TimelineDot done={!!contract} label="Contratado" ts={contract?.created_at} />
-                <TimelineDot done={freight.status === "in_transit" || freight.status === "delivered"} label="Em trânsito" />
-                <TimelineDot done={freight.status === "delivered" || freight.status === "completed"} label="Entregue" />
+                <TimelineDot
+                  done={freight.status === "in_transit" || freight.status === "delivered"}
+                  label="Em trânsito"
+                />
+                <TimelineDot
+                  done={freight.status === "delivered" || freight.status === "completed"}
+                  label="Entregue"
+                />
                 {checkpoints?.map((c) => (
                   <li key={c.id} className="flex gap-2 text-xs">
                     <MapPin className="w-3 h-3 text-steel-blue-200 mt-0.5" />
@@ -452,10 +466,7 @@ export function FreightDetailPage() {
                 )}
                 {(!contract.escrow_status || contract.escrow_status === "pending") &&
                   contract.status === "active" && (
-                    <Link
-                      to="/shipper/payment/$contractId"
-                      params={{ contractId: contract.id }}
-                    >
+                    <Link to="/shipper/payment/$contractId" params={{ contractId: contract.id }}>
                       <Button className="w-full mt-3">Confirmar e garantir pagamento →</Button>
                     </Link>
                   )}
@@ -482,7 +493,8 @@ export function FreightDetailPage() {
             </div>
           </div>
           <p className="text-sm text-[#8B949E] mb-4">
-            Ao aceitar, as outras propostas serão recusadas automaticamente e um contrato será gerado.
+            Ao aceitar, as outras propostas serão recusadas automaticamente e um contrato será
+            gerado.
           </p>
           <label className="flex items-center gap-2 text-sm text-[#C9D1D9] mb-4">
             <input
@@ -493,7 +505,9 @@ export function FreightDetailPage() {
             Confirmo que li todas as condições
           </label>
           <div className="flex gap-2 justify-end">
-            <Button variant="ghost" onClick={() => setAcceptBid(null)}>Cancelar</Button>
+            <Button variant="ghost" onClick={() => setAcceptBid(null)}>
+              Cancelar
+            </Button>
             <Button
               disabled={!confirmChecked || acceptMut.isPending}
               onClick={() => acceptMut.mutate()}
@@ -516,15 +530,7 @@ function InfoRow({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function TimelineDot({
-  done,
-  label,
-  ts,
-}: {
-  done: boolean;
-  label: string;
-  ts?: string | null;
-}) {
+function TimelineDot({ done, label, ts }: { done: boolean; label: string; ts?: string | null }) {
   return (
     <li className="flex gap-2 items-start">
       <span
@@ -534,11 +540,7 @@ function TimelineDot({
       />
       <div>
         <p className="text-sm text-[#C9D1D9]">{label}</p>
-        {ts && (
-          <p className="text-xs text-[#484F58]">
-            {new Date(ts).toLocaleString("pt-BR")}
-          </p>
-        )}
+        {ts && <p className="text-xs text-[#484F58]">{new Date(ts).toLocaleString("pt-BR")}</p>}
       </div>
     </li>
   );

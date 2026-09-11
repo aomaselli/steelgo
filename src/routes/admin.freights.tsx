@@ -53,16 +53,31 @@ function AdminFreightsPage() {
 
   function toggle(id: string) {
     const next = new Set(selectedIds);
-    next.has(id) ? next.delete(id) : next.add(id);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
     setSelectedIds(next);
   }
 
   async function bulkCancel() {
-    await supabase
-      .from("freights")
-      .update({ status: "cancelled" })
-      .in("id", Array.from(selectedIds));
-    toast.success(`${selectedIds.size} frete(s) cancelado(s)`);
+    // L2a: cancelamento em lote passa por RPC, um frete por chamada, cada uma
+    // com sua propria chave de idempotencia e sua propria entrada na trilha.
+    let ok = 0;
+    for (const fid of Array.from(selectedIds)) {
+      const { error } = await supabase.rpc("cancel_freight", {
+        p_freight_id: fid,
+        p_reason: "Cancelamento administrativo em lote",
+        p_request_id: crypto.randomUUID(),
+      });
+      if (error) {
+        toast.error(`Frete ${fid}: ${error.message}`);
+      } else {
+        ok++;
+      }
+    }
+    toast.success(`${ok} frete(s) cancelado(s)`);
     setSelectedIds(new Set());
     qc.invalidateQueries({ queryKey: ["admin-freights"] });
   }
@@ -89,7 +104,16 @@ function AdminFreightsPage() {
   }
 
   async function cancelOne(id: string) {
-    await supabase.from("freights").update({ status: "cancelled" }).eq("id", id);
+    // L2a: cancelamento administrativo unitario por RPC.
+    const { error } = await supabase.rpc("cancel_freight", {
+      p_freight_id: id,
+      p_reason: "Cancelamento administrativo",
+      p_request_id: crypto.randomUUID(),
+    });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Frete cancelado");
     qc.invalidateQueries({ queryKey: ["admin-freights"] });
   }
@@ -130,7 +154,6 @@ function AdminFreightsPage() {
           <option value="all">Todas categorias</option>
           <option value="traditional">Tradicional</option>
           <option value="green_low_carbon">Verde</option>
-          
         </Select>
       </div>
 
@@ -168,7 +191,9 @@ function AdminFreightsPage() {
                     className="rounded border-graphite-600"
                   />
                 </td>
-                <td className="px-3 py-3 font-mono text-xs text-graphite-300">{f.id.slice(0, 8)}</td>
+                <td className="px-3 py-3 font-mono text-xs text-graphite-300">
+                  {f.id.slice(0, 8)}
+                </td>
                 <td className="px-3 py-3 text-graphite-200">
                   {f.origin_city ?? "—"} → {f.dest_city ?? "—"}
                 </td>
@@ -181,7 +206,9 @@ function AdminFreightsPage() {
                 <td className="px-3 py-3">
                   <Badge variant="blue">{f.status}</Badge>
                 </td>
-                <td className="px-3 py-3 text-graphite-200">{fmtBRL(Number(f.final_price_brl ?? f.budget_brl ?? 0))}</td>
+                <td className="px-3 py-3 text-graphite-200">
+                  {fmtBRL(Number(f.final_price_brl ?? f.budget_brl ?? 0))}
+                </td>
                 <td className="px-3 py-3 text-right">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -190,8 +217,12 @@ function AdminFreightsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => toast.info("Detalhes em breve")}>Ver detalhes</DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => cancelOne(f.id)}>Cancelar frete</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => toast.info("Detalhes em breve")}>
+                        Ver detalhes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => cancelOne(f.id)}>
+                        Cancelar frete
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => toast.info("Notificação enviada")}>
                         Contatar embarcador
                       </DropdownMenuItem>

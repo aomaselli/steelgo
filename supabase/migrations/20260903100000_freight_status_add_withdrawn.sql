@@ -1,0 +1,24 @@
+-- =============================================================================
+-- L2a - migration 1/7 : valor 'withdrawn' no enum public.freight_status
+-- =============================================================================
+-- ISOLADA E IRREVERSIVEL POR DECISAO.
+--
+-- Motivo do isolamento: ALTER TYPE ... ADD VALUE adiciona o rotulo ao catalogo,
+-- mas o novo valor NAO pode ser referenciado por nenhuma outra instrucao na
+-- MESMA transacao. Como o Supabase CLI executa cada arquivo dentro de uma
+-- transacao, o valor so se torna utilizavel apos o COMMIT deste arquivo.
+--
+-- Irreversibilidade: PostgreSQL nao oferece DROP VALUE em enum. Nao existe
+-- rollback sem recriar o tipo e reescrever todas as colunas que o usam.
+--
+-- Efeito colateral DESEJADO sobre visibilidade (fato verificado, nao hipotese):
+--   a policy "freights_select" (20260521014520, linha 345) lista os status
+--   visiveis a terceiros e NAO inclui 'withdrawn'. Um frete retirado deixa de
+--   ser visivel para quem nao e o criador, o dono da empresa ou admin, sem que
+--   esta migration precise alterar a policy. A retirada da vitrine passa a ser
+--   consequencia estrutural da RLS ja existente.
+--
+-- Escopo: nenhum dado e alterado. Nenhuma linha recebe 'withdrawn' aqui.
+-- =============================================================================
+
+alter type public.freight_status add value 'withdrawn';

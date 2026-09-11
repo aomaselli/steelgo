@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -26,33 +26,63 @@ import { supabase } from "@/integrations/supabase/client";
 // ─── Constants per spec ───
 
 const STEPS = [
-  { id: 1, label: "Carga", title: "Detalhes da carga", subtitle: "Tipo de aço, peso e valor da carga" },
-  { id: 2, label: "Rota", title: "Origem e destino", subtitle: "Onde a carga sai e onde precisa chegar" },
-  { id: 3, label: "Logística", title: "Logística e operação", subtitle: "Categoria, frota aceita e janelas" },
-  { id: 4, label: "Comercial", title: "Condições comerciais", subtitle: "Orçamento, prazo e referências" },
-  { id: 5, label: "Revisão", title: "Revisão e publicação", subtitle: "Confira tudo antes de publicar" },
+  {
+    id: 1,
+    label: "Carga",
+    title: "Detalhes da carga",
+    subtitle: "Tipo de aço, peso e valor da carga",
+  },
+  {
+    id: 2,
+    label: "Rota",
+    title: "Origem e destino",
+    subtitle: "Onde a carga sai e onde precisa chegar",
+  },
+  {
+    id: 3,
+    label: "Logística",
+    title: "Logística e operação",
+    subtitle: "Categoria, frota aceita e janelas",
+  },
+  {
+    id: 4,
+    label: "Comercial",
+    title: "Condições comerciais",
+    subtitle: "Orçamento, prazo e referências",
+  },
+  {
+    id: 5,
+    label: "Revisão",
+    title: "Revisão e publicação",
+    subtitle: "Confira tudo antes de publicar",
+  },
 ] as const;
 
 // (id, label, desc, color) — id matches the steel_type enum in DB.
 const STEEL_TYPES = [
-  { id: "cold_rolled",     label: "Bobina frio",       desc: "Chapas processadas a frio",  color: "#3B89D4" },
-  { id: "hot_rolled",      label: "Bobina quente",     desc: "Produção de tubos e perfis", color: "#3B89D4" },
-  { id: "plate",           label: "Chapa grossa",      desc: "Estruturas pesadas",         color: "#484F58" },
-  { id: "structural",      label: "Perfil estrutural", desc: "Vigas e colunas",            color: "#484F58" },
-  { id: "seamless_pipe",   label: "Cano sem costura",  desc: "Alta pressão",               color: "#8B949E" },
-  { id: "rebar",           label: "Vergalhão",         desc: "Construção civil",           color: "#8B949E" },
-  { id: "galvanized_tube", label: "Tubo galvanizado",  desc: "Anti-corrosão",              color: "#8B949E" },
-  { id: "special_steel",   label: "Aço especial",      desc: "Ferramentas e moldes",       color: "#484F58" },
+  { id: "cold_rolled", label: "Bobina frio", desc: "Chapas processadas a frio", color: "#3B89D4" },
+  {
+    id: "hot_rolled",
+    label: "Bobina quente",
+    desc: "Produção de tubos e perfis",
+    color: "#3B89D4",
+  },
+  { id: "plate", label: "Chapa grossa", desc: "Estruturas pesadas", color: "#484F58" },
+  { id: "structural", label: "Perfil estrutural", desc: "Vigas e colunas", color: "#484F58" },
+  { id: "seamless_pipe", label: "Cano sem costura", desc: "Alta pressão", color: "#8B949E" },
+  { id: "rebar", label: "Vergalhão", desc: "Construção civil", color: "#8B949E" },
+  { id: "galvanized_tube", label: "Tubo galvanizado", desc: "Anti-corrosão", color: "#8B949E" },
+  { id: "special_steel", label: "Aço especial", desc: "Ferramentas e moldes", color: "#484F58" },
 ] as const;
 
 const TRUCK_TYPES = [
-  { id: "truck_simples",  label: "Truck simples",  capacity: 23 },
-  { id: "toco",           label: "Toco",           capacity: 15 },
-  { id: "carreta",        label: "Carreta",        capacity: 33 },
-  { id: "carreta_ext",    label: "Carreta ext.",   capacity: 45 },
-  { id: "bitrem",         label: "Bitrem",         capacity: 57 },
-  { id: "rodotrem",       label: "Rodotrem",       capacity: 74 },
-  { id: "prancha",        label: "Prancha (AET)",  capacity: 0  },
+  { id: "truck_simples", label: "Truck simples", capacity: 23 },
+  { id: "toco", label: "Toco", capacity: 15 },
+  { id: "carreta", label: "Carreta", capacity: 33 },
+  { id: "carreta_ext", label: "Carreta ext.", capacity: 45 },
+  { id: "bitrem", label: "Bitrem", capacity: 57 },
+  { id: "rodotrem", label: "Rodotrem", capacity: 74 },
+  { id: "prancha", label: "Prancha (AET)", capacity: 0 },
 ] as const;
 
 const HOUR_OPTIONS = Array.from({ length: 15 }, (_, i) => `${String(i + 6).padStart(2, "0")}:00`);
@@ -115,6 +145,8 @@ export function NewFreightPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  // L2a: chaves de idempotencia por intencao (rascunho / publicacao).
+  const requestIdRef = useRef<{ draft?: string; publish?: string }>({});
 
   const form = useForm<FormState>({
     defaultValues: {
@@ -124,16 +156,22 @@ export function NewFreightPage() {
       volume_m3: "",
       notes: "",
       mopp: false,
-      origin_city: "", origin_state: "", origin_name: "",
-      dest_city: "", dest_state: "", dest_name: "",
+      origin_city: "",
+      origin_state: "",
+      origin_name: "",
+      dest_city: "",
+      dest_state: "",
+      dest_name: "",
       distance_km: "",
       waypoints: [],
       category: "traditional",
       required_truck: [],
       pickup_date: "",
-      pickup_from: "08:00", pickup_to: "18:00",
+      pickup_from: "08:00",
+      pickup_to: "18:00",
       delivery_date: "",
-      delivery_from: "08:00", delivery_to: "18:00",
+      delivery_from: "08:00",
+      delivery_to: "18:00",
       budget_brl: "",
       toll_included: false,
       bid_deadline: defaultDeadline(),
@@ -152,7 +190,9 @@ export function NewFreightPage() {
       (Object.keys(parsed) as Array<keyof FormState>).forEach((k) =>
         setValue(k, parsed[k] as never),
       );
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }, [setValue]);
 
   // ── Auto-save every 10s ──
@@ -184,16 +224,50 @@ export function NewFreightPage() {
       return;
     }
     if (publish) {
-      if (!v.steel_type) { toast.error("Selecione o tipo de aço"); setCurrentStep(1); return; }
-      if (!v.weight_tons || Number(v.weight_tons) <= 0) { toast.error("Informe o peso da carga"); setCurrentStep(1); return; }
-      if (!v.origin_city || !v.dest_city) { toast.error("Informe origem e destino"); setCurrentStep(2); return; }
-      if (!v.pickup_date) { toast.error("Informe a data de coleta"); setCurrentStep(3); return; }
+      if (!v.steel_type) {
+        toast.error("Selecione o tipo de aço");
+        setCurrentStep(1);
+        return;
+      }
+      if (!v.weight_tons || Number(v.weight_tons) <= 0) {
+        toast.error("Informe o peso da carga");
+        setCurrentStep(1);
+        return;
+      }
+      if (!v.origin_city || !v.dest_city) {
+        toast.error("Informe origem e destino");
+        setCurrentStep(2);
+        return;
+      }
+      if (!v.pickup_date) {
+        toast.error("Informe a data de coleta");
+        setCurrentStep(3);
+        return;
+      }
+      // L2a: publicar exige valor anunciado positivo. A RPC recusa o contrario.
+      if (!(Number(v.budget_brl) > 0)) {
+        toast.error("Informe o valor anunciado");
+        setCurrentStep(3);
+        return;
+      }
     }
+
+    // L2a: uma chave de idempotencia por INTENCAO do usuario, nao por tentativa.
+    // Reaproveitada em retry e em duplo clique, para que a segunda chamada caia
+    // no replay da RPC em vez de criar um segundo frete. Limpa apos o sucesso.
+    const idemKey = publish ? "publish" : "draft";
+    if (!requestIdRef.current[idemKey]) {
+      requestIdRef.current[idemKey] = crypto.randomUUID();
+    }
+    const requestId = requestIdRef.current[idemKey] as string;
 
     setSubmitting(true);
     const dbCategory =
-      v.category === "green" ? "green_low_carbon" :
-      v.category === "green_ev" ? "green_ev" : "traditional";
+      v.category === "green"
+        ? "green_low_carbon"
+        : v.category === "green_ev"
+          ? "green_ev"
+          : "traditional";
 
     const pickupWindow = v.pickup_from && v.pickup_to ? `${v.pickup_from}-${v.pickup_to}` : null;
 
@@ -202,44 +276,53 @@ export function NewFreightPage() {
       return Number.isFinite(n) && n > 0 ? n : null;
     };
 
-    const { data, error } = await supabase
-      .from("freights")
-      .insert({
-        company_id: company.id,
-        created_by: user.id,
-        steel_type: v.steel_type as never,
-        weight_tons: num(v.weight_tons),
-        cargo_value_brl: num(v.cargo_value_brl),
-        notes: v.notes || null,
-        origin_name: v.origin_name || null,
-        origin_city: v.origin_city || null,
-        origin_state: v.origin_state || null,
-        dest_name: v.dest_name || null,
-        dest_city: v.dest_city || null,
-        dest_state: v.dest_state || null,
-        distance_km: num(v.distance_km),
-        category: dbCategory as never,
-        required_truck: v.required_truck.length ? (v.required_truck as never) : null,
-        pickup_date: v.pickup_date || null,
-        delivery_date: v.delivery_date || null,
-        pickup_window: pickupWindow,
-        budget_brl: num(v.budget_brl),
-        bid_deadline: v.bid_deadline ? new Date(v.bid_deadline).toISOString() : null,
-        status: publish ? "published" : "draft",
-        published_at: publish ? new Date().toISOString() : null,
-      })
-      .select("id")
-      .single();
+    // L2a: criacao e publicacao passam por RPC transacional. INSERT direto em
+    // public.freights foi revogado de authenticated: status, published_at,
+    // company_id e created_by sao fixados no servidor e NAO vao no payload.
+    const payload = {
+      steel_type: v.steel_type || null,
+      weight_tons: num(v.weight_tons),
+      cargo_value_brl: num(v.cargo_value_brl),
+      notes: v.notes || null,
+      origin_name: v.origin_name || null,
+      origin_city: v.origin_city || null,
+      origin_state: v.origin_state || null,
+      dest_name: v.dest_name || null,
+      dest_city: v.dest_city || null,
+      dest_state: v.dest_state || null,
+      distance_km: num(v.distance_km),
+      category: dbCategory as never,
+      required_truck: v.required_truck.length ? (v.required_truck as never) : null,
+      pickup_date: v.pickup_date || null,
+      delivery_date: v.delivery_date || null,
+      pickup_window: pickupWindow,
+      budget_brl: num(v.budget_brl),
+      bid_deadline: v.bid_deadline ? new Date(v.bid_deadline).toISOString() : null,
+    };
+
+    const { data, error } = publish
+      ? await supabase.rpc("create_and_publish_freight", {
+          p_company_id: company.id,
+          p_payload: payload as never,
+          p_budget_brl: num(v.budget_brl) as number,
+          p_request_id: requestId,
+        })
+      : await supabase.rpc("create_freight_draft", {
+          p_company_id: company.id,
+          p_payload: payload as never,
+          p_request_id: requestId,
+        });
     setSubmitting(false);
 
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
       return;
     }
+    requestIdRef.current[idemKey] = undefined;
     localStorage.removeItem(DRAFT_KEY);
     if (publish) {
       toast.success("✅ Frete publicado! Transportadoras verificadas já podem ver sua carga.");
-      void navigate({ to: "/shipper/freights/$id", params: { id: String(data!.id) } });
+      void navigate({ to: "/shipper/freights/$id", params: { id: String(data) } });
     } else {
       toast.success("Rascunho salvo");
       void navigate({ to: "/shipper/freights" });
@@ -275,8 +358,11 @@ export function NewFreightPage() {
                     onClick={() => setCurrentStep(s.id)}
                     className={[
                       "flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-left text-sm transition",
-                      active ? "bg-[#1B6CB8]/10 font-medium text-[#E6EDF3]" :
-                      done ? "text-[#2ECC8A]" : "text-[#484F58]",
+                      active
+                        ? "bg-[#1B6CB8]/10 font-medium text-[#E6EDF3]"
+                        : done
+                          ? "text-[#2ECC8A]"
+                          : "text-[#484F58]",
                     ].join(" ")}
                   >
                     {done ? (
@@ -307,7 +393,15 @@ export function NewFreightPage() {
 
             {currentStep === 1 && <StepCarga v={v} register={register} setValue={setValue} />}
             {currentStep === 2 && <StepRota v={v} register={register} setValue={setValue} />}
-            {currentStep === 3 && <StepLogistica v={v} register={register} setValue={setValue} co2Saved={co2Saved} toggleTruck={toggleTruck} />}
+            {currentStep === 3 && (
+              <StepLogistica
+                v={v}
+                register={register}
+                setValue={setValue}
+                co2Saved={co2Saved}
+                toggleTruck={toggleTruck}
+              />
+            )}
             {currentStep === 4 && <StepComercial register={register} />}
             {currentStep === 5 && <StepRevisao v={v} co2Saved={co2Saved} goto={setCurrentStep} />}
           </div>
@@ -323,9 +417,7 @@ export function NewFreightPage() {
             >
               Salvar rascunho
             </button>
-            {savedAt && (
-              <span className="text-xs text-[#484F58]">Rascunho salvo às {savedAt}</span>
-            )}
+            {savedAt && <span className="text-xs text-[#484F58]">Rascunho salvo às {savedAt}</span>}
           </div>
           <div className="flex gap-3">
             {currentStep > 1 && (
@@ -365,8 +457,14 @@ export function NewFreightPage() {
 // ─── Shared field primitives ───
 
 function Field({
-  label, children, hint,
-}: { label: string; children: React.ReactNode; hint?: string }) {
+  label,
+  children,
+  hint,
+}: {
+  label: string;
+  children: React.ReactNode;
+  hint?: string;
+}) {
   return (
     <div>
       <label className="mb-1.5 block text-xs font-medium text-[#C9D1D9]">{label}</label>
@@ -377,8 +475,11 @@ function Field({
 }
 
 function TextInput({
-  icon: Icon, ...props
-}: React.InputHTMLAttributes<HTMLInputElement> & { icon?: React.ComponentType<{ className?: string }> }) {
+  icon: Icon,
+  ...props
+}: React.InputHTMLAttributes<HTMLInputElement> & {
+  icon?: React.ComponentType<{ className?: string }>;
+}) {
   return (
     <div className="relative">
       {Icon && (
@@ -458,7 +559,10 @@ function StepCarga({ v, register, setValue }: StepProps) {
         <Field label="Peso (toneladas)">
           <TextInput
             icon={Scale}
-            type="number" min={0.1} max={100} step={0.1}
+            type="number"
+            min={0.1}
+            max={100}
+            step={0.1}
             placeholder="0,0"
             {...register("weight_tons", { valueAsNumber: true })}
           />
@@ -471,13 +575,20 @@ function StepCarga({ v, register, setValue }: StepProps) {
         </Field>
         <Field label="Valor da carga (R$)">
           <TextInput
-            icon={DollarSign} type="number" min={0}
+            icon={DollarSign}
+            type="number"
+            min={0}
             placeholder="Para cálculo do seguro RCTR-C"
             {...register("cargo_value_brl", { valueAsNumber: true })}
           />
         </Field>
         <Field label="Volume (m³)" hint="Opcional">
-          <TextInput icon={Box} type="number" min={0} {...register("volume_m3", { valueAsNumber: true })} />
+          <TextInput
+            icon={Box}
+            type="number"
+            min={0}
+            {...register("volume_m3", { valueAsNumber: true })}
+          />
         </Field>
         <Field label="Manuseio especial" hint="Opcional">
           <textarea
@@ -508,7 +619,10 @@ function StepRota({ v, register, setValue }: StepProps) {
     setValue("waypoints", [...(v.waypoints ?? []), ""]);
   };
   const removeWaypoint = (i: number) => {
-    setValue("waypoints", (v.waypoints ?? []).filter((_, idx) => idx !== i));
+    setValue(
+      "waypoints",
+      (v.waypoints ?? []).filter((_, idx) => idx !== i),
+    );
   };
   const updateWaypoint = (i: number, val: string) => {
     const next = [...(v.waypoints ?? [])];
@@ -522,13 +636,30 @@ function StepRota({ v, register, setValue }: StepProps) {
       <Field label="Origem">
         <TextInput icon={MapPin} placeholder="Cidade de origem" {...register("origin_city")} />
         <div className="mt-2 grid grid-cols-3 gap-2">
-          <TextInput placeholder="UF" maxLength={2} className="col-span-1" {...register("origin_state")} />
-          <TextInput placeholder="Endereço (opcional)" className="col-span-2" {...register("origin_name")} />
+          <TextInput
+            placeholder="UF"
+            maxLength={2}
+            className="col-span-1"
+            {...register("origin_state")}
+          />
+          <TextInput
+            placeholder="Endereço (opcional)"
+            className="col-span-2"
+            {...register("origin_name")}
+          />
         </div>
         {v.origin_city && (
           <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#1B6CB8]/15 px-3 py-1 text-xs text-[#79B8F8]">
-            📍 {v.origin_city}{v.origin_state ? `, ${v.origin_state.toUpperCase()}` : ""}
-            <button type="button" onClick={() => { setValue("origin_city", ""); setValue("origin_state", ""); }} className="text-[#484F58] hover:text-[#C9D1D9]">
+            📍 {v.origin_city}
+            {v.origin_state ? `, ${v.origin_state.toUpperCase()}` : ""}
+            <button
+              type="button"
+              onClick={() => {
+                setValue("origin_city", "");
+                setValue("origin_state", "");
+              }}
+              className="text-[#484F58] hover:text-[#C9D1D9]"
+            >
               <X className="h-3 w-3" />
             </button>
           </div>
@@ -542,13 +673,30 @@ function StepRota({ v, register, setValue }: StepProps) {
       <Field label="Destino">
         <TextInput icon={MapPin} placeholder="Cidade de destino" {...register("dest_city")} />
         <div className="mt-2 grid grid-cols-3 gap-2">
-          <TextInput placeholder="UF" maxLength={2} className="col-span-1" {...register("dest_state")} />
-          <TextInput placeholder="Endereço (opcional)" className="col-span-2" {...register("dest_name")} />
+          <TextInput
+            placeholder="UF"
+            maxLength={2}
+            className="col-span-1"
+            {...register("dest_state")}
+          />
+          <TextInput
+            placeholder="Endereço (opcional)"
+            className="col-span-2"
+            {...register("dest_name")}
+          />
         </div>
         {v.dest_city && (
           <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#1B6CB8]/15 px-3 py-1 text-xs text-[#79B8F8]">
-            📍 {v.dest_city}{v.dest_state ? `, ${v.dest_state.toUpperCase()}` : ""}
-            <button type="button" onClick={() => { setValue("dest_city", ""); setValue("dest_state", ""); }} className="text-[#484F58] hover:text-[#C9D1D9]">
+            📍 {v.dest_city}
+            {v.dest_state ? `, ${v.dest_state.toUpperCase()}` : ""}
+            <button
+              type="button"
+              onClick={() => {
+                setValue("dest_city", "");
+                setValue("dest_state", "");
+              }}
+              className="text-[#484F58] hover:text-[#C9D1D9]"
+            >
               <X className="h-3 w-3" />
             </button>
           </div>
@@ -568,7 +716,10 @@ function StepRota({ v, register, setValue }: StepProps) {
         </div>
       )}
 
-      <Field label="Distância estimada (km)" hint="Será calculada automaticamente quando a integração de mapas estiver ativa">
+      <Field
+        label="Distância estimada (km)"
+        hint="Será calculada automaticamente quando a integração de mapas estiver ativa"
+      >
         <TextInput type="number" min={0} {...register("distance_km", { valueAsNumber: true })} />
       </Field>
 
@@ -593,7 +744,11 @@ function StepRota({ v, register, setValue }: StepProps) {
                 value={w}
                 onChange={(e) => updateWaypoint(i, e.target.value)}
               />
-              <button type="button" onClick={() => removeWaypoint(i)} className="rounded-md p-2 text-[#484F58] hover:bg-[#21262D] hover:text-[#C9D1D9]">
+              <button
+                type="button"
+                onClick={() => removeWaypoint(i)}
+                className="rounded-md p-2 text-[#484F58] hover:bg-[#21262D] hover:text-[#C9D1D9]"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -607,17 +762,32 @@ function StepRota({ v, register, setValue }: StepProps) {
 // ─── STEP 3: Logística ───
 
 function StepLogistica({
-  v, register, setValue, co2Saved, toggleTruck,
+  v,
+  register,
+  setValue,
+  co2Saved,
+  toggleTruck,
 }: StepProps & { co2Saved: number; toggleTruck: (id: string) => void }) {
   const CategoryCard = ({
-    id, title, subtitle, accentGreen, RightIcon, badge,
+    id,
+    title,
+    subtitle,
+    accentGreen,
+    RightIcon,
+    badge,
   }: {
-    id: Category; title: string; subtitle: string; accentGreen?: boolean;
-    RightIcon: React.ComponentType<{ className?: string }>; badge?: string;
+    id: Category;
+    title: string;
+    subtitle: string;
+    accentGreen?: boolean;
+    RightIcon: React.ComponentType<{ className?: string }>;
+    badge?: string;
   }) => {
     const selected = v.category === id;
     const border = selected
-      ? (accentGreen ? "border-[#1A9B5E] bg-[#1A9B5E]/5" : "border-[#484F58] bg-[#21262D]")
+      ? accentGreen
+        ? "border-[#1A9B5E] bg-[#1A9B5E]/5"
+        : "border-[#484F58] bg-[#21262D]"
       : "border-[#30363D]";
     return (
       <button
@@ -626,19 +796,35 @@ function StepLogistica({
         className={`flex items-center justify-between rounded-[14px] border p-5 text-left transition ${border}`}
       >
         <div className="flex items-center gap-4">
-          <span className={[
-            "flex h-5 w-5 items-center justify-center rounded-full border",
-            selected ? (accentGreen ? "border-[#1A9B5E]" : "border-[#3B89D4]") : "border-[#484F58]",
-          ].join(" ")}>
-            {selected && <span className={`h-2.5 w-2.5 rounded-full ${accentGreen ? "bg-[#1A9B5E]" : "bg-[#3B89D4]"}`} />}
+          <span
+            className={[
+              "flex h-5 w-5 items-center justify-center rounded-full border",
+              selected
+                ? accentGreen
+                  ? "border-[#1A9B5E]"
+                  : "border-[#3B89D4]"
+                : "border-[#484F58]",
+            ].join(" ")}
+          >
+            {selected && (
+              <span
+                className={`h-2.5 w-2.5 rounded-full ${accentGreen ? "bg-[#1A9B5E]" : "bg-[#3B89D4]"}`}
+              />
+            )}
           </span>
           <div>
             <div className="font-semibold text-[#E6EDF3]">{title}</div>
-            <div className={`text-sm ${accentGreen ? "text-[#2ECC8A]" : "text-[#8B949E]"}`}>{subtitle}</div>
+            <div className={`text-sm ${accentGreen ? "text-[#2ECC8A]" : "text-[#8B949E]"}`}>
+              {subtitle}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {badge && <span className="rounded-full bg-[#1A9B5E]/15 px-2 py-0.5 text-[10px] font-semibold text-[#2ECC8A]">{badge}</span>}
+          {badge && (
+            <span className="rounded-full bg-[#1A9B5E]/15 px-2 py-0.5 text-[10px] font-semibold text-[#2ECC8A]">
+              {badge}
+            </span>
+          )}
           <RightIcon className={`h-5 w-5 ${accentGreen ? "text-[#2ECC8A]" : "text-[#484F58]"}`} />
         </div>
       </button>
@@ -652,9 +838,27 @@ function StepLogistica({
       <div>
         <label className="mb-3 block text-xs font-medium text-[#C9D1D9]">Categoria do frete</label>
         <div className="flex flex-col gap-3">
-          <CategoryCard id="traditional" title="Frete Tradicional" subtitle="Diesel convencional" RightIcon={Truck} />
-          <CategoryCard id="green" title="🌿 Verde (Biodiesel)" subtitle="Redução de até 80% CO₂" accentGreen RightIcon={Leaf} />
-          <CategoryCard id="green_ev" title="⚡ Verde Elétrico" subtitle="Zero emissão direta" accentGreen badge="EV" RightIcon={Leaf} />
+          <CategoryCard
+            id="traditional"
+            title="Frete Tradicional"
+            subtitle="Diesel convencional"
+            RightIcon={Truck}
+          />
+          <CategoryCard
+            id="green"
+            title="🌿 Verde (Biodiesel)"
+            subtitle="Redução de até 80% CO₂"
+            accentGreen
+            RightIcon={Leaf}
+          />
+          <CategoryCard
+            id="green_ev"
+            title="⚡ Verde Elétrico"
+            subtitle="Zero emissão direta"
+            accentGreen
+            badge="EV"
+            RightIcon={Leaf}
+          />
         </div>
 
         {isGreen && (
@@ -689,7 +893,8 @@ function StepLogistica({
                     : "border-[#30363D] text-[#484F58] hover:border-[#484F58]",
                 ].join(" ")}
               >
-                {t.label}{t.capacity ? ` (${t.capacity}t)` : ""}
+                {t.label}
+                {t.capacity ? ` (${t.capacity}t)` : ""}
               </button>
             );
           })}
@@ -725,14 +930,22 @@ function StepLogistica({
 }
 
 function TimeSelect({
-  register, name,
-}: { register: StepProps["register"]; name: keyof FormState }) {
+  register,
+  name,
+}: {
+  register: StepProps["register"];
+  name: keyof FormState;
+}) {
   return (
     <select
       {...register(name)}
       className="rounded-[8px] border border-[#30363D] bg-[#0D1117] px-2 py-1.5 text-sm text-[#E6EDF3] focus:border-[#1B6CB8] focus:outline-none"
     >
-      {HOUR_OPTIONS.map((h) => <option key={h} value={h}>{h}</option>)}
+      {HOUR_OPTIONS.map((h) => (
+        <option key={h} value={h}>
+          {h}
+        </option>
+      ))}
     </select>
   );
 }
@@ -742,18 +955,33 @@ function TimeSelect({
 function StepComercial({ register }: { register: StepProps["register"] }) {
   return (
     <div className="space-y-6">
-      <Field label="Orçamento de referência (R$)" hint="Opcional. Visível às transportadoras como referência. Deixe em branco para propostas abertas.">
-        <TextInput icon={DollarSign} type="number" min={0} {...register("budget_brl", { valueAsNumber: true })} />
+      <Field
+        label="Orçamento de referência (R$)"
+        hint="Opcional. Visível às transportadoras como referência. Deixe em branco para propostas abertas."
+      >
+        <TextInput
+          icon={DollarSign}
+          type="number"
+          min={0}
+          {...register("budget_brl", { valueAsNumber: true })}
+        />
       </Field>
 
       <ToggleRow name="toll_included" label="Pedágio incluso no valor" register={register} />
 
-      <Field label="Prazo para receber propostas" hint="Transportadoras poderão enviar propostas até esta data">
+      <Field
+        label="Prazo para receber propostas"
+        hint="Transportadoras poderão enviar propostas até esta data"
+      >
         <TextInput type="datetime-local" {...register("bid_deadline")} />
       </Field>
 
       <Field label="Referência interna (PO)" hint="Não visível às transportadoras">
-        <TextInput icon={Hash} placeholder="Número do pedido interno" {...register("internal_ref")} />
+        <TextInput
+          icon={Hash}
+          placeholder="Número do pedido interno"
+          {...register("internal_ref")}
+        />
       </Field>
 
       <Field label="Observações para transportadoras (opcional)">
@@ -769,8 +997,14 @@ function StepComercial({ register }: { register: StepProps["register"] }) {
 }
 
 function ToggleRow({
-  name, label, register,
-}: { name: keyof FormState; label: string; register: StepProps["register"] }) {
+  name,
+  label,
+  register,
+}: {
+  name: keyof FormState;
+  label: string;
+  register: StepProps["register"];
+}) {
   // controlled via register checkbox for simplicity
   return (
     <label className="flex cursor-pointer items-center justify-between rounded-[12px] bg-[#161B22] p-4">
@@ -786,31 +1020,50 @@ function ToggleRow({
 // ─── STEP 5: Revisão ───
 
 function StepRevisao({
-  v, co2Saved, goto,
-}: { v: FormState; co2Saved: number; goto: (n: number) => void }) {
+  v,
+  co2Saved,
+  goto,
+}: {
+  v: FormState;
+  co2Saved: number;
+  goto: (n: number) => void;
+}) {
   const steel = STEEL_TYPES.find((s) => s.id === v.steel_type);
   const isGreen = v.category === "green" || v.category === "green_ev";
-  const truckLabels = (v.required_truck ?? [])
-    .map((id) => TRUCK_TYPES.find((t) => t.id === id)?.label ?? id)
-    .join(", ") || "—";
+  const truckLabels =
+    (v.required_truck ?? [])
+      .map((id) => TRUCK_TYPES.find((t) => t.id === id)?.label ?? id)
+      .join(", ") || "—";
   const catLabel =
-    v.category === "green" ? "🌿 Verde (Biodiesel)" :
-    v.category === "green_ev" ? "⚡ Verde Elétrico" : "Frete Tradicional";
+    v.category === "green"
+      ? "🌿 Verde (Biodiesel)"
+      : v.category === "green_ev"
+        ? "⚡ Verde Elétrico"
+        : "Frete Tradicional";
 
   return (
     <div className="space-y-4">
       <SummaryCard title="📦 Carga" onEdit={() => goto(1)}>
         <KV k="Tipo de aço" val={steel?.label ?? "—"} />
         <KV k="Peso" val={v.weight_tons ? `${v.weight_tons} t` : "—"} />
-        <KV k="Valor declarado" val={v.cargo_value_brl ? `R$ ${Number(v.cargo_value_brl).toLocaleString("pt-BR")}` : "—"} />
+        <KV
+          k="Valor declarado"
+          val={v.cargo_value_brl ? `R$ ${Number(v.cargo_value_brl).toLocaleString("pt-BR")}` : "—"}
+        />
         <KV k="Volume" val={v.volume_m3 ? `${v.volume_m3} m³` : "—"} />
         <KV k="MOPP" val={v.mopp ? "Sim" : "Não"} />
         {v.notes && <KV k="Manuseio" val={v.notes} full />}
       </SummaryCard>
 
       <SummaryCard title="🗺️ Rota" onEdit={() => goto(2)}>
-        <KV k="Origem" val={`${v.origin_city || "—"}${v.origin_state ? `, ${v.origin_state.toUpperCase()}` : ""}`} />
-        <KV k="Destino" val={`${v.dest_city || "—"}${v.dest_state ? `, ${v.dest_state.toUpperCase()}` : ""}`} />
+        <KV
+          k="Origem"
+          val={`${v.origin_city || "—"}${v.origin_state ? `, ${v.origin_state.toUpperCase()}` : ""}`}
+        />
+        <KV
+          k="Destino"
+          val={`${v.dest_city || "—"}${v.dest_state ? `, ${v.dest_state.toUpperCase()}` : ""}`}
+        />
         <KV k="Distância" val={v.distance_km ? `${v.distance_km} km` : "calculando..."} />
         <KV k="Paradas" val={(v.waypoints ?? []).filter(Boolean).join(" → ") || "—"} />
       </SummaryCard>
@@ -818,17 +1071,37 @@ function StepRevisao({
       <SummaryCard title="⚙️ Logística" onEdit={() => goto(3)}>
         <KV k="Categoria" val={catLabel} />
         <KV k="Caminhões" val={truckLabels} />
-        <KV k="Coleta" val={v.pickup_date ? `${v.pickup_date} (${v.pickup_from}-${v.pickup_to})` : "—"} />
-        <KV k="Entrega" val={v.delivery_date ? `${v.delivery_date} (${v.delivery_from}-${v.delivery_to})` : "—"} />
+        <KV
+          k="Coleta"
+          val={v.pickup_date ? `${v.pickup_date} (${v.pickup_from}-${v.pickup_to})` : "—"}
+        />
+        <KV
+          k="Entrega"
+          val={v.delivery_date ? `${v.delivery_date} (${v.delivery_from}-${v.delivery_to})` : "—"}
+        />
         {isGreen && (
-          <KV k="CO₂ evitado" val={<span className="text-[#2ECC8A]">~{co2Saved.toLocaleString("pt-BR")} kg</span>} full />
+          <KV
+            k="CO₂ evitado"
+            val={<span className="text-[#2ECC8A]">~{co2Saved.toLocaleString("pt-BR")} kg</span>}
+            full
+          />
         )}
       </SummaryCard>
 
       <SummaryCard title="💰 Comercial" onEdit={() => goto(4)}>
-        <KV k="Orçamento" val={v.budget_brl ? `R$ ${Number(v.budget_brl).toLocaleString("pt-BR")}` : "Propostas abertas"} />
+        <KV
+          k="Orçamento"
+          val={
+            v.budget_brl
+              ? `R$ ${Number(v.budget_brl).toLocaleString("pt-BR")}`
+              : "Propostas abertas"
+          }
+        />
         <KV k="Pedágio incluso" val={v.toll_included ? "Sim" : "Não"} />
-        <KV k="Prazo propostas" val={v.bid_deadline ? new Date(v.bid_deadline).toLocaleString("pt-BR") : "—"} />
+        <KV
+          k="Prazo propostas"
+          val={v.bid_deadline ? new Date(v.bid_deadline).toLocaleString("pt-BR") : "—"}
+        />
         <KV k="Ref. interna" val={v.internal_ref || "—"} />
       </SummaryCard>
 
@@ -836,7 +1109,9 @@ function StepRevisao({
         <div className="flex items-start gap-2">
           <Info className="mt-0.5 h-4 w-4 text-[#79B8F8]" />
           <div>
-            <div className="text-sm text-[#79B8F8]">Taxa da plataforma: 3,5% do valor do frete fechado</div>
+            <div className="text-sm text-[#79B8F8]">
+              Taxa da plataforma: 3,5% do valor do frete fechado
+            </div>
             <div className="text-xs text-[#484F58]">Você só paga quando fechar um frete.</div>
           </div>
         </div>
@@ -846,8 +1121,14 @@ function StepRevisao({
 }
 
 function SummaryCard({
-  title, onEdit, children,
-}: { title: string; onEdit: () => void; children: React.ReactNode }) {
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-[14px] border border-[#30363D] bg-[#161B22] p-5">
       <div className="mb-3 flex items-center justify-between">
