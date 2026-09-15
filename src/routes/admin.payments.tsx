@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { FinanceCenter } from "@/components/finance/FinanceCenter";
+import { AdminFinanceOps } from "@/components/finance/AdminFinanceOps";
 
 export const Route = createFileRoute("/admin/payments")({
-  component: () => <FinanceCenter scope="admin" />,
+  component: () => <AdminFinanceOps />,
 });

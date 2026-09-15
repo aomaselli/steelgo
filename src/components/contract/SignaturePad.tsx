@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/steel";
+import { sha256Hex } from "@/lib/sha256";
 
 interface Props {
   contractId: string;
@@ -16,14 +17,6 @@ interface Props {
    */
   party: "shipper" | "carrier";
   onSigned: () => void;
-}
-
-async function sha256Hex(input: string) {
-  const bytes = new TextEncoder().encode(input);
-  const buf = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(buf))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 export function SignaturePad({ contractId, party, onSigned }: Props) {

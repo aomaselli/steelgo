@@ -96,7 +96,7 @@ const SECTIONS: Record<Exclude<UserRole, "driver">, NavSection[]> = {
     {
       label: "Financeiro",
       items: [
-        { label: "Pagamentos", to: "/admin/payments", icon: CreditCard },
+        { label: "Operação financeira", to: "/admin/payments", icon: CreditCard },
         { label: "Disputas", to: "/admin/disputes", icon: AlertTriangle },
       ],
     },
@@ -122,8 +122,7 @@ export function Sidebar({ userRole, className = "" }: SidebarProps) {
   const { profile, signOut } = useAuth();
   const sections = userRole === "driver" ? [] : SECTIONS[userRole];
 
-  const isActive = (to: string) =>
-    to === pathname || (to !== "/" && pathname.startsWith(to + "/"));
+  const isActive = (to: string) => to === pathname || (to !== "/" && pathname.startsWith(to + "/"));
 
   return (
     <aside
@@ -167,11 +166,13 @@ export function Sidebar({ userRole, className = "" }: SidebarProps) {
 
       {/* User */}
       <div className="border-t border-[#30363D] p-3 flex flex-row gap-2 items-center">
-        <Avatar name={profile?.full_name ?? "User"} src={profile?.avatar_url ?? undefined} size="sm" />
+        <Avatar
+          name={profile?.full_name ?? "User"}
+          src={profile?.avatar_url ?? undefined}
+          size="sm"
+        />
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-[#C9D1D9] truncate">
-            {profile?.full_name ?? "Usuário"}
-          </div>
+          <div className="text-sm text-[#C9D1D9] truncate">{profile?.full_name ?? "Usuário"}</div>
           <div className="text-[10px] text-[#484F58] uppercase tracking-wide">{userRole}</div>
         </div>
         <button

@@ -45,11 +45,7 @@ export function CarrierDashboardPage() {
     queryKey: ["carrier-dashboard-metrics", carrier?.id, company?.id],
     enabled: !!carrier?.id && !!company?.id,
     queryFn: async () => {
-      const monthStart = new Date(
-        new Date().getFullYear(),
-        new Date().getMonth(),
-        1,
-      ).toISOString();
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
       const [bidsRes, activeRes, payoutRes] = await Promise.all([
         supabase
           .from("bids")
@@ -61,19 +57,18 @@ export function CarrierDashboardPage() {
           .select("id", { count: "exact", head: true })
           .eq("carrier_company_id", company!.id)
           .eq("status", "active"),
+        // Ledger: liquido da transportadora com aporte confirmado e ainda nao
+        // repassado (funding_confirmed + release_requested). Nao le public.payments.
         supabase
-          .from("payments")
-          .select("carrier_payout_brl")
-          .eq("carrier_company_id", company!.id)
-          .eq("status", "escrow_held"),
+          .from("payment_intents")
+          .select("carrier_net_amount, contracts!inner(carrier_company_id)")
+          .eq("contracts.carrier_company_id", company!.id)
+          .in("internal_status", ["funding_confirmed", "release_requested"]),
       ]);
       return {
         bidsCount: bidsRes.count ?? 0,
         activeCount: activeRes.count ?? 0,
-        payout: (payoutRes.data ?? []).reduce(
-          (s, r) => s + Number(r.carrier_payout_brl ?? 0),
-          0,
-        ),
+        payout: (payoutRes.data ?? []).reduce((s, r) => s + Number(r.carrier_net_amount ?? 0), 0),
       };
     },
   });
@@ -116,24 +111,28 @@ export function CarrierDashboardPage() {
     queryKey: ["carrier-recent-payouts", company?.id],
     enabled: !!company?.id,
     queryFn: async () => {
+      // Repasses CONFIRMADOS (released_confirmed) no ledger, mais recentes primeiro.
       const { data } = await supabase
-        .from("payments")
-        .select("id, carrier_payout_brl, released_at, contract_id")
-        .eq("carrier_company_id", company!.id)
-        .eq("status", "released")
-        .order("released_at", { ascending: false })
+        .from("payment_intents")
+        .select(
+          "id, carrier_net_amount, released_confirmed_at, contract_id, contracts!inner(carrier_company_id)",
+        )
+        .eq("contracts.carrier_company_id", company!.id)
+        .eq("internal_status", "released_confirmed")
+        .order("released_confirmed_at", { ascending: false })
         .limit(5);
-      return data ?? [];
+      return (data ?? []).map((p) => ({
+        id: p.id,
+        carrier_payout_brl: Number(p.carrier_net_amount ?? 0),
+        released_at: p.released_confirmed_at,
+        contract_id: p.contract_id,
+      }));
     },
   });
 
   const overall = Number(score?.overall_score ?? 0);
   const scoreColor =
-    overall >= 8.5
-      ? "text-[#2ECC8A]"
-      : overall >= 7
-        ? "text-[#3B89D4]"
-        : "text-[#F0A500]";
+    overall >= 8.5 ? "text-[#2ECC8A]" : overall >= 7 ? "text-[#3B89D4]" : "text-[#F0A500]";
 
   return (
     <div className="space-y-8 bg-[#F4F7FB]">
@@ -143,9 +142,7 @@ export function CarrierDashboardPage() {
           <h1 className="text-2xl font-bold text-[#10274A]">
             {t("carrierDashboard.greeting")} {firstName}!
           </h1>
-          <p className="mt-1 text-sm text-[#5B6B80]">
-            {t("carrierDashboard.subtitle")}
-          </p>
+          <p className="mt-1 text-sm text-[#5B6B80]">{t("carrierDashboard.subtitle")}</p>
         </div>
         <Link to="/carrier/marketplace">
           <Button>
@@ -201,10 +198,7 @@ export function CarrierDashboardPage() {
           <h2 className="text-base font-semibold text-[#10274A]">
             {t("carrierDashboard.availableFreightsHeading")}
           </h2>
-          <Link
-            to="/carrier/marketplace"
-            className="text-xs text-[#3B89D4] hover:underline"
-          >
+          <Link to="/carrier/marketplace" className="text-xs text-[#3B89D4] hover:underline">
             {t("carrierDashboard.viewAll")}
           </Link>
         </div>
@@ -255,9 +249,7 @@ export function CarrierDashboardPage() {
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       <div className="font-medium text-[#2ECC8A] tabular-nums">
-                        {f.budget_brl
-                          ? formatBRL(f.budget_brl)
-                          : t("carrierDashboard.open")}
+                        {f.budget_brl ? formatBRL(f.budget_brl) : t("carrierDashboard.open")}
                       </div>
                     </div>
                     <Button variant="ghost" size="sm">
@@ -315,10 +307,7 @@ export function CarrierDashboardPage() {
                   <div className="text-xs text-[#5B6B80]">
                     <div>{d?.full_name ?? "—"}</div>
                   </div>
-                  <Link
-                    to="/carrier/trips/$id"
-                    params={{ id: String(c.id) }}
-                  >
+                  <Link to="/carrier/trips/$id" params={{ id: String(c.id) }}>
                     <Button size="sm">{t("carrierDashboard.track")}</Button>
                   </Link>
                 </Card>
@@ -354,9 +343,7 @@ export function CarrierDashboardPage() {
                     #{String(p.contract_id).slice(0, 8).toUpperCase()}
                   </div>
                   <div className="text-xs text-[#5B6B80] mt-0.5">
-                    {p.released_at
-                      ? new Date(p.released_at).toLocaleDateString("pt-BR")
-                      : "—"}
+                    {p.released_at ? new Date(p.released_at).toLocaleDateString("pt-BR") : "—"}
                   </div>
                 </div>
                 <div className="font-medium tabular-nums text-[#2ECC8A]">

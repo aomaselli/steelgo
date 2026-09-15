@@ -2963,8 +2963,11 @@ export type Database = {
       payment_transactions: {
         Row: {
           amount: number
+          confirmation_evidence_etag: string | null
           confirmation_evidence_hash: string | null
+          confirmation_evidence_mime: string | null
           confirmation_evidence_ref: string | null
+          confirmation_evidence_size_bytes: number | null
           confirmation_method:
             | Database["public"]["Enums"]["payment_confirmation_method"]
             | null
@@ -2988,8 +2991,11 @@ export type Database = {
         }
         Insert: {
           amount: number
+          confirmation_evidence_etag?: string | null
           confirmation_evidence_hash?: string | null
+          confirmation_evidence_mime?: string | null
           confirmation_evidence_ref?: string | null
+          confirmation_evidence_size_bytes?: number | null
           confirmation_method?:
             | Database["public"]["Enums"]["payment_confirmation_method"]
             | null
@@ -3013,8 +3019,11 @@ export type Database = {
         }
         Update: {
           amount?: number
+          confirmation_evidence_etag?: string | null
           confirmation_evidence_hash?: string | null
+          confirmation_evidence_mime?: string | null
           confirmation_evidence_ref?: string | null
+          confirmation_evidence_size_bytes?: number | null
           confirmation_method?:
             | Database["public"]["Enums"]["payment_confirmation_method"]
             | null
@@ -4695,6 +4704,20 @@ export type Database = {
         }
         Returns: string
       }
+      assert_payment_evidence: {
+        Args: {
+          p_contract_id: string
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_kind: Database["public"]["Enums"]["payment_transaction_kind"]
+          p_transaction_id: string
+        }
+        Returns: {
+          etag: string
+          mime: string
+          size_bytes: number
+        }[]
+      }
       can_govern_freight: {
         Args: { p_company_id: string; p_created_by: string }
         Returns: boolean
@@ -4981,6 +5004,16 @@ export type Database = {
         Returns: boolean
       }
       is_dispute_visible: { Args: { p_case_id: string }; Returns: boolean }
+      list_visible_contract_counterparties: {
+        Args: { p_contract_ids: string[] }
+        Returns: {
+          carrier_company_id: string
+          carrier_company_name: string
+          contract_id: string
+          shipper_company_id: string
+          shipper_company_name: string
+        }[]
+      }
       match_capacity_for_freight: {
         Args: {
           p_freight_id: string
@@ -5033,6 +5066,19 @@ export type Database = {
           release_suspended: boolean
           was_replayed: boolean
         }[]
+      }
+      open_payment_reconciliation: {
+        Args: {
+          p_contract_id: string
+          p_expected_amount: number
+          p_note: string
+          p_observed_amount?: number
+          p_request_id: string
+          p_source: string
+          p_statement_ref?: string
+          p_transaction_id?: string
+        }
+        Returns: string
       }
       payment_event_append: {
         Args: {
@@ -5224,6 +5270,18 @@ export type Database = {
           p_status: string
         }
         Returns: string
+      }
+      retry_failed_payment_transaction: {
+        Args: { p_contract_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          affected_contract_id: string
+          failed_transaction_id: string
+          intent_id: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          new_transaction_id: string
+          retried_kind: Database["public"]["Enums"]["payment_transaction_kind"]
+          was_replayed: boolean
+        }[]
       }
       review_driver_carrier_request: {
         Args: {

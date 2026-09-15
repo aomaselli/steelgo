@@ -12,6 +12,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { paymentStatusMeta } from "@/lib/paymentStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, Spinner, Button } from "@/components/steel";
 import { StatusPill } from "@/components/steel/StatusPill";
@@ -495,40 +496,10 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
 }
 
 function EscrowBadge({ status }: { status?: string | null }) {
-  // L2a revisão 8.1: rótulos HONESTOS. Solicitação registrada, confirmação
-  // externa recebida e pagamento efetivamente confirmado são três coisas
-  // diferentes, e a interface diz qual delas é.
-  //
-  // "confirmado pela SteelGo" é deliberado: enquanto não houver provedor
-  // integrado, a confirmação é uma ATESTAÇÃO humana com comprovante anexado —
-  // nunca uma confirmação automática bancária, e o rótulo não pode sugerir que
-  // seja.
-  const map: Record<string, { label: string; cls: string }> = {
-    pending: { label: "Pagamento não solicitado", cls: "bg-[#EEF3F8] text-[#10274A]" },
-    pending_provider: { label: "Aguardando meio de pagamento", cls: "bg-[#EEF3F8] text-[#10274A]" },
-    awaiting_funding: { label: "Solicitado — sem confirmação", cls: "bg-[#FDF6E9] text-[#8A5A12]" },
-    funding_confirmed: {
-      label: "Recebimento confirmado pela SteelGo",
-      cls: "bg-[#EAF7F1] text-[#14603F]",
-    },
-    release_requested: {
-      label: "Liberação solicitada — sem confirmação",
-      cls: "bg-[#FDF6E9] text-[#8A5A12]",
-    },
-    released_confirmed: {
-      label: "Repasse confirmado pela SteelGo",
-      cls: "bg-[#EAF7F1] text-[#14603F]",
-    },
-    failed: { label: "Falhou", cls: "bg-[#FDF3F3] text-[#8A2B2B]" },
-    cancelled: { label: "Cancelado", cls: "bg-[#EEF3F8] text-[#54657C]" },
-    reconciliation_required: { label: "Em reconciliação", cls: "bg-[#FDF3F3] text-[#8A2B2B]" },
-    disputed: { label: "Disputado", cls: "bg-[#FDF3F3] text-[#8A2B2B]" },
-    // valores legados, mantidos apenas para linhas antigas
-    escrow_held: { label: "Em escrow (legado)", cls: "bg-[#FDF6E9] text-[#8A5A12]" },
-    released: { label: "Liberado (legado)", cls: "bg-[#EAF7F1] text-[#14603F]" },
-    refunded: { label: "Reembolsado (legado)", cls: "bg-[#EEF3F8] text-[#54657C]" },
-  };
-  const it = map[status ?? "pending"] ?? map.pending;
+  // Rotulos HONESTOS, num unico lugar (src/lib/paymentStatus.ts): solicitado,
+  // confirmado pela SteelGo (atestacao humana) e repassado sao estados
+  // diferentes, e a interface diz qual deles e.
+  const it = paymentStatusMeta(status);
   return (
     <span
       className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${it.cls}`}

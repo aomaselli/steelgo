@@ -12,6 +12,8 @@ import {
   UserRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { paymentStatusMeta } from "@/lib/paymentStatus";
 import { useLanguage } from "@/lib/i18n";
 
 type Scope = "admin" | "shipper" | "carrier";
@@ -37,7 +39,7 @@ type OperationalRow = {
   alertCount: number;
 };
 
-const ACTIVE_STATUSES = [
+const ACTIVE_STATUSES: Database["public"]["Enums"]["contract_status"][] = [
   "draft",
   "awaiting_shipper_signature",
   "awaiting_carrier_signature",
@@ -83,15 +85,21 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
   const [filter, setFilter] = useState<"all" | "attention" | "active">(defaultFilter);
   const isLight = scope === "admin" || scope === "carrier";
 
-  const { data: rows = [], isLoading, isError } = useQuery({
+  const {
+    data: rows = [],
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["operations-board", scope, companyId],
     enabled: scope === "admin" || Boolean(companyId),
     refetchInterval: 30_000,
     queryFn: async (): Promise<OperationalRow[]> => {
       let contractsQuery = supabase
         .from("contracts")
-        .select("id, contract_number, status, total_amount_brl, carrier_payout_brl, driver_id, created_at, freights(id, status, origin_city, origin_state, dest_city, dest_state, pickup_date, final_price_brl)")
-        .in("status", ACTIVE_STATUSES as any)
+        .select(
+          "id, contract_number, status, total_amount_brl, carrier_payout_brl, driver_id, created_at, freights(id, status, origin_city, origin_state, dest_city, dest_state, pickup_date, final_price_brl)",
+        )
+        .in("status", ACTIVE_STATUSES)
         .order("created_at", { ascending: false })
         .limit(100);
 
@@ -121,9 +129,10 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
           .select("contract_id")
           .in("contract_id", contractIds)
           .is("resolved_at", null),
+        // Ledger financeiro (payment_intents), nao a tabela legada public.payments.
         supabase
-          .from("payments")
-          .select("contract_id, status")
+          .from("payment_intents")
+          .select("contract_id, internal_status")
           .in("contract_id", contractIds),
         driverIds.length
           ? supabase.from("drivers").select("id, full_name").in("id", driverIds)
@@ -132,7 +141,11 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
 
       const latestSignal = new Map<string, string>();
       for (const position of positionsResult.data ?? []) {
-        if (position.contract_id && position.updated_at && !latestSignal.has(position.contract_id)) {
+        if (
+          position.contract_id &&
+          position.updated_at &&
+          !latestSignal.has(position.contract_id)
+        ) {
           latestSignal.set(position.contract_id, position.updated_at);
         }
       }
@@ -145,7 +158,8 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
 
       const paymentStatus = new Map<string, string>();
       for (const payment of paymentsResult.data ?? []) {
-        if (payment.contract_id) paymentStatus.set(payment.contract_id, payment.status ?? "pending");
+        if (payment.contract_id)
+          paymentStatus.set(payment.contract_id, payment.internal_status ?? "pending");
       }
 
       const driverNames = new Map<string, string>();
@@ -153,10 +167,12 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
         driverNames.set(driver.id, driver.full_name ?? "Motorista");
       }
 
-      return contracts.map((contract: any) => {
+      return contracts.map((contract) => {
         const freight = Array.isArray(contract.freights) ? contract.freights[0] : contract.freights;
-        const origin = [freight?.origin_city, freight?.origin_state].filter(Boolean).join("/") || null;
-        const destination = [freight?.dest_city, freight?.dest_state].filter(Boolean).join("/") || null;
+        const origin =
+          [freight?.origin_city, freight?.origin_state].filter(Boolean).join("/") || null;
+        const destination =
+          [freight?.dest_city, freight?.dest_state].filter(Boolean).join("/") || null;
         return {
           id: contract.id,
           contractNumber: contract.contract_number || String(contract.id).slice(0, 8).toUpperCase(),
@@ -211,8 +227,12 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
             <p className={`mt-1 text-sm ${muted}`}>{t("operationsBoard.subtitle")}</p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <span className="rounded-full bg-[#1B6CB8]/10 px-3 py-1.5 font-medium text-[#1B6CB8]">{activeCount} {t("operationsBoard.activeCount")}</span>
-            <span className={`rounded-full px-3 py-1.5 font-medium ${attentionCount ? "bg-[#E0A23A]/15 text-[#B7791F]" : "bg-[#2FA98A]/10 text-[#1A7D60]"}`}>
+            <span className="rounded-full bg-[#1B6CB8]/10 px-3 py-1.5 font-medium text-[#1B6CB8]">
+              {activeCount} {t("operationsBoard.activeCount")}
+            </span>
+            <span
+              className={`rounded-full px-3 py-1.5 font-medium ${attentionCount ? "bg-[#E0A23A]/15 text-[#B7791F]" : "bg-[#2FA98A]/10 text-[#1A7D60]"}`}
+            >
               {attentionCount} {t("operationsBoard.attentionCount")}
             </span>
           </div>
@@ -236,7 +256,11 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
                 onClick={() => setFilter(value)}
                 className={`px-3 py-2 text-xs font-medium transition ${filter === value ? "bg-[#1B6CB8] text-white" : muted}`}
               >
-                {value === "all" ? t("operationsBoard.filterAll") : value === "attention" ? t("operationsBoard.filterAttention") : t("operationsBoard.filterActive")}
+                {value === "all"
+                  ? t("operationsBoard.filterAll")
+                  : value === "attention"
+                    ? t("operationsBoard.filterAttention")
+                    : t("operationsBoard.filterActive")}
               </button>
             ))}
           </div>
@@ -273,20 +297,57 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
                     )}
                   </td>
                   <td className="px-3 py-4">
-                    <div className="font-mono text-xs font-semibold text-[#1B6CB8]">#{row.contractNumber}</div>
-                    <div className="mt-1 flex items-center gap-1.5 font-medium"><MapPin className="h-3.5 w-3.5 text-[#2FA98A]" />{row.originLabel ?? t("operationsBoard.originPending")} → {row.destinationLabel ?? t("operationsBoard.destinationPending")}</div>
-                    <div className={`mt-1 text-xs ${muted}`}>{row.pickupDate ? `${t("operationsBoard.pickupConfirmed")} ${new Date(row.pickupDate).toLocaleDateString("pt-BR")}` : t("operationsBoard.pickupPending")}</div>
-                  </td>
-                  <td className="px-3 py-4"><span className="rounded-full bg-[#1B6CB8]/10 px-2 py-1 text-xs font-medium text-[#1B6CB8]">{t(`operationsBoard.${STATUS_KEY[row.status] ?? "statusPreparing"}`)}</span></td>
-                  <td className="px-3 py-4"><div className="flex items-center gap-2"><UserRound className={`h-4 w-4 ${muted}`} /><span>{row.driverName ?? t("operationsBoard.driverUnassigned")}</span></div></td>
-                  <td className="px-3 py-4">
-                    <div className={`flex items-center gap-2 ${signalRisk(row.lastSignal) ? "text-[#B74545]" : "text-[#1A7D60]"}`}>
-                      <Radio className="h-4 w-4" />{relativeSignal(row.lastSignal, t)}
+                    <div className="font-mono text-xs font-semibold text-[#1B6CB8]">
+                      #{row.contractNumber}
                     </div>
-                    {row.alertCount > 0 && <div className="mt-1 text-xs text-[#B74545]">{row.alertCount} {t("operationsBoard.alertsSuffix")}</div>}
+                    <div className="mt-1 flex items-center gap-1.5 font-medium">
+                      <MapPin className="h-3.5 w-3.5 text-[#2FA98A]" />
+                      {row.originLabel ?? t("operationsBoard.originPending")} →{" "}
+                      {row.destinationLabel ?? t("operationsBoard.destinationPending")}
+                    </div>
+                    <div className={`mt-1 text-xs ${muted}`}>
+                      {row.pickupDate
+                        ? `${t("operationsBoard.pickupConfirmed")} ${new Date(row.pickupDate).toLocaleDateString("pt-BR")}`
+                        : t("operationsBoard.pickupPending")}
+                    </div>
                   </td>
-                  <td className="px-3 py-4"><div className="flex items-center gap-2"><Banknote className={`h-4 w-4 ${muted}`} /><span className="capitalize">{row.paymentStatus.replaceAll("_", " ")}</span></div></td>
-                  <td className="px-5 py-4 text-right font-semibold tabular-nums">{formatBRL(row.amount)}</td>
+                  <td className="px-3 py-4">
+                    <span className="rounded-full bg-[#1B6CB8]/10 px-2 py-1 text-xs font-medium text-[#1B6CB8]">
+                      {t(`operationsBoard.${STATUS_KEY[row.status] ?? "statusPreparing"}`)}
+                    </span>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="flex items-center gap-2">
+                      <UserRound className={`h-4 w-4 ${muted}`} />
+                      <span>{row.driverName ?? t("operationsBoard.driverUnassigned")}</span>
+                    </div>
+                  </td>
+                  <td className="px-3 py-4">
+                    <div
+                      className={`flex items-center gap-2 ${signalRisk(row.lastSignal) ? "text-[#B74545]" : "text-[#1A7D60]"}`}
+                    >
+                      <Radio className="h-4 w-4" />
+                      {relativeSignal(row.lastSignal, t)}
+                    </div>
+                    {row.alertCount > 0 && (
+                      <div className="mt-1 text-xs text-[#B74545]">
+                        {row.alertCount} {t("operationsBoard.alertsSuffix")}
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-3 py-4">
+                    <div className="flex items-center gap-2">
+                      <Banknote className={`h-4 w-4 ${muted}`} />
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${paymentStatusMeta(row.paymentStatus).cls}`}
+                      >
+                        {paymentStatusMeta(row.paymentStatus).short}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-4 text-right font-semibold tabular-nums">
+                    {formatBRL(row.amount)}
+                  </td>
                 </tr>
               );
             })}
@@ -295,14 +356,24 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
       </div>
 
       {!isLoading && !isError && filteredRows.length === 0 && (
-        <div className={`flex min-h-48 flex-col items-center justify-center gap-2 px-6 py-10 text-center ${muted}`}>
+        <div
+          className={`flex min-h-48 flex-col items-center justify-center gap-2 px-6 py-10 text-center ${muted}`}
+        >
           <Clock3 className="h-7 w-7" />
           <p className="font-medium">{t("operationsBoard.emptyTitle")}</p>
           <p className="text-xs">{t("operationsBoard.emptyDesc")}</p>
         </div>
       )}
-      {isLoading && <div className={`px-6 py-12 text-center text-sm ${muted}`}>{t("operationsBoard.loading")}</div>}
-      {isError && <div className="px-6 py-12 text-center text-sm text-[#B74545]">{t("operationsBoard.error")}</div>}
+      {isLoading && (
+        <div className={`px-6 py-12 text-center text-sm ${muted}`}>
+          {t("operationsBoard.loading")}
+        </div>
+      )}
+      {isError && (
+        <div className="px-6 py-12 text-center text-sm text-[#B74545]">
+          {t("operationsBoard.error")}
+        </div>
+      )}
     </section>
   );
 }
