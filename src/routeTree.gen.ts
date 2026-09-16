@@ -29,7 +29,6 @@ import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as ShipperPaymentsRouteImport } from './routes/shipper.payments'
 import { Route as ShipperEsgRouteImport } from './routes/shipper.esg'
-import { Route as ShipperContractsRouteImport } from './routes/shipper.contracts'
 import { Route as DriverProfileRouteImport } from './routes/driver.profile'
 import { Route as DriverPanicRouteImport } from './routes/driver.panic'
 import { Route as DriverHistoryRouteImport } from './routes/driver.history'
@@ -53,20 +52,26 @@ import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminFreightsRouteImport } from './routes/admin.freights'
 import { Route as AdminEsgRouteImport } from './routes/admin.esg'
-import { Route as AdminDisputesRouteImport } from './routes/admin.disputes'
 import { Route as AdminContractsRouteImport } from './routes/admin.contracts'
 import { Route as AdminCarriersRouteImport } from './routes/admin.carriers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as ShipperFreightsIndexRouteImport } from './routes/shipper.freights.index'
+import { Route as ShipperDisputesIndexRouteImport } from './routes/shipper.disputes.index'
+import { Route as ShipperContractsIndexRouteImport } from './routes/shipper.contracts.index'
 import { Route as CarrierTripsIndexRouteImport } from './routes/carrier.trips.index'
+import { Route as CarrierDisputesIndexRouteImport } from './routes/carrier.disputes.index'
 import { Route as CarrierContractsIndexRouteImport } from './routes/carrier.contracts.index'
+import { Route as AdminDisputesIndexRouteImport } from './routes/admin.disputes.index'
 import { Route as ShipperReviewContractIdRouteImport } from './routes/shipper.review.$contractId'
 import { Route as ShipperPaymentContractIdRouteImport } from './routes/shipper.payment.$contractId'
 import { Route as ShipperFreightsNewRouteImport } from './routes/shipper.freights.new'
 import { Route as ShipperFreightsIdRouteImport } from './routes/shipper.freights.$id'
+import { Route as ShipperDisputesIdRouteImport } from './routes/shipper.disputes.$id'
 import { Route as ShipperContractsIdRouteImport } from './routes/shipper.contracts.$id'
 import { Route as CarrierTripsIdRouteImport } from './routes/carrier.trips.$id'
+import { Route as CarrierDisputesIdRouteImport } from './routes/carrier.disputes.$id'
 import { Route as CarrierContractsIdRouteImport } from './routes/carrier.contracts.$id'
+import { Route as AdminDisputesIdRouteImport } from './routes/admin.disputes.$id'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -166,11 +171,6 @@ const ShipperPaymentsRoute = ShipperPaymentsRouteImport.update({
 const ShipperEsgRoute = ShipperEsgRouteImport.update({
   id: '/esg',
   path: '/esg',
-  getParentRoute: () => ShipperRoute,
-} as any)
-const ShipperContractsRoute = ShipperContractsRouteImport.update({
-  id: '/contracts',
-  path: '/contracts',
   getParentRoute: () => ShipperRoute,
 } as any)
 const DriverProfileRoute = DriverProfileRouteImport.update({
@@ -288,11 +288,6 @@ const AdminEsgRoute = AdminEsgRouteImport.update({
   path: '/esg',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminDisputesRoute = AdminDisputesRouteImport.update({
-  id: '/disputes',
-  path: '/disputes',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AdminContractsRoute = AdminContractsRouteImport.update({
   id: '/contracts',
   path: '/contracts',
@@ -313,15 +308,35 @@ const ShipperFreightsIndexRoute = ShipperFreightsIndexRouteImport.update({
   path: '/freights/',
   getParentRoute: () => ShipperRoute,
 } as any)
+const ShipperDisputesIndexRoute = ShipperDisputesIndexRouteImport.update({
+  id: '/disputes/',
+  path: '/disputes/',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperContractsIndexRoute = ShipperContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
+  getParentRoute: () => ShipperRoute,
+} as any)
 const CarrierTripsIndexRoute = CarrierTripsIndexRouteImport.update({
   id: '/trips/',
   path: '/trips/',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierDisputesIndexRoute = CarrierDisputesIndexRouteImport.update({
+  id: '/disputes/',
+  path: '/disputes/',
   getParentRoute: () => CarrierRoute,
 } as any)
 const CarrierContractsIndexRoute = CarrierContractsIndexRouteImport.update({
   id: '/contracts/',
   path: '/contracts/',
   getParentRoute: () => CarrierRoute,
+} as any)
+const AdminDisputesIndexRoute = AdminDisputesIndexRouteImport.update({
+  id: '/disputes/',
+  path: '/disputes/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const ShipperReviewContractIdRoute = ShipperReviewContractIdRouteImport.update({
   id: '/review/$contractId',
@@ -344,20 +359,35 @@ const ShipperFreightsIdRoute = ShipperFreightsIdRouteImport.update({
   path: '/freights/$id',
   getParentRoute: () => ShipperRoute,
 } as any)
+const ShipperDisputesIdRoute = ShipperDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
+  getParentRoute: () => ShipperRoute,
+} as any)
 const ShipperContractsIdRoute = ShipperContractsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => ShipperContractsRoute,
+  id: '/contracts/$id',
+  path: '/contracts/$id',
+  getParentRoute: () => ShipperRoute,
 } as any)
 const CarrierTripsIdRoute = CarrierTripsIdRouteImport.update({
   id: '/trips/$id',
   path: '/trips/$id',
   getParentRoute: () => CarrierRoute,
 } as any)
+const CarrierDisputesIdRoute = CarrierDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
+  getParentRoute: () => CarrierRoute,
+} as any)
 const CarrierContractsIdRoute = CarrierContractsIdRouteImport.update({
   id: '/contracts/$id',
   path: '/contracts/$id',
   getParentRoute: () => CarrierRoute,
+} as any)
+const AdminDisputesIdRoute = AdminDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
+  getParentRoute: () => AdminRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -378,7 +408,6 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
-  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/esg': typeof AdminEsgRoute
   '/admin/freights': typeof AdminFreightsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -402,22 +431,28 @@ export interface FileRoutesByFullPath {
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
   '/driver/profile': typeof DriverProfileRoute
-  '/shipper/contracts': typeof ShipperContractsRouteWithChildren
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
   '/shipper/': typeof ShipperIndexRoute
+  '/admin/disputes/$id': typeof AdminDisputesIdRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
+  '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
   '/shipper/contracts/$id': typeof ShipperContractsIdRoute
+  '/shipper/disputes/$id': typeof ShipperDisputesIdRoute
   '/shipper/freights/$id': typeof ShipperFreightsIdRoute
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/admin/disputes/': typeof AdminDisputesIndexRoute
   '/carrier/contracts/': typeof CarrierContractsIndexRoute
+  '/carrier/disputes/': typeof CarrierDisputesIndexRoute
   '/carrier/trips/': typeof CarrierTripsIndexRoute
+  '/shipper/contracts/': typeof ShipperContractsIndexRoute
+  '/shipper/disputes/': typeof ShipperDisputesIndexRoute
   '/shipper/freights/': typeof ShipperFreightsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -434,7 +469,6 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
-  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/esg': typeof AdminEsgRoute
   '/admin/freights': typeof AdminFreightsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -458,22 +492,28 @@ export interface FileRoutesByTo {
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
   '/driver/profile': typeof DriverProfileRoute
-  '/shipper/contracts': typeof ShipperContractsRouteWithChildren
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/admin': typeof AdminIndexRoute
   '/carrier': typeof CarrierIndexRoute
   '/driver': typeof DriverIndexRoute
   '/shipper': typeof ShipperIndexRoute
+  '/admin/disputes/$id': typeof AdminDisputesIdRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
+  '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
   '/shipper/contracts/$id': typeof ShipperContractsIdRoute
+  '/shipper/disputes/$id': typeof ShipperDisputesIdRoute
   '/shipper/freights/$id': typeof ShipperFreightsIdRoute
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/admin/disputes': typeof AdminDisputesIndexRoute
   '/carrier/contracts': typeof CarrierContractsIndexRoute
+  '/carrier/disputes': typeof CarrierDisputesIndexRoute
   '/carrier/trips': typeof CarrierTripsIndexRoute
+  '/shipper/contracts': typeof ShipperContractsIndexRoute
+  '/shipper/disputes': typeof ShipperDisputesIndexRoute
   '/shipper/freights': typeof ShipperFreightsIndexRoute
 }
 export interface FileRoutesById {
@@ -495,7 +535,6 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
-  '/admin/disputes': typeof AdminDisputesRoute
   '/admin/esg': typeof AdminEsgRoute
   '/admin/freights': typeof AdminFreightsRoute
   '/admin/payments': typeof AdminPaymentsRoute
@@ -519,22 +558,28 @@ export interface FileRoutesById {
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
   '/driver/profile': typeof DriverProfileRoute
-  '/shipper/contracts': typeof ShipperContractsRouteWithChildren
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
   '/shipper/': typeof ShipperIndexRoute
+  '/admin/disputes/$id': typeof AdminDisputesIdRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
+  '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
   '/shipper/contracts/$id': typeof ShipperContractsIdRoute
+  '/shipper/disputes/$id': typeof ShipperDisputesIdRoute
   '/shipper/freights/$id': typeof ShipperFreightsIdRoute
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/admin/disputes/': typeof AdminDisputesIndexRoute
   '/carrier/contracts/': typeof CarrierContractsIndexRoute
+  '/carrier/disputes/': typeof CarrierDisputesIndexRoute
   '/carrier/trips/': typeof CarrierTripsIndexRoute
+  '/shipper/contracts/': typeof ShipperContractsIndexRoute
+  '/shipper/disputes/': typeof ShipperDisputesIndexRoute
   '/shipper/freights/': typeof ShipperFreightsIndexRoute
 }
 export interface FileRouteTypes {
@@ -557,7 +602,6 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
-    | '/admin/disputes'
     | '/admin/esg'
     | '/admin/freights'
     | '/admin/payments'
@@ -581,22 +625,28 @@ export interface FileRouteTypes {
     | '/driver/history'
     | '/driver/panic'
     | '/driver/profile'
-    | '/shipper/contracts'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
     | '/shipper/'
+    | '/admin/disputes/$id'
     | '/carrier/contracts/$id'
+    | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
     | '/shipper/contracts/$id'
+    | '/shipper/disputes/$id'
     | '/shipper/freights/$id'
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/admin/disputes/'
     | '/carrier/contracts/'
+    | '/carrier/disputes/'
     | '/carrier/trips/'
+    | '/shipper/contracts/'
+    | '/shipper/disputes/'
     | '/shipper/freights/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -613,7 +663,6 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
-    | '/admin/disputes'
     | '/admin/esg'
     | '/admin/freights'
     | '/admin/payments'
@@ -637,22 +686,28 @@ export interface FileRouteTypes {
     | '/driver/history'
     | '/driver/panic'
     | '/driver/profile'
-    | '/shipper/contracts'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/admin'
     | '/carrier'
     | '/driver'
     | '/shipper'
+    | '/admin/disputes/$id'
     | '/carrier/contracts/$id'
+    | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
     | '/shipper/contracts/$id'
+    | '/shipper/disputes/$id'
     | '/shipper/freights/$id'
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/admin/disputes'
     | '/carrier/contracts'
+    | '/carrier/disputes'
     | '/carrier/trips'
+    | '/shipper/contracts'
+    | '/shipper/disputes'
     | '/shipper/freights'
   id:
     | '__root__'
@@ -673,7 +728,6 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
-    | '/admin/disputes'
     | '/admin/esg'
     | '/admin/freights'
     | '/admin/payments'
@@ -697,22 +751,28 @@ export interface FileRouteTypes {
     | '/driver/history'
     | '/driver/panic'
     | '/driver/profile'
-    | '/shipper/contracts'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
     | '/shipper/'
+    | '/admin/disputes/$id'
     | '/carrier/contracts/$id'
+    | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
     | '/shipper/contracts/$id'
+    | '/shipper/disputes/$id'
     | '/shipper/freights/$id'
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/admin/disputes/'
     | '/carrier/contracts/'
+    | '/carrier/disputes/'
     | '/carrier/trips/'
+    | '/shipper/contracts/'
+    | '/shipper/disputes/'
     | '/shipper/freights/'
   fileRoutesById: FileRoutesById
 }
@@ -876,13 +936,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShipperEsgRouteImport
       parentRoute: typeof ShipperRoute
     }
-    '/shipper/contracts': {
-      id: '/shipper/contracts'
-      path: '/contracts'
-      fullPath: '/shipper/contracts'
-      preLoaderRoute: typeof ShipperContractsRouteImport
-      parentRoute: typeof ShipperRoute
-    }
     '/driver/profile': {
       id: '/driver/profile'
       path: '/profile'
@@ -1044,13 +1097,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEsgRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/disputes': {
-      id: '/admin/disputes'
-      path: '/disputes'
-      fullPath: '/admin/disputes'
-      preLoaderRoute: typeof AdminDisputesRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/admin/contracts': {
       id: '/admin/contracts'
       path: '/contracts'
@@ -1079,11 +1125,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShipperFreightsIndexRouteImport
       parentRoute: typeof ShipperRoute
     }
+    '/shipper/disputes/': {
+      id: '/shipper/disputes/'
+      path: '/disputes'
+      fullPath: '/shipper/disputes/'
+      preLoaderRoute: typeof ShipperDisputesIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/contracts/': {
+      id: '/shipper/contracts/'
+      path: '/contracts'
+      fullPath: '/shipper/contracts/'
+      preLoaderRoute: typeof ShipperContractsIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
     '/carrier/trips/': {
       id: '/carrier/trips/'
       path: '/trips'
       fullPath: '/carrier/trips/'
       preLoaderRoute: typeof CarrierTripsIndexRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/disputes/': {
+      id: '/carrier/disputes/'
+      path: '/disputes'
+      fullPath: '/carrier/disputes/'
+      preLoaderRoute: typeof CarrierDisputesIndexRouteImport
       parentRoute: typeof CarrierRoute
     }
     '/carrier/contracts/': {
@@ -1092,6 +1159,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/carrier/contracts/'
       preLoaderRoute: typeof CarrierContractsIndexRouteImport
       parentRoute: typeof CarrierRoute
+    }
+    '/admin/disputes/': {
+      id: '/admin/disputes/'
+      path: '/disputes'
+      fullPath: '/admin/disputes/'
+      preLoaderRoute: typeof AdminDisputesIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/shipper/review/$contractId': {
       id: '/shipper/review/$contractId'
@@ -1121,18 +1195,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShipperFreightsIdRouteImport
       parentRoute: typeof ShipperRoute
     }
+    '/shipper/disputes/$id': {
+      id: '/shipper/disputes/$id'
+      path: '/disputes/$id'
+      fullPath: '/shipper/disputes/$id'
+      preLoaderRoute: typeof ShipperDisputesIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
     '/shipper/contracts/$id': {
       id: '/shipper/contracts/$id'
-      path: '/$id'
+      path: '/contracts/$id'
       fullPath: '/shipper/contracts/$id'
       preLoaderRoute: typeof ShipperContractsIdRouteImport
-      parentRoute: typeof ShipperContractsRoute
+      parentRoute: typeof ShipperRoute
     }
     '/carrier/trips/$id': {
       id: '/carrier/trips/$id'
       path: '/trips/$id'
       fullPath: '/carrier/trips/$id'
       preLoaderRoute: typeof CarrierTripsIdRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/disputes/$id': {
+      id: '/carrier/disputes/$id'
+      path: '/disputes/$id'
+      fullPath: '/carrier/disputes/$id'
+      preLoaderRoute: typeof CarrierDisputesIdRouteImport
       parentRoute: typeof CarrierRoute
     }
     '/carrier/contracts/$id': {
@@ -1142,6 +1230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarrierContractsIdRouteImport
       parentRoute: typeof CarrierRoute
     }
+    '/admin/disputes/$id': {
+      id: '/admin/disputes/$id'
+      path: '/disputes/$id'
+      fullPath: '/admin/disputes/$id'
+      preLoaderRoute: typeof AdminDisputesIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -1149,7 +1244,6 @@ interface AdminRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCarriersRoute: typeof AdminCarriersRoute
   AdminContractsRoute: typeof AdminContractsRoute
-  AdminDisputesRoute: typeof AdminDisputesRoute
   AdminEsgRoute: typeof AdminEsgRoute
   AdminFreightsRoute: typeof AdminFreightsRoute
   AdminPaymentsRoute: typeof AdminPaymentsRoute
@@ -1157,13 +1251,14 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  AdminDisputesIdRoute: typeof AdminDisputesIdRoute
+  AdminDisputesIndexRoute: typeof AdminDisputesIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminCarriersRoute: AdminCarriersRoute,
   AdminContractsRoute: AdminContractsRoute,
-  AdminDisputesRoute: AdminDisputesRoute,
   AdminEsgRoute: AdminEsgRoute,
   AdminFreightsRoute: AdminFreightsRoute,
   AdminPaymentsRoute: AdminPaymentsRoute,
@@ -1171,6 +1266,8 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
+  AdminDisputesIdRoute: AdminDisputesIdRoute,
+  AdminDisputesIndexRoute: AdminDisputesIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1188,8 +1285,10 @@ interface CarrierRouteChildren {
   CarrierVehiclesRoute: typeof CarrierVehiclesRoute
   CarrierIndexRoute: typeof CarrierIndexRoute
   CarrierContractsIdRoute: typeof CarrierContractsIdRoute
+  CarrierDisputesIdRoute: typeof CarrierDisputesIdRoute
   CarrierTripsIdRoute: typeof CarrierTripsIdRoute
   CarrierContractsIndexRoute: typeof CarrierContractsIndexRoute
+  CarrierDisputesIndexRoute: typeof CarrierDisputesIndexRoute
   CarrierTripsIndexRoute: typeof CarrierTripsIndexRoute
 }
 
@@ -1206,8 +1305,10 @@ const CarrierRouteChildren: CarrierRouteChildren = {
   CarrierVehiclesRoute: CarrierVehiclesRoute,
   CarrierIndexRoute: CarrierIndexRoute,
   CarrierContractsIdRoute: CarrierContractsIdRoute,
+  CarrierDisputesIdRoute: CarrierDisputesIdRoute,
   CarrierTripsIdRoute: CarrierTripsIdRoute,
   CarrierContractsIndexRoute: CarrierContractsIndexRoute,
+  CarrierDisputesIndexRoute: CarrierDisputesIndexRoute,
   CarrierTripsIndexRoute: CarrierTripsIndexRoute,
 }
 
@@ -1237,38 +1338,33 @@ const DriverRouteChildren: DriverRouteChildren = {
 const DriverRouteWithChildren =
   DriverRoute._addFileChildren(DriverRouteChildren)
 
-interface ShipperContractsRouteChildren {
-  ShipperContractsIdRoute: typeof ShipperContractsIdRoute
-}
-
-const ShipperContractsRouteChildren: ShipperContractsRouteChildren = {
-  ShipperContractsIdRoute: ShipperContractsIdRoute,
-}
-
-const ShipperContractsRouteWithChildren =
-  ShipperContractsRoute._addFileChildren(ShipperContractsRouteChildren)
-
 interface ShipperRouteChildren {
-  ShipperContractsRoute: typeof ShipperContractsRouteWithChildren
   ShipperEsgRoute: typeof ShipperEsgRoute
   ShipperPaymentsRoute: typeof ShipperPaymentsRoute
   ShipperIndexRoute: typeof ShipperIndexRoute
+  ShipperContractsIdRoute: typeof ShipperContractsIdRoute
+  ShipperDisputesIdRoute: typeof ShipperDisputesIdRoute
   ShipperFreightsIdRoute: typeof ShipperFreightsIdRoute
   ShipperFreightsNewRoute: typeof ShipperFreightsNewRoute
   ShipperPaymentContractIdRoute: typeof ShipperPaymentContractIdRoute
   ShipperReviewContractIdRoute: typeof ShipperReviewContractIdRoute
+  ShipperContractsIndexRoute: typeof ShipperContractsIndexRoute
+  ShipperDisputesIndexRoute: typeof ShipperDisputesIndexRoute
   ShipperFreightsIndexRoute: typeof ShipperFreightsIndexRoute
 }
 
 const ShipperRouteChildren: ShipperRouteChildren = {
-  ShipperContractsRoute: ShipperContractsRouteWithChildren,
   ShipperEsgRoute: ShipperEsgRoute,
   ShipperPaymentsRoute: ShipperPaymentsRoute,
   ShipperIndexRoute: ShipperIndexRoute,
+  ShipperContractsIdRoute: ShipperContractsIdRoute,
+  ShipperDisputesIdRoute: ShipperDisputesIdRoute,
   ShipperFreightsIdRoute: ShipperFreightsIdRoute,
   ShipperFreightsNewRoute: ShipperFreightsNewRoute,
   ShipperPaymentContractIdRoute: ShipperPaymentContractIdRoute,
   ShipperReviewContractIdRoute: ShipperReviewContractIdRoute,
+  ShipperContractsIndexRoute: ShipperContractsIndexRoute,
+  ShipperDisputesIndexRoute: ShipperDisputesIndexRoute,
   ShipperFreightsIndexRoute: ShipperFreightsIndexRoute,
 }
 

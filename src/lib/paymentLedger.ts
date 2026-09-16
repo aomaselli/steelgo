@@ -200,7 +200,11 @@ export async function fetchPendingReconciliations(): Promise<
   }));
 }
 
-/** Objetos do bucket payment-evidence sem transacao confirmada apontando para eles. */
+/**
+ * Objetos do bucket payment-evidence que nenhuma transacao confirmada NEM
+ * recuperacao confirmada referencia. As recuperacoes vem por RPC (admin nao
+ * tem SELECT direto em payment_recoveries).
+ */
 export async function fetchUnlinkedEvidence(): Promise<
   { name: string; created_at: string | null; size: number | null }[]
 > {
@@ -213,7 +217,12 @@ export async function fetchUnlinkedEvidence(): Promise<
     .select("confirmation_evidence_ref")
     .not("confirmation_evidence_ref", "is", null);
   if (refErr) throw refErr;
-  const linked = new Set((refs ?? []).map((r) => r.confirmation_evidence_ref as string));
+  const { data: recRefs, error: recErr } = await supabase.rpc("list_recovery_evidence_refs");
+  if (recErr) throw recErr;
+  const linked = new Set<string>([
+    ...(refs ?? []).map((r) => r.confirmation_evidence_ref as string),
+    ...((recRefs ?? []) as string[]),
+  ]);
   const out: { name: string; created_at: string | null; size: number | null }[] = [];
   for (const contractFolder of roots ?? []) {
     if (!contractFolder.name) continue;
@@ -248,9 +257,9 @@ export type LedgerKpis = {
   contractedNet: number; // Σ carrier_net de todas as intents
   protectedGross: number; // funding_confirmed ∪ release_requested (em custodia)
   protectedNet: number;
-  confirmedGross: number; // released_confirmed
-  confirmedNet: number;
-  confirmedFee: number; // platform_fee onde released_confirmed
+  confirmedGross: number; // released_confirmed (bruto) + settled (amount da release confirmada)
+  confirmedNet: number; // carrier_net + alocacao 'carrier' da release confirmada nos settled
+  confirmedFee: number; // platform_fee onde released_confirmed + alocacao 'platform' nos settled
   issueGross: number; // failed ∪ reconciliation_required ∪ bloqueado por disputa
   awaitingFundingGross: number; // awaiting_funding (solicitado, sem confirmacao)
   awaitingFundingCount: number;
@@ -259,7 +268,31 @@ export type LedgerKpis = {
   issueCount: number;
 };
 
-export function computeLedgerKpis(rows: LedgerIntent[]): LedgerKpis {
+/**
+ * Valores PERSISTIDOS da liquidacao confirmada de cada intent `settled`:
+ * amount da release confirmada e suas alocacoes. Vem da RPC sanitizada
+ * list_settled_release_amounts (admin: tudo; parte: contratos visiveis).
+ * Nenhuma formula financeira e recalculada no cliente.
+ */
+export type SettledRelease = {
+  intent_id: string;
+  contract_id: string;
+  transaction_id: string;
+  release_amount: number;
+  carrier_amount: number;
+  platform_amount: number;
+};
+
+export async function fetchSettledReleases(): Promise<SettledRelease[]> {
+  const { data, error } = await supabase.rpc("list_settled_release_amounts");
+  if (error) throw error;
+  return (data ?? []) as SettledRelease[];
+}
+
+export function computeLedgerKpis(
+  rows: LedgerIntent[],
+  settled: SettledRelease[] = [],
+): LedgerKpis {
   const k: LedgerKpis = {
     contractedGross: 0,
     contractedNet: 0,
@@ -275,6 +308,7 @@ export function computeLedgerKpis(rows: LedgerIntent[]): LedgerKpis {
     awaitingReleaseCount: 0,
     issueCount: 0,
   };
+  const settledByIntent = new Map(settled.map((s) => [s.intent_id, s]));
   for (const r of rows) {
     const gross = Number(r.gross_amount ?? 0),
       net = Number(r.carrier_net_amount ?? 0),
@@ -291,12 +325,25 @@ export function computeLedgerKpis(rows: LedgerIntent[]): LedgerKpis {
       k.confirmedNet += net;
       k.confirmedFee += fee;
     }
+    // Liquidacao de disputa confirmada: soma-se o que esta no razao (release
+    // confirmada e alocacoes), nunca um recalculo. Sem release confirmada
+    // (decisao sem parcela a liberar) nada e somado.
+    if (s === "settled") {
+      const sr = settledByIntent.get(r.id);
+      if (sr) {
+        k.confirmedGross += Number(sr.release_amount);
+        k.confirmedNet += Number(sr.carrier_amount);
+        k.confirmedFee += Number(sr.platform_amount);
+      }
+    }
     if (PENDING_ISSUE_STATUSES.includes(s) || r.release_blocked_by_dispute) {
       k.issueGross += gross;
       k.issueCount += 1;
     }
     if (s === "awaiting_funding") {
-      k.awaitingFundingGross += gross;
+      // Aporte de decisao de disputa: o devido e R (settlement_funding_amount,
+      // persistido pelo servidor), nao o bruto do contrato.
+      k.awaitingFundingGross += Number(r.settlement_funding_amount ?? gross);
       k.awaitingFundingCount += 1;
     }
     if (s === "release_requested") {

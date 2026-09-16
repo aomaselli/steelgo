@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -12,6 +13,7 @@ import {
   WalletCards,
 } from "lucide-react";
 import { formatBRL } from "@/lib/steel";
+import { brl } from "@/lib/disputes";
 import { cn } from "@/lib/utils";
 import {
   ATTESTATION_NOTICE,
@@ -24,6 +26,7 @@ import {
   fetchIntentDetail,
   fetchLedgerIntents,
   fetchPendingReconciliations,
+  fetchSettledReleases,
   fetchUnlinkedEvidence,
   routeLabel,
   type LedgerIntent,
@@ -41,11 +44,12 @@ import {
 // Operacao financeira administrativa. Le o LEDGER (nunca public.payments) e
 // escreve exclusivamente por RPC. Toda confirmacao aqui e atestacao humana.
 
-type Queue = "funding" | "release" | "failed" | "reconciliation" | "done" | "all";
+type Queue = "funding" | "release" | "settlement" | "failed" | "reconciliation" | "done" | "all";
 
 const QUEUES: { id: Queue; label: string }[] = [
   { id: "funding", label: "Aporte aguardando atestação" },
   { id: "release", label: "Liberação aguardando atestação" },
+  { id: "settlement", label: "Liquidação de disputa" },
   { id: "failed", label: "Falhas" },
   { id: "reconciliation", label: "Reconciliação pendente" },
   { id: "done", label: "Concluídos" },
@@ -90,9 +94,14 @@ export function AdminFinanceOps() {
     queryFn: fetchUnlinkedEvidence,
     refetchInterval: 120_000,
   });
+  const settled = useQuery({
+    queryKey: ["ledger-settled-releases"],
+    queryFn: fetchSettledReleases,
+    refetchInterval: 60_000,
+  });
 
   const rows = useMemo(() => intents.data ?? [], [intents.data]);
-  const kpis = useMemo(() => computeLedgerKpis(rows), [rows]);
+  const kpis = useMemo(() => computeLedgerKpis(rows, settled.data ?? []), [rows, settled.data]);
   const pendingByContract = useMemo(() => {
     const m = new Map<string, ReconciliationRow[]>();
     for (const r of pendingRec.data ?? [])
@@ -105,6 +114,7 @@ export function AdminFinanceOps() {
     qc.invalidateQueries({ queryKey: ["ledger-reconciliations-pending"] });
     qc.invalidateQueries({ queryKey: ["ledger-intent-detail"] });
     qc.invalidateQueries({ queryKey: ["ledger-unlinked-evidence"] });
+    qc.invalidateQueries({ queryKey: ["ledger-settled-releases"] });
   };
 
   const filtered = useMemo(() => {
@@ -115,10 +125,12 @@ export function AdminFinanceOps() {
         queue === "all" ||
         (queue === "funding" && s === "awaiting_funding") ||
         (queue === "release" && s === "release_requested") ||
+        (queue === "settlement" && s === "settlement_requested") ||
         (queue === "failed" && s === "failed") ||
         (queue === "reconciliation" &&
           (s === "reconciliation_required" || pendingByContract.has(r.contract_id))) ||
-        (queue === "done" && (s === "released_confirmed" || s === "funding_confirmed"));
+        (queue === "done" &&
+          (s === "released_confirmed" || s === "funding_confirmed" || s === "settled"));
       if (!inQueue) return false;
       if (!term) return true;
       const hay = [
@@ -138,6 +150,7 @@ export function AdminFinanceOps() {
     const c: Record<Queue, number> = {
       funding: 0,
       release: 0,
+      settlement: 0,
       failed: 0,
       reconciliation: 0,
       done: 0,
@@ -147,10 +160,11 @@ export function AdminFinanceOps() {
       const s = r.internal_status as PaymentInternalStatus;
       if (s === "awaiting_funding") c.funding++;
       if (s === "release_requested") c.release++;
+      if (s === "settlement_requested") c.settlement++;
       if (s === "failed") c.failed++;
       if (s === "reconciliation_required" || pendingByContract.has(r.contract_id))
         c.reconciliation++;
-      if (s === "released_confirmed" || s === "funding_confirmed") c.done++;
+      if (s === "released_confirmed" || s === "funding_confirmed" || s === "settled") c.done++;
     }
     return c;
   }, [rows, pendingByContract]);
@@ -180,7 +194,7 @@ export function AdminFinanceOps() {
     {
       label: "Repasses confirmados",
       value: kpis.confirmedGross,
-      sub: `Receita SteelGo confirmada ${formatBRL(kpis.confirmedFee)}`,
+      sub: `Receita SteelGo confirmada ${brl(kpis.confirmedFee)}`,
       icon: FileCheck2,
       color: "text-[#1A7D60]",
     },
@@ -227,9 +241,7 @@ export function AdminFinanceOps() {
               <span className={"text-xs uppercase tracking-wide " + muted}>{k.label}</span>
               <k.icon className={"h-5 w-5 " + k.color} />
             </div>
-            <div className={"mt-3 text-2xl font-bold tabular-nums " + k.color}>
-              {formatBRL(k.value)}
-            </div>
+            <div className={"mt-3 text-2xl font-bold tabular-nums " + k.color}>{brl(k.value)}</div>
             <div className={"mt-1 text-xs " + muted}>{k.sub}</div>
           </div>
         ))}
@@ -365,7 +377,7 @@ export function AdminFinanceOps() {
             modal.intent.contracts.contract_number ?? modal.intent.contract_id.slice(0, 8)
           }
           transactionId={modal.tx.id}
-          amount={Number(modal.intent.gross_amount)}
+          amount={Number(modal.tx.amount)}
           onDone={refetchAll}
         />
       )}
@@ -517,6 +529,14 @@ function IntentRow({
               >
                 Atestar aporte
               </button>
+            )}
+            {(s === "settlement_requested" || s === "settled") && (
+              <Link
+                to="/admin/disputes"
+                className="rounded-md border border-[#D4DAE3] px-2.5 py-1 text-xs font-medium text-[#16263F]"
+              >
+                {s === "settled" ? "Liquidação de disputa (ver caso)" : "Atestar na disputa →"}
+              </Link>
             )}
             {s === "release_requested" && pendingTx && !intent.release_blocked_by_dispute && (
               <button

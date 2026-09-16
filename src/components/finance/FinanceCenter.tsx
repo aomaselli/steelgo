@@ -16,6 +16,7 @@ import {
   counterpartyLabel,
   computeLedgerKpis,
   fetchLedgerIntents,
+  fetchSettledReleases,
   type LedgerIntent,
 } from "@/lib/paymentLedger";
 
@@ -28,6 +29,8 @@ import {
 //   protegido   = aporte confirmado ainda nao repassado (funding_confirmed +
 //                 release_requested)
 //   pago/recebido = repasse confirmado (released_confirmed)
+//                 + release confirmada de liquidacao de disputa (settled),
+//                 lida do razao via list_settled_release_amounts
 //   pendencia   = falha, reconciliacao, disputa e (para o embarcador) aporte
 //                 solicitado sem confirmacao
 
@@ -75,7 +78,13 @@ export function FinanceCenter({ scope }: { scope: FinanceScope }) {
     queryFn: () => fetchLedgerIntents(scope, companyId),
   });
 
-  const kpis = useMemo(() => computeLedgerKpis(rows), [rows]);
+  const settled = useQuery({
+    queryKey: ["ledger-settled-releases", scope, companyId],
+    enabled: Boolean(companyId),
+    refetchInterval: 60_000,
+    queryFn: fetchSettledReleases,
+  });
+  const kpis = useMemo(() => computeLedgerKpis(rows, settled.data ?? []), [rows, settled.data]);
   const metrics =
     scope === "carrier"
       ? [kpis.contractedNet, kpis.protectedNet, kpis.confirmedNet, kpis.issueGross]

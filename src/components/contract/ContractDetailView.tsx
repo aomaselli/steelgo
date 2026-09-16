@@ -19,6 +19,8 @@ import { StatusPill } from "@/components/steel/StatusPill";
 import { steelLabel, formatBRL, formatNum } from "@/lib/steel";
 import { SignaturePad } from "./SignaturePad";
 import { ReleasePaymentModal } from "@/components/payment/ReleasePaymentModal";
+import { OpenDisputeModal } from "@/components/dispute/OpenDisputeModal";
+import { fetchDisputeCases } from "@/lib/disputes";
 
 type Role = "shipper" | "carrier";
 
@@ -109,6 +111,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
   const qc = useQueryClient();
   const [showClauses, setShowClauses] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
+  const [disputeOpen, setDisputeOpen] = useState(false);
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["contract-detail", contractId],
@@ -189,6 +192,13 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
         .limit(1);
       return rows?.[0] ?? null;
     },
+  });
+
+  // Modulo 2: a disputa deste contrato, se houver (uma por contrato, permanente)
+  const { data: disputeRow } = useQuery({
+    queryKey: ["dispute-list", "mine", "contract", contractId],
+    queryFn: async () =>
+      (await fetchDisputeCases("mine")).find((r) => r.contract_id === contractId) ?? null,
   });
 
   const status = data?.status ?? "draft";
@@ -449,9 +459,16 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
                 label="Frete ativo"
                 ts={data.activated_at}
               />
+              {status === "disputed" && (
+                <TimelineStep
+                  done={false}
+                  current
+                  label="Em disputa — aguardando decisão da SteelGo"
+                />
+              )}
               <TimelineStep
-                done={status === "completed" || status === "disputed"}
-                label={status === "disputed" ? "Disputado" : "Concluído"}
+                done={status === "completed"}
+                label="Concluído"
                 ts={data.completed_at}
               />
             </ol>
@@ -477,9 +494,70 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
               )}
             </Card>
           )}
+
+          {(isShipperOwner || isCarrierOwner) &&
+            (status === "active" || status === "completed" || status === "disputed") && (
+              <Card variant="light" className="p-5 space-y-2">
+                <h4 className="text-sm font-semibold text-[#10274A]">Disputa</h4>
+                {disputeRow ? (
+                  <>
+                    <p className="text-xs text-[#54657C]">
+                      Este contrato possui disputa registrada ({disputeRow.case_number}). É admitida
+                      uma única disputa por contrato.
+                    </p>
+                    {viewerRole === "shipper" ? (
+                      <Link to="/shipper/disputes/$id" params={{ id: disputeRow.case_id }}>
+                        <Button variant="secondary" className="w-full">
+                          Ver disputa →
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Link to="/carrier/disputes/$id" params={{ id: disputeRow.case_id }}>
+                        <Button variant="secondary" className="w-full">
+                          Ver disputa →
+                        </Button>
+                      </Link>
+                    )}
+                  </>
+                ) : status === "disputed" ? (
+                  <p className="text-xs text-[#54657C]">Contrato em disputa.</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-[#54657C]">
+                      {status === "completed"
+                        ? "Contrato concluído: disputa permitida até 7 dias após a conclusão."
+                        : "A abertura suspende a liberação de pagamento ainda não confirmada."}
+                    </p>
+                    <Button
+                      variant="danger"
+                      className="w-full"
+                      onClick={() => setDisputeOpen(true)}
+                    >
+                      Abrir disputa
+                    </Button>
+                  </>
+                )}
+              </Card>
+            )}
         </div>
       </div>
 
+      {(isShipperOwner || isCarrierOwner) && (
+        <OpenDisputeModal
+          open={disputeOpen}
+          onClose={() => setDisputeOpen(false)}
+          contractId={contractId}
+          contractNumber={data.contract_number ?? String(data.id).slice(0, 8)}
+          contractTotal={data.total_amount_brl ?? 0}
+          contractStatus={status}
+          completedAt={data.completed_at}
+          escrowStatus={data.escrow_status}
+          onOpened={() => {
+            refetchAll();
+            qc.invalidateQueries({ queryKey: ["dispute-list"] });
+          }}
+        />
+      )}
       {isShipperOwner && (
         <ReleasePaymentModal
           open={releaseOpen}

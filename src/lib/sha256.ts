@@ -69,15 +69,19 @@ export function utcStamp(d: Date = new Date()): string {
   return `${iso.slice(0, 4)}${iso.slice(5, 7)}${iso.slice(8, 10)}T${iso.slice(11, 13)}${iso.slice(14, 16)}${iso.slice(17, 19)}.${iso.slice(20, 23)}Z`;
 }
 
+export type FinancialEvidenceKind = "funding" | "release" | "refund" | "recovery";
+
 /**
  * Caminho do comprovante no bucket payment-evidence, exatamente como a policy
- * de INSERT e a RPC assert_payment_evidence exigem:
- *   <contract_id>/<transaction_id>/<kind>-<UTC ms>-<random uuid>-<sha256_16>.<ext>
+ * de INSERT e a RPC assert_financial_evidence exigem:
+ *   <contract_id>/<subject_id>/<kind>-<UTC ms>-<random uuid>-<sha256_16>.<ext>
+ * subject_id: id da transacao (funding|release|refund) ou da obrigacao de
+ * recuperacao (recovery).
  */
 export function buildEvidencePath(args: {
   contractId: string;
   transactionId: string;
-  kind: "funding" | "release";
+  kind: FinancialEvidenceKind;
   sha256: string;
   ext: EvidenceExt;
   objectUuid: string;
@@ -85,4 +89,25 @@ export function buildEvidencePath(args: {
 }): string {
   const { contractId, transactionId, kind, sha256, ext, objectUuid, at } = args;
   return `${contractId}/${transactionId}/${kind}-${utcStamp(at)}-${objectUuid}-${sha256.slice(0, 16)}.${ext}`;
+}
+
+export type DisputeEvidenceKind = "photo" | "document" | "invoice" | "message" | "other";
+
+/**
+ * Caminho da evidencia no bucket dispute-evidence:
+ *   <case_id>/<random uuid>/<kind>-<UTC ms>-<random uuid>-<sha256_16>.<ext>
+ * O caminho NAO carrega o uuid de quem envia; a autoria e o owner_id que o
+ * Storage registra no upload, conferido no servidor.
+ */
+export function buildDisputeEvidencePath(args: {
+  caseId: string;
+  kind: DisputeEvidenceKind;
+  sha256: string;
+  ext: EvidenceExt;
+  folderUuid: string;
+  objectUuid: string;
+  at?: Date;
+}): string {
+  const { caseId, kind, sha256, ext, folderUuid, objectUuid, at } = args;
+  return `${caseId}/${folderUuid}/${kind}-${utcStamp(at)}-${objectUuid}-${sha256.slice(0, 16)}.${ext}`;
 }

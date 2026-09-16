@@ -285,6 +285,7 @@ const translations = {
         documents: "Contratos",
         esg: "ESG",
         payments: "Pagamentos",
+        disputes: "Disputas",
         support: "Suporte",
       },
       carrier: {
@@ -295,6 +296,7 @@ const translations = {
         trucks: "Caminhões",
         documents: "Contratos",
         receivables: "Recebíveis",
+        disputes: "Disputas",
         esg: "ESG",
         support: "Suporte",
       },
@@ -873,6 +875,7 @@ const translations = {
         documents: "Contracts",
         esg: "ESG",
         payments: "Payments",
+        disputes: "Disputes",
         support: "Support",
       },
       carrier: {
@@ -883,6 +886,7 @@ const translations = {
         trucks: "Trucks",
         documents: "Contracts",
         receivables: "Receivables",
+        disputes: "Disputes",
         esg: "ESG",
         support: "Support",
       },
@@ -1316,6 +1320,7 @@ const translations = {
         documents: "Contratos",
         esg: "ESG",
         payments: "Pagos",
+        disputes: "Disputas",
         support: "Soporte",
       },
       carrier: {
@@ -1326,6 +1331,7 @@ const translations = {
         trucks: "Camiones",
         documents: "Contratos",
         receivables: "Cuentas por cobrar",
+        disputes: "Disputas",
         esg: "ESG",
         support: "Soporte",
       },

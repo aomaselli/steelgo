@@ -13,9 +13,14 @@ export const Route = createFileRoute("/carrier/trips/")({
 });
 
 const TABS = [
-  { id: "active", label: "Ativas", statuses: ["active", "awaiting_carrier_signature", "awaiting_shipper_signature"] },
+  {
+    id: "active",
+    label: "Ativas",
+    statuses: ["active", "awaiting_carrier_signature", "awaiting_shipper_signature"],
+  },
   { id: "completed", label: "Concluídas", statuses: ["completed"] },
-  { id: "cancelled", label: "Canceladas", statuses: ["cancelled", "disputed"] },
+  { id: "disputed", label: "Em disputa", statuses: ["disputed"] },
+  { id: "cancelled", label: "Canceladas", statuses: ["cancelled"] },
 ] as const;
 
 function TripsPage() {
@@ -27,8 +32,11 @@ function TripsPage() {
     queryKey: ["carrier-trips", company?.id, tab],
     enabled: !!company?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("contracts")
-        .select("*, freights(origin_city, origin_state, dest_city, dest_state, pickup_date, weight_tons)")
+      const { data } = await supabase
+        .from("contracts")
+        .select(
+          "*, freights(origin_city, origin_state, dest_city, dest_state, pickup_date, weight_tons)",
+        )
         .eq("carrier_company_id", company!.id)
         .in("status", statuses as never)
         .order("created_at", { ascending: false });
@@ -45,17 +53,26 @@ function TripsPage() {
 
       <div className="flex gap-1 border-b border-graphite-700">
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm transition-colors ${tab === t.id ? "text-steel-blue-200 border-b-2 border-steel-blue-200 -mb-px" : "text-graphite-400 hover:text-graphite-100"}`}>
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-2 text-sm transition-colors ${tab === t.id ? "text-steel-blue-200 border-b-2 border-steel-blue-200 -mb-px" : "text-graphite-400 hover:text-graphite-100"}`}
+          >
             {t.label}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center p-12"><Spinner /></div>
+        <div className="flex justify-center p-12">
+          <Spinner />
+        </div>
       ) : !contracts?.length ? (
-        <EmptyState icon={Package} title="Nenhuma viagem" description="Suas viagens aparecerão aqui." />
+        <EmptyState
+          icon={Package}
+          title="Nenhuma viagem"
+          description="Suas viagens aparecerão aqui."
+        />
       ) : (
         <Card className="overflow-hidden">
           <table className="w-full text-sm">
@@ -71,17 +88,33 @@ function TripsPage() {
             </thead>
             <tbody>
               {contracts.map((c) => {
-                const f = (c as { freights?: { origin_city?: string; dest_city?: string; pickup_date?: string } }).freights;
+                const f = (
+                  c as {
+                    freights?: { origin_city?: string; dest_city?: string; pickup_date?: string };
+                  }
+                ).freights;
                 return (
                   <tr key={c.id} className="border-t border-graphite-700">
-                    <td className="px-4 py-3 font-mono text-xs text-steel-blue-200">{c.contract_number ?? String(c.id).slice(0, 8)}</td>
-                    <td className="px-4 py-3 text-graphite-100">{f?.origin_city ?? "—"} → {f?.dest_city ?? "—"}</td>
-                    <td className="px-4 py-3 text-xs text-graphite-200">{f?.pickup_date ? new Date(f.pickup_date).toLocaleDateString("pt-BR") : "—"}</td>
-                    <td className="px-4 py-3"><StatusPill status={c.status ?? "draft"} /></td>
-                    <td className="px-4 py-3 text-right tabular-nums text-graphite-50">{formatBRL(c.carrier_payout_brl)}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-steel-blue-200">
+                      {c.contract_number ?? String(c.id).slice(0, 8)}
+                    </td>
+                    <td className="px-4 py-3 text-graphite-100">
+                      {f?.origin_city ?? "—"} → {f?.dest_city ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-graphite-200">
+                      {f?.pickup_date ? new Date(f.pickup_date).toLocaleDateString("pt-BR") : "—"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusPill status={c.status ?? "draft"} />
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-graphite-50">
+                      {formatBRL(c.carrier_payout_brl)}
+                    </td>
                     <td className="px-4 py-3 text-right">
                       <Link to="/carrier/trips/$id" params={{ id: String(c.id) }}>
-                        <Button variant="ghost" size="sm">Abrir</Button>
+                        <Button variant="ghost" size="sm">
+                          Abrir
+                        </Button>
                       </Link>
                     </td>
                   </tr>

@@ -1061,8 +1061,11 @@ export type Database = {
           opened_by: string
           opened_by_role: Database["public"]["Enums"]["dispute_party_role"]
           payment_intent_id: string | null
+          previous_contract_status: Database["public"]["Enums"]["contract_status"]
           priority: Database["public"]["Enums"]["dispute_priority"]
           reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          settlement_due_at: string | null
+          settlement_state: string
           status: Database["public"]["Enums"]["dispute_status"]
           updated_at: string
         }
@@ -1085,8 +1088,11 @@ export type Database = {
           opened_by: string
           opened_by_role: Database["public"]["Enums"]["dispute_party_role"]
           payment_intent_id?: string | null
+          previous_contract_status: Database["public"]["Enums"]["contract_status"]
           priority?: Database["public"]["Enums"]["dispute_priority"]
           reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          settlement_due_at?: string | null
+          settlement_state?: string
           status?: Database["public"]["Enums"]["dispute_status"]
           updated_at?: string
         }
@@ -1109,8 +1115,11 @@ export type Database = {
           opened_by?: string
           opened_by_role?: Database["public"]["Enums"]["dispute_party_role"]
           payment_intent_id?: string | null
+          previous_contract_status?: Database["public"]["Enums"]["contract_status"]
           priority?: Database["public"]["Enums"]["dispute_priority"]
           reason_code?: Database["public"]["Enums"]["dispute_reason_code"]
+          settlement_due_at?: string | null
+          settlement_state?: string
           status?: Database["public"]["Enums"]["dispute_status"]
           updated_at?: string
         }
@@ -1118,7 +1127,7 @@ export type Database = {
           {
             foreignKeyName: "dispute_cases_contract_fk"
             columns: ["contract_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "contracts"
             referencedColumns: ["id"]
           },
@@ -1229,39 +1238,63 @@ export type Database = {
       }
       dispute_decisions: {
         Row: {
+          carrier_delta: number
+          carrier_final: number
           case_id: string
           currency_code: string
           decided_amount: number
           decided_at: string
           decided_by: string
+          gross_amount: number
           id: string
           is_current: boolean
+          original_platform_fee: number
           outcome: Database["public"]["Enums"]["dispute_decision_outcome"]
+          platform_delta: number
+          platform_fee_final: number
           rationale: string
+          release_amount: number
+          shipper_amount: number
           supersedes_decision_id: string | null
         }
         Insert: {
+          carrier_delta: number
+          carrier_final: number
           case_id: string
           currency_code: string
           decided_amount: number
           decided_at?: string
           decided_by: string
+          gross_amount: number
           id?: string
           is_current?: boolean
+          original_platform_fee: number
           outcome: Database["public"]["Enums"]["dispute_decision_outcome"]
+          platform_delta: number
+          platform_fee_final: number
           rationale: string
+          release_amount: number
+          shipper_amount: number
           supersedes_decision_id?: string | null
         }
         Update: {
+          carrier_delta?: number
+          carrier_final?: number
           case_id?: string
           currency_code?: string
           decided_amount?: number
           decided_at?: string
           decided_by?: string
+          gross_amount?: number
           id?: string
           is_current?: boolean
+          original_platform_fee?: number
           outcome?: Database["public"]["Enums"]["dispute_decision_outcome"]
+          platform_delta?: number
+          platform_fee_final?: number
           rationale?: string
+          release_amount?: number
+          shipper_amount?: number
           supersedes_decision_id?: string | null
         }
         Relationships: [
@@ -1291,14 +1324,17 @@ export type Database = {
           decision_id: string | null
           event_type: string
           evidence_id: string | null
+          evidence_request_id: string | null
           id: string
           new_status: Database["public"]["Enums"]["dispute_status"]
           note: string | null
           params_fingerprint: string
           previous_event_id: string | null
           previous_status: Database["public"]["Enums"]["dispute_status"] | null
+          recovery_id: string | null
           request_id: string
           rpc_name: string
+          transaction_id: string | null
         }
         Insert: {
           actor_id?: string | null
@@ -1309,14 +1345,17 @@ export type Database = {
           decision_id?: string | null
           event_type: string
           evidence_id?: string | null
+          evidence_request_id?: string | null
           id?: string
           new_status: Database["public"]["Enums"]["dispute_status"]
           note?: string | null
           params_fingerprint: string
           previous_event_id?: string | null
           previous_status?: Database["public"]["Enums"]["dispute_status"] | null
+          recovery_id?: string | null
           request_id: string
           rpc_name: string
+          transaction_id?: string | null
         }
         Update: {
           actor_id?: string | null
@@ -1327,14 +1366,17 @@ export type Database = {
           decision_id?: string | null
           event_type?: string
           evidence_id?: string | null
+          evidence_request_id?: string | null
           id?: string
           new_status?: Database["public"]["Enums"]["dispute_status"]
           note?: string | null
           params_fingerprint?: string
           previous_event_id?: string | null
           previous_status?: Database["public"]["Enums"]["dispute_status"] | null
+          recovery_id?: string | null
           request_id?: string
           rpc_name?: string
+          transaction_id?: string | null
         }
         Relationships: [
           {
@@ -1366,21 +1408,46 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "dispute_events_evidence_request_same_case_fk"
+            columns: ["evidence_request_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_evidence_requests"
+            referencedColumns: ["id", "case_id"]
+          },
+          {
             foreignKeyName: "dispute_events_previous_fk"
             columns: ["previous_event_id", "case_id"]
             isOneToOne: false
             referencedRelation: "dispute_events"
             referencedColumns: ["id", "case_id"]
           },
+          {
+            foreignKeyName: "dispute_events_recovery_fk"
+            columns: ["recovery_id"]
+            isOneToOne: false
+            referencedRelation: "payment_recoveries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_events_transaction_fk"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "payment_transactions"
+            referencedColumns: ["id"]
+          },
         ]
       }
       dispute_evidence: {
         Row: {
+          artifact_etag: string | null
+          artifact_mime: string | null
           artifact_ref: string | null
+          artifact_size_bytes: number | null
           case_id: string
           claim_id: string | null
           content_hash: string
           description: string
+          evidence_request_id: string | null
           id: string
           kind: string
           submitted_at: string
@@ -1388,11 +1455,15 @@ export type Database = {
           submitted_by_role: Database["public"]["Enums"]["dispute_party_role"]
         }
         Insert: {
+          artifact_etag?: string | null
+          artifact_mime?: string | null
           artifact_ref?: string | null
+          artifact_size_bytes?: number | null
           case_id: string
           claim_id?: string | null
           content_hash: string
           description: string
+          evidence_request_id?: string | null
           id?: string
           kind: string
           submitted_at?: string
@@ -1400,11 +1471,15 @@ export type Database = {
           submitted_by_role: Database["public"]["Enums"]["dispute_party_role"]
         }
         Update: {
+          artifact_etag?: string | null
+          artifact_mime?: string | null
           artifact_ref?: string | null
+          artifact_size_bytes?: number | null
           case_id?: string
           claim_id?: string | null
           content_hash?: string
           description?: string
+          evidence_request_id?: string | null
           id?: string
           kind?: string
           submitted_at?: string
@@ -1420,11 +1495,87 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "dispute_evidence_claim_fk"
-            columns: ["claim_id"]
+            foreignKeyName: "dispute_evidence_claim_same_case_fk"
+            columns: ["claim_id", "case_id"]
             isOneToOne: false
             referencedRelation: "dispute_claims"
+            referencedColumns: ["id", "case_id"]
+          },
+          {
+            foreignKeyName: "dispute_evidence_request_same_case_fk"
+            columns: ["evidence_request_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_evidence_requests"
+            referencedColumns: ["id", "case_id"]
+          },
+        ]
+      }
+      dispute_evidence_requests: {
+        Row: {
+          case_id: string
+          created_at: string
+          description: string
+          due_at: string
+          evidence_id: string | null
+          fulfilled_at: string | null
+          fulfilled_by: string | null
+          id: string
+          requested_by: string
+          rpc_request_id: string
+          status: string
+          target_role: Database["public"]["Enums"]["dispute_party_role"]
+          waive_note: string | null
+          waived_at: string | null
+          waived_by: string | null
+        }
+        Insert: {
+          case_id: string
+          created_at?: string
+          description: string
+          due_at: string
+          evidence_id?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          requested_by: string
+          rpc_request_id: string
+          status?: string
+          target_role: Database["public"]["Enums"]["dispute_party_role"]
+          waive_note?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          created_at?: string
+          description?: string
+          due_at?: string
+          evidence_id?: string | null
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          id?: string
+          requested_by?: string
+          rpc_request_id?: string
+          status?: string
+          target_role?: Database["public"]["Enums"]["dispute_party_role"]
+          waive_note?: string | null
+          waived_at?: string | null
+          waived_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispute_evidence_requests_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispute_evidence_requests_evidence_same_case_fk"
+            columns: ["evidence_id", "case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_evidence"
+            referencedColumns: ["id", "case_id"]
           },
         ]
       }
@@ -2568,35 +2719,58 @@ export type Database = {
       notifications: {
         Row: {
           body: string | null
+          case_id: string | null
+          contract_id: string | null
           created_at: string | null
           id: string
           is_read: boolean | null
           link: string | null
           profile_id: string
+          read_at: string | null
           title: string | null
           type: string | null
         }
         Insert: {
           body?: string | null
+          case_id?: string | null
+          contract_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           link?: string | null
           profile_id: string
+          read_at?: string | null
           title?: string | null
           type?: string | null
         }
         Update: {
           body?: string | null
+          case_id?: string | null
+          contract_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           link?: string | null
           profile_id?: string
+          read_at?: string | null
           title?: string | null
           type?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_contract_fk"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_profile_id_fkey"
             columns: ["profile_id"]
@@ -2843,6 +3017,11 @@ export type Database = {
           released_confirmed_at: string | null
           requested_at: string | null
           requested_by: string | null
+          settled_at: string | null
+          settlement_decision_id: string | null
+          settlement_funding_amount: number | null
+          settlement_refund_amount: number | null
+          settlement_release_amount: number | null
           updated_at: string
         }
         Insert: {
@@ -2870,6 +3049,11 @@ export type Database = {
           released_confirmed_at?: string | null
           requested_at?: string | null
           requested_by?: string | null
+          settled_at?: string | null
+          settlement_decision_id?: string | null
+          settlement_funding_amount?: number | null
+          settlement_refund_amount?: number | null
+          settlement_release_amount?: number | null
           updated_at?: string
         }
         Update: {
@@ -2897,6 +3081,11 @@ export type Database = {
           released_confirmed_at?: string | null
           requested_at?: string | null
           requested_by?: string | null
+          settled_at?: string | null
+          settlement_decision_id?: string | null
+          settlement_funding_amount?: number | null
+          settlement_refund_amount?: number | null
+          settlement_release_amount?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -2927,6 +3116,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "payment_providers"
             referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "payment_intents_settlement_decision_fk"
+            columns: ["settlement_decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -2960,6 +3156,123 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_recoveries: {
+        Row: {
+          case_id: string
+          confirmed_at: string | null
+          confirmed_by: string | null
+          creditor_company_id: string
+          currency_code: string
+          debtor_company_id: string | null
+          debtor_kind: string
+          dispute_decision_id: string
+          evidence_etag: string | null
+          evidence_hash: string | null
+          evidence_mime: string | null
+          evidence_ref: string | null
+          evidence_size_bytes: number | null
+          expected_amount: number
+          external_reference: string | null
+          id: string
+          intent_id: string
+          note: string | null
+          registered_at: string
+          registered_by: string
+          status: string
+          write_off_note: string | null
+          written_off_at: string | null
+          written_off_by: string | null
+        }
+        Insert: {
+          case_id: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          creditor_company_id: string
+          currency_code: string
+          debtor_company_id?: string | null
+          debtor_kind: string
+          dispute_decision_id: string
+          evidence_etag?: string | null
+          evidence_hash?: string | null
+          evidence_mime?: string | null
+          evidence_ref?: string | null
+          evidence_size_bytes?: number | null
+          expected_amount: number
+          external_reference?: string | null
+          id?: string
+          intent_id: string
+          note?: string | null
+          registered_at?: string
+          registered_by: string
+          status?: string
+          write_off_note?: string | null
+          written_off_at?: string | null
+          written_off_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          creditor_company_id?: string
+          currency_code?: string
+          debtor_company_id?: string | null
+          debtor_kind?: string
+          dispute_decision_id?: string
+          evidence_etag?: string | null
+          evidence_hash?: string | null
+          evidence_mime?: string | null
+          evidence_ref?: string | null
+          evidence_size_bytes?: number | null
+          expected_amount?: number
+          external_reference?: string | null
+          id?: string
+          intent_id?: string
+          note?: string | null
+          registered_at?: string
+          registered_by?: string
+          status?: string
+          write_off_note?: string | null
+          written_off_at?: string | null
+          written_off_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_recoveries_case_fk"
+            columns: ["case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_recoveries_creditor_company_fk"
+            columns: ["creditor_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_recoveries_debtor_company_fk"
+            columns: ["debtor_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_recoveries_decision_fk"
+            columns: ["dispute_decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_recoveries_intent_fk"
+            columns: ["intent_id"]
+            isOneToOne: false
+            referencedRelation: "payment_intents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_transactions: {
         Row: {
           amount: number
@@ -2976,6 +3289,7 @@ export type Database = {
           confirmed_by: string | null
           created_at: string
           currency_code: string
+          dispute_decision_id: string | null
           external_reference: string | null
           external_status: string | null
           failure_code: string | null
@@ -3004,6 +3318,7 @@ export type Database = {
           confirmed_by?: string | null
           created_at?: string
           currency_code: string
+          dispute_decision_id?: string | null
           external_reference?: string | null
           external_status?: string | null
           failure_code?: string | null
@@ -3032,6 +3347,7 @@ export type Database = {
           confirmed_by?: string | null
           created_at?: string
           currency_code?: string
+          dispute_decision_id?: string | null
           external_reference?: string | null
           external_status?: string | null
           failure_code?: string | null
@@ -3046,6 +3362,13 @@ export type Database = {
           status?: Database["public"]["Enums"]["payment_transaction_status"]
         }
         Relationships: [
+          {
+            foreignKeyName: "payment_transactions_dispute_decision_fk"
+            columns: ["dispute_decision_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_decisions"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_transactions_intent_fk"
             columns: ["intent_id"]
@@ -4649,12 +4972,45 @@ export type Database = {
         }
         Returns: string
       }
+      add_dispute_comment: {
+        Args: {
+          p_body: string
+          p_case_id: string
+          p_internal: boolean
+          p_request_id: string
+        }
+        Returns: string
+      }
       add_dispute_evidence: {
         Args: {
           p_artifact_ref: string
           p_case_id: string
           p_content_hash: string
           p_description: string
+          p_kind: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      add_dispute_evidence_for_claim: {
+        Args: {
+          p_artifact_ref: string
+          p_case_id: string
+          p_claim_id: string
+          p_content_hash: string
+          p_description: string
+          p_kind: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      add_dispute_evidence_for_request: {
+        Args: {
+          p_artifact_ref: string
+          p_case_id: string
+          p_content_hash: string
+          p_description: string
+          p_evidence_request_id: string
           p_kind: string
           p_request_id: string
         }
@@ -4704,6 +5060,34 @@ export type Database = {
         }
         Returns: string
       }
+      assert_dispute_evidence: {
+        Args: {
+          p_artifact_ref: string
+          p_case_id: string
+          p_content_hash: string
+          p_kind: string
+          p_uploader: string
+        }
+        Returns: {
+          etag: string
+          mime: string
+          size_bytes: number
+        }[]
+      }
+      assert_financial_evidence: {
+        Args: {
+          p_contract_id: string
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_kind: string
+          p_subject_id: string
+        }
+        Returns: {
+          etag: string
+          mime: string
+          size_bytes: number
+        }[]
+      }
       assert_payment_evidence: {
         Args: {
           p_contract_id: string
@@ -4718,6 +5102,20 @@ export type Database = {
           size_bytes: number
         }[]
       }
+      assign_dispute_case: {
+        Args: {
+          p_assignee: string
+          p_case_id: string
+          p_note: string
+          p_request_id: string
+        }
+        Returns: {
+          assignee_label: string
+          case_id: string
+          was_reassigned: boolean
+          was_replayed: boolean
+        }[]
+      }
       can_govern_freight: {
         Args: { p_company_id: string; p_created_by: string }
         Returns: boolean
@@ -4725,6 +5123,16 @@ export type Database = {
       can_manage_capacity: {
         Args: { p_carrier_id: string; p_driver_id?: string }
         Returns: boolean
+      }
+      cancel_contract_for_unpaid_settlement: {
+        Args: { p_case_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          case_id: string
+          contract_id: string
+          new_contract_status: Database["public"]["Enums"]["contract_status"]
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          was_replayed: boolean
+        }[]
       }
       cancel_driver_carrier_request: {
         Args: { p_request_id: string }
@@ -4752,6 +5160,41 @@ export type Database = {
           delivery_at: string
           new_escrow_status: string
           new_status: Database["public"]["Enums"]["contract_status"]
+          was_replayed: boolean
+        }[]
+      }
+      confirm_dispute_recovery: {
+        Args: {
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_external_reference: string
+          p_note: string
+          p_recovery_id: string
+          p_request_id: string
+        }
+        Returns: {
+          all_recoveries_closed: boolean
+          new_status: string
+          recovery_id: string
+          was_replayed: boolean
+        }[]
+      }
+      confirm_dispute_settlement: {
+        Args: {
+          p_contract_id: string
+          p_evidence_hash: string
+          p_evidence_ref: string
+          p_external_reference: string
+          p_note: string
+          p_request_id: string
+          p_transaction_id: string
+        }
+        Returns: {
+          contract_id: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          settlement_complete: boolean
+          transaction_id: string
+          transaction_kind: Database["public"]["Enums"]["payment_transaction_kind"]
           was_replayed: boolean
         }[]
       }
@@ -4818,6 +5261,7 @@ export type Database = {
         Args: { p_carrier_company_id: string; p_shipper_company_id: string }
         Returns: string
       }
+      count_my_unread_notifications: { Args: never; Returns: number }
       create_and_publish_freight: {
         Args: {
           p_budget_brl: number
@@ -4875,6 +5319,16 @@ export type Database = {
           was_replayed: boolean
         }[]
       }
+      dispute_actor_json: {
+        Args: {
+          p_case_id: string
+          p_user_id: string
+          p_viewer: string
+          p_viewer_admin: boolean
+        }
+        Returns: Json
+      }
+      dispute_case_visible: { Args: { p_case_id: string }; Returns: boolean }
       dispute_event_append: {
         Args: {
           p_actor_id: string
@@ -4884,14 +5338,69 @@ export type Database = {
           p_decision_id: string
           p_event_type: string
           p_evidence_id: string
+          p_evidence_request_id?: string
           p_fingerprint: string
           p_new_status: Database["public"]["Enums"]["dispute_status"]
           p_note: string
+          p_recovery_id?: string
+          p_request_id: string
+          p_rpc_name: string
+          p_transaction_id?: string
+        }
+        Returns: string
+      }
+      dispute_evidence_insert: {
+        Args: {
+          p_actor: string
+          p_artifact_ref: string
+          p_case_id: string
+          p_claim_id: string
+          p_content_hash: string
+          p_description: string
+          p_evidence_req: string
+          p_fingerprint: string
+          p_kind: string
           p_request_id: string
           p_rpc_name: string
         }
         Returns: string
       }
+      dispute_expire_open_requests: {
+        Args: {
+          p_case_id: string
+          p_fingerprint: string
+          p_only_past_due: boolean
+          p_request_id: string
+          p_rpc_name: string
+        }
+        Returns: number
+      }
+      dispute_object_visible: { Args: { p_case: string }; Returns: boolean }
+      dispute_party_role_of: {
+        Args: { p_case_id: string; p_user_id: string }
+        Returns: string
+      }
+      dispute_settlement_math: {
+        Args: {
+          p_disputed: number
+          p_fee: number
+          p_gross: number
+          p_shipper: number
+        }
+        Returns: {
+          carrier_delta: number
+          carrier_final: number
+          carrier_recovery: number
+          carrier_u: number
+          fee_final: number
+          fee_u: number
+          platform_delta: number
+          platform_recovery: number
+          r: number
+          u: number
+        }[]
+      }
+      dispute_upload_allowed: { Args: { p_case: string }; Returns: boolean }
       emergency_withdraw_offers_by_ids: {
         Args: {
           p_freight_ids: string[]
@@ -4952,6 +5461,11 @@ export type Database = {
           released_confirmed_at: string | null
           requested_at: string | null
           requested_by: string | null
+          settled_at: string | null
+          settlement_decision_id: string | null
+          settlement_funding_amount: number | null
+          settlement_refund_amount: number | null
+          settlement_release_amount: number | null
           updated_at: string
         }
         SetofOptions: {
@@ -4964,6 +5478,21 @@ export type Database = {
       execute_bulk_withdrawal: {
         Args: { p_preview_id: string; p_request_id: string }
         Returns: number
+      }
+      fail_dispute_settlement_transaction: {
+        Args: {
+          p_contract_id: string
+          p_failure_code: string
+          p_failure_reason: string
+          p_request_id: string
+          p_transaction_id: string
+        }
+        Returns: {
+          contract_id: string
+          new_status: Database["public"]["Enums"]["payment_transaction_status"]
+          transaction_id: string
+          was_replayed: boolean
+        }[]
       }
       fail_payment_transaction: {
         Args: {
@@ -4983,6 +5512,7 @@ export type Database = {
         Args: { p_f: Database["public"]["Tables"]["freights"]["Row"] }
         Returns: Json
       }
+      get_dispute_case: { Args: { p_case_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -5004,6 +5534,69 @@ export type Database = {
         Returns: boolean
       }
       is_dispute_visible: { Args: { p_case_id: string }; Returns: boolean }
+      list_dispute_admins: {
+        Args: never
+        Returns: {
+          display_name: string
+          user_id: string
+        }[]
+      }
+      list_dispute_cases: {
+        Args: {
+          p_limit?: number
+          p_scope?: string
+          p_status?: Database["public"]["Enums"]["dispute_status"][]
+        }
+        Returns: {
+          assignee_label: string
+          case_id: string
+          case_number: string
+          claimant_company_name: string
+          contract_id: string
+          contract_number: string
+          currency_code: string
+          disputed_amount: number
+          due_at: string
+          is_assigned: boolean
+          my_role: string
+          opened_at: string
+          overdue: boolean
+          previous_contract_status: Database["public"]["Enums"]["contract_status"]
+          reason_code: Database["public"]["Enums"]["dispute_reason_code"]
+          respondent_company_name: string
+          settlement_due_at: string
+          settlement_state: string
+          status: Database["public"]["Enums"]["dispute_status"]
+          updated_at: string
+        }[]
+      }
+      list_my_notifications: {
+        Args: { p_limit?: number; p_unread_only?: boolean }
+        Returns: {
+          body: string
+          case_id: string
+          contract_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string
+          read_at: string
+          title: string
+          type: string
+        }[]
+      }
+      list_recovery_evidence_refs: { Args: never; Returns: string[] }
+      list_settled_release_amounts: {
+        Args: never
+        Returns: {
+          carrier_amount: number
+          contract_id: string
+          intent_id: string
+          platform_amount: number
+          release_amount: number
+          transaction_id: string
+        }[]
+      }
       list_visible_contract_counterparties: {
         Args: { p_contract_ids: string[] }
         Returns: {
@@ -5014,6 +5607,7 @@ export type Database = {
           shipper_company_name: string
         }[]
       }
+      mark_notifications_read: { Args: { p_ids: string[] }; Returns: number }
       match_capacity_for_freight: {
         Args: {
           p_freight_id: string
@@ -5048,6 +5642,30 @@ export type Database = {
       }
       normalize_identity_document: {
         Args: { p_value: string }
+        Returns: string
+      }
+      notify_dispute_case: {
+        Args: {
+          p_body: string
+          p_case_id: string
+          p_exclude_user: string
+          p_include_admins: boolean
+          p_only_role?: string
+          p_title: string
+          p_type: string
+        }
+        Returns: number
+      }
+      notify_user: {
+        Args: {
+          p_body: string
+          p_case_id: string
+          p_contract_id: string
+          p_link: string
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
         Returns: string
       }
       open_dispute_case: {
@@ -5225,6 +5843,19 @@ export type Database = {
         }
         Returns: string
       }
+      request_dispute_evidence: {
+        Args: {
+          p_case_id: string
+          p_description: string
+          p_due_at: string
+          p_request_id: string
+          p_target_role: string
+        }
+        Returns: {
+          evidence_request_id: string
+          target_role: string
+        }[]
+      }
       request_driver_carrier_link: {
         Args: {
           p_carrier_id: string
@@ -5270,6 +5901,21 @@ export type Database = {
           p_status: string
         }
         Returns: string
+      }
+      retry_dispute_settlement_transaction: {
+        Args: {
+          p_contract_id: string
+          p_failed_transaction_id: string
+          p_note: string
+          p_request_id: string
+        }
+        Returns: {
+          contract_id: string
+          failed_transaction_id: string
+          new_transaction_id: string
+          transaction_kind: Database["public"]["Enums"]["payment_transaction_kind"]
+          was_replayed: boolean
+        }[]
       }
       retry_failed_payment_transaction: {
         Args: { p_contract_id: string; p_note: string; p_request_id: string }
@@ -5379,6 +6025,22 @@ export type Database = {
           updated_at: string
         }[]
       }
+      settle_dispute_decision: {
+        Args: { p_case_id: string; p_request_id: string }
+        Returns: {
+          cancelled_transaction_id: string
+          carrier_amount: number
+          case_id: string
+          intent_id: string
+          new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
+          platform_amount: number
+          refund_amount: number
+          refund_transaction_id: string
+          release_amount: number
+          release_transaction_id: string
+          was_replayed: boolean
+        }[]
+      }
       sign_contract: {
         Args: {
           p_contract_id: string
@@ -5419,6 +6081,24 @@ export type Database = {
           location_updated_at: string
         }[]
       }
+      waive_dispute_evidence_request: {
+        Args: {
+          p_case_id: string
+          p_evidence_request_id: string
+          p_note: string
+          p_request_id: string
+        }
+        Returns: string
+      }
+      withdraw_dispute_case: {
+        Args: { p_case_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          case_id: string
+          dispute_state: Database["public"]["Enums"]["dispute_status"]
+          restored_contract_status: Database["public"]["Enums"]["contract_status"]
+          was_replayed: boolean
+        }[]
+      }
       withdraw_freight: {
         Args: { p_freight_id: string; p_reason: string; p_request_id: string }
         Returns: string
@@ -5435,6 +6115,15 @@ export type Database = {
           p_rpc_name: string
         }
         Returns: string
+      }
+      write_off_dispute_recovery: {
+        Args: { p_note: string; p_recovery_id: string; p_request_id: string }
+        Returns: {
+          all_recoveries_closed: boolean
+          new_status: string
+          recovery_id: string
+          was_replayed: boolean
+        }[]
       }
     }
     Enums: {
@@ -5477,6 +6166,9 @@ export type Database = {
         | "disputed"
         | "dispute_resolved"
         | "cancelled"
+        | "escrow_settlement_requested"
+        | "escrow_settlement_confirmed"
+        | "dispute_withdrawn"
       contract_status:
         | "draft"
         | "awaiting_shipper_signature"
@@ -5543,6 +6235,8 @@ export type Database = {
         | "failed"
         | "cancelled"
         | "reconciliation_required"
+        | "settlement_requested"
+        | "settled"
       payment_party_kind: "platform" | "carrier" | "shipper"
       payment_status:
         | "pending"
@@ -5760,6 +6454,9 @@ export const Constants = {
         "disputed",
         "dispute_resolved",
         "cancelled",
+        "escrow_settlement_requested",
+        "escrow_settlement_confirmed",
+        "dispute_withdrawn",
       ],
       contract_status: [
         "draft",
@@ -5834,6 +6531,8 @@ export const Constants = {
         "failed",
         "cancelled",
         "reconciliation_required",
+        "settlement_requested",
+        "settled",
       ],
       payment_party_kind: ["platform", "carrier", "shipper"],
       payment_status: [

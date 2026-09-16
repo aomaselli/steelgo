@@ -86,6 +86,20 @@ export const PAYMENT_STATUS: Record<PaymentDisplayStatus, PaymentStatusMeta> = {
     cls: "bg-[#FDF3F3] text-[#8A2B2B]",
     tone: "bad",
   },
+  // Modulo 2: liquidacao por decisao de disputa (refund e/ou release). NAO e
+  // released_confirmed: a composicao esta nas transacoes da decisao.
+  settlement_requested: {
+    label: "Liquidação de disputa solicitada — sem confirmação",
+    short: "Liquidação solicitada",
+    cls: "bg-[#FDF6E9] text-[#8A5A12]",
+    tone: "wait",
+  },
+  settled: {
+    label: "Liquidação de disputa confirmada pela SteelGo",
+    short: "Liquidação confirmada",
+    cls: "bg-[#EAF7F1] text-[#14603F]",
+    tone: "ok",
+  },
   // valores legados de contracts.escrow_status, mantidos apenas para linhas antigas
   escrow_held: {
     label: "Em escrow (legado)",
@@ -115,6 +129,7 @@ export function paymentStatusMeta(status: string | null | undefined): PaymentSta
 export const PROTECTED_STATUSES: readonly PaymentInternalStatus[] = [
   "funding_confirmed",
   "release_requested",
+  "settlement_requested",
 ];
 /** Estados que exigem acao ou atencao humana. */
 export const PENDING_ISSUE_STATUSES: readonly PaymentInternalStatus[] = [
