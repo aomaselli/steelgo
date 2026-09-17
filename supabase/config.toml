@@ -1,1 +1,6 @@
 project_id = "iaabxrclxpsagdijkrcx"
+
+# Modulo 3: a Edge Function push-dispatch e chamada pelo agendador do banco
+# (pg_net) com HMAC-SHA256 sobre os bytes do corpo; nao ha JWT de usuario.
+[functions.push-dispatch]
+verify_jwt = false

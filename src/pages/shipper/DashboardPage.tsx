@@ -12,6 +12,9 @@ import {
   Map as MapIcon,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyTrips, fetchTrip } from "@/lib/trips";
+import { MemberDashboard } from "@/components/trip/MemberDashboard";
+import { ACTIVE_TRIP_STATUSES } from "@/lib/tripStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppShell } from "@/components/layout/AppShell";
 import { StatusPill } from "@/components/steel/StatusPill";
@@ -22,7 +25,6 @@ import { OperationsBoard } from "@/components/operations/OperationsBoard";
 
 const BR_CENTER = { lat: -15.7801, lng: -47.9292 };
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
-
 
 const DARK_MAP_STYLE = [
   { elementType: "geometry", stylers: [{ color: "#0d1117" }] },
@@ -40,8 +42,11 @@ type Activity = {
 };
 
 export function DashboardPage() {
-  const { profile, company } = useAuth();
+  const { profile, company, companyRole } = useAuth();
   const navigate = useNavigate();
+  // Modulo 3: operador/leitor do embarcador recebem o painel de membro
+  // (fretes, contratos e pagamentos sao leituras/acoes do proprietario).
+  const isMember = companyRole === "operator" || companyRole === "viewer";
   const firstName = profile?.full_name?.split(" ")[0] ?? "";
   const companyId = company?.id;
 
@@ -54,18 +59,32 @@ export function DashboardPage() {
       const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
       const weekAgo = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
       const [active, prevActive, monthly, transit, esg] = await Promise.all([
-        supabase.from("freights").select("id", { count: "exact", head: true })
+        supabase
+          .from("freights")
+          .select("id", { count: "exact", head: true })
           .eq("company_id", companyId!)
           .in("status", ["contracted", "in_transit", "matched", "contract_pending"]),
-        supabase.from("freights").select("id", { count: "exact", head: true })
-          .eq("company_id", companyId!).lt("created_at", weekAgo)
+        supabase
+          .from("freights")
+          .select("id", { count: "exact", head: true })
+          .eq("company_id", companyId!)
+          .lt("created_at", weekAgo)
           .in("status", ["contracted", "in_transit", "matched", "contract_pending"]),
-        supabase.from("freights").select("weight_tons")
-          .eq("company_id", companyId!).gte("created_at", monthStart),
-        supabase.from("freights").select("final_price_brl")
-          .eq("company_id", companyId!).eq("status", "in_transit"),
-        supabase.from("esg_logs").select("co2_saved_kg")
-          .eq("company_id", companyId!).gte("logged_at", monthStart),
+        supabase
+          .from("freights")
+          .select("weight_tons")
+          .eq("company_id", companyId!)
+          .gte("created_at", monthStart),
+        supabase
+          .from("freights")
+          .select("final_price_brl")
+          .eq("company_id", companyId!)
+          .eq("status", "in_transit"),
+        supabase
+          .from("esg_logs")
+          .select("co2_saved_kg")
+          .eq("company_id", companyId!)
+          .gte("logged_at", monthStart),
       ]);
       return {
         active: active.count ?? 0,
@@ -83,9 +102,12 @@ export function DashboardPage() {
     enabled: !!companyId,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("freights")
-        .select("*").eq("company_id", companyId!)
-        .order("created_at", { ascending: false }).limit(8);
+      const { data } = await supabase
+        .from("freights")
+        .select("*")
+        .eq("company_id", companyId!)
+        .order("created_at", { ascending: false })
+        .limit(8);
       return data ?? [];
     },
   });
@@ -96,7 +118,8 @@ export function DashboardPage() {
     enabled: !!companyId,
     refetchInterval: 60_000,
     queryFn: async () => {
-      const { data } = await supabase.from("contracts")
+      const { data } = await supabase
+        .from("contracts")
         .select("id, contract_number, status, driver_id, freight_id")
         .eq("shipper_company_id", companyId!)
         .eq("status", "active");
@@ -114,7 +137,8 @@ export function DashboardPage() {
 
   useEffect(() => {
     if (!companyId) return;
-    const channel = supabase.channel(`shipper-activity-${companyId}`)
+    const channel = supabase
+      .channel(`shipper-activity-${companyId}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "checkpoints" }, (p) => {
         const r = p.new as any;
         if (activeContractIds.length && !activeContractIds.includes(r.contract_id)) return;
@@ -126,16 +150,20 @@ export function DashboardPage() {
         };
         setActivity((a) => [item, ...a].slice(0, 30));
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "security_alerts" }, (p) => {
-        const r = p.new as any;
-        const item: Activity = {
-          id: r.id,
-          kind: "alert",
-          msg: `⚠️ ${r.title ?? "Alerta de segurança"}`,
-          at: r.created_at ?? new Date().toISOString(),
-        };
-        setActivity((a) => [item, ...a].slice(0, 30));
-      })
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "security_alerts" },
+        (p) => {
+          const r = p.new as any;
+          const item: Activity = {
+            id: r.id,
+            kind: "alert",
+            msg: `⚠️ ${r.title ?? "Alerta de segurança"}`,
+            at: r.created_at ?? new Date().toISOString(),
+          };
+          setActivity((a) => [item, ...a].slice(0, 30));
+        },
+      )
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "payments" }, (p) => {
         const r = p.new as any;
         if (r.shipper_company_id !== companyId) return;
@@ -161,8 +189,12 @@ export function DashboardPage() {
         }
       })
       .subscribe();
-    return () => { void supabase.removeChannel(channel); };
+    return () => {
+      void supabase.removeChannel(channel);
+    };
   }, [companyId, activeContractIds]);
+
+  if (isMember) return <MemberDashboard kind="shipper" />;
 
   return (
     <AppShell title="Dashboard">
@@ -170,12 +202,8 @@ export function DashboardPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-[#E6EDF3]">
-              Olá, {firstName || "bem-vindo"}!
-            </h1>
-            <p className="mt-1 text-sm text-[#8B949E]">
-              Bem-vindo ao seu painel de logística
-            </p>
+            <h1 className="text-2xl font-bold text-[#E6EDF3]">Olá, {firstName || "bem-vindo"}!</h1>
+            <p className="mt-1 text-sm text-[#8B949E]">Bem-vindo ao seu painel de logística</p>
           </div>
           <button
             type="button"
@@ -192,7 +220,11 @@ export function DashboardPage() {
             label="Fretes ativos"
             value={String(metrics?.active ?? 0)}
             valueColor="#79B8F8"
-            delta={metrics ? `${metrics.activeDelta >= 0 ? "↑" : "↓"} ${Math.abs(metrics.activeDelta)} vs 7 dias` : undefined}
+            delta={
+              metrics
+                ? `${metrics.activeDelta >= 0 ? "↑" : "↓"} ${Math.abs(metrics.activeDelta)} vs 7 dias`
+                : undefined
+            }
             deltaColor="#8B949E"
           />
           <Metric
@@ -343,9 +375,7 @@ export function DashboardPage() {
 
           {/* Activity feed */}
           <div className="rounded-[16px] border border-[#30363D] bg-[#161B22] p-5">
-            <h3 className="mb-4 text-sm font-semibold text-[#E6EDF3]">
-              Atividade recente
-            </h3>
+            <h3 className="mb-4 text-sm font-semibold text-[#E6EDF3]">Atividade recente</h3>
             {activity.length === 0 ? (
               <div className="flex flex-col items-center py-8 text-center">
                 <Bell className="mb-2 h-6 w-6 text-[#484F58]" />
@@ -447,8 +477,14 @@ function LiveMap({ contractIds }: { contractIds: string[] }) {
 
   // Load script
   useEffect(() => {
-    if (!MAPS_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return; }
-    if (window.google?.maps) { setReady(true); return; }
+    if (!MAPS_KEY) {
+      console.warn("[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.");
+      return;
+    }
+    if (window.google?.maps) {
+      setReady(true);
+      return;
+    }
     if (document.getElementById("steelgo-maps-script")) {
       window.__steelGoMapsInit = () => setReady(true);
       return;
@@ -478,11 +514,20 @@ function LiveMap({ contractIds }: { contractIds: string[] }) {
     queryKey: ["map-positions", contractIds],
     enabled: ready && contractIds.length > 0,
     refetchInterval: 30_000,
+    // Modulo 3: ultima posicao das viagens ativas do embarcador via
+    // list_my_trips + get_trip (RPCs sanitizadas). driver_positions foi congelada.
     queryFn: async () => {
-      const { data } = await supabase.from("driver_positions")
-        .select("contract_id, lat, lng, updated_at")
-        .in("contract_id", contractIds);
-      return data ?? [];
+      const trips = await fetchMyTrips("mine", ACTIVE_TRIP_STATUSES, 100);
+      const mine = trips.filter((t) => contractIds.includes(t.contract_id));
+      const details = await Promise.all(mine.map((t) => fetchTrip(t.trip_id).catch(() => null)));
+      return details
+        .filter((d): d is NonNullable<typeof d> => !!d && !!d.last_location)
+        .map((d) => ({
+          contract_id: d.contract.id,
+          lat: d.last_location!.lat,
+          lng: d.last_location!.lng,
+          updated_at: d.last_location_at,
+        }));
     },
   });
 
@@ -513,9 +558,7 @@ function LiveMap({ contractIds }: { contractIds: string[] }) {
       <div className="flex h-[260px] items-center justify-center bg-[#0F1923]">
         <div className="flex flex-col items-center gap-2">
           <MapIcon className="h-10 w-10 text-[#484F58]" />
-          <p className="text-sm text-[#484F58]">
-            Mapa disponível após conectar Google Maps
-          </p>
+          <p className="text-sm text-[#484F58]">Mapa disponível após conectar Google Maps</p>
         </div>
       </div>
     );

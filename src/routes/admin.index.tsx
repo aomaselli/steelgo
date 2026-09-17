@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,13 +14,10 @@ import {
   Cell,
   Legend,
 } from "recharts";
-import {
-  AlertTriangle,
-  CheckCircle2,
-  Download,
-  ShieldAlert,
-} from "lucide-react";
+import { AlertTriangle, CheckCircle2, Download, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchOperationalAlerts, fetchSosQueue } from "@/lib/trips";
+import { ALERT_KIND_LABEL } from "@/lib/tripStatus";
 import { Button, Badge } from "@/components/steel";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -99,16 +96,31 @@ function MetricsRow({ locale }: { locale: string }) {
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
       const [freightsToday, gmvToday, fees, bidsWeek, alerts, carriersPending] = await Promise.all([
-        supabase.from("freights").select("id", { count: "exact", head: true }).gte("created_at", todayIso),
-        supabase.from("freights").select("final_price_brl").gte("created_at", todayIso).not("status", "in", "(cancelled,draft)"),
+        supabase
+          .from("freights")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", todayIso),
+        supabase
+          .from("freights")
+          .select("final_price_brl")
+          .gte("created_at", todayIso)
+          .not("status", "in", "(cancelled,draft)"),
         supabase.from("contracts").select("platform_fee_brl").gte("created_at", todayIso),
         supabase.from("bids").select("status").gte("submitted_at", weekAgo),
-        supabase.from("security_alerts").select("id", { count: "exact", head: true }).is("resolved_at", null),
-        supabase.from("companies").select("id", { count: "exact", head: true }).eq("is_verified", false),
+        Promise.all([fetchSosQueue(), fetchOperationalAlerts("open", 500)]).then(([sos, al]) => ({
+          count: sos.length + al.length,
+        })),
+        supabase
+          .from("companies")
+          .select("id", { count: "exact", head: true })
+          .eq("is_verified", false),
       ]);
 
       const gmv = (gmvToday.data ?? []).reduce((s, r) => s + Number(r.final_price_brl ?? 0), 0);
-      const platformRev = (fees.data ?? []).reduce((s, r) => s + Number(r.platform_fee_brl ?? 0), 0);
+      const platformRev = (fees.data ?? []).reduce(
+        (s, r) => s + Number(r.platform_fee_brl ?? 0),
+        0,
+      );
       const bidsArr = bidsWeek.data ?? [];
       const accepted = bidsArr.filter((b) => b.status === "accepted").length;
       const matchRate = bidsArr.length ? (100 * accepted) / bidsArr.length : 0;
@@ -125,10 +137,30 @@ function MetricsRow({ locale }: { locale: string }) {
   });
 
   const cards = [
-    { label: t("admin.freightsToday"), value: data?.freightsToday ?? 0, delta: "-", color: "text-[#16263F]" },
-    { label: t("admin.gmvToday"), value: fmtBRL(data?.gmv ?? 0, locale), delta: "-", color: "text-[#16263F]" },
-    { label: t("admin.platformRevenue"), value: fmtBRL(data?.platformRev ?? 0, locale), delta: "-", color: "text-[#2FA98A]" },
-    { label: t("admin.matchRate"), value: `${(data?.matchRate ?? 0).toFixed(1)}%`, delta: t("admin.last7d"), color: "text-[#16263F]" },
+    {
+      label: t("admin.freightsToday"),
+      value: data?.freightsToday ?? 0,
+      delta: "-",
+      color: "text-[#16263F]",
+    },
+    {
+      label: t("admin.gmvToday"),
+      value: fmtBRL(data?.gmv ?? 0, locale),
+      delta: "-",
+      color: "text-[#16263F]",
+    },
+    {
+      label: t("admin.platformRevenue"),
+      value: fmtBRL(data?.platformRev ?? 0, locale),
+      delta: "-",
+      color: "text-[#2FA98A]",
+    },
+    {
+      label: t("admin.matchRate"),
+      value: `${(data?.matchRate ?? 0).toFixed(1)}%`,
+      delta: t("admin.last7d"),
+      color: "text-[#16263F]",
+    },
     {
       label: t("admin.activeAlerts"),
       value: data?.alerts ?? 0,
@@ -198,7 +230,11 @@ function GMVChart({ locale }: { locale: string }) {
         <AreaChart data={data}>
           <CartesianGrid stroke="#E6EAF0" strokeDasharray="3 3" />
           <XAxis dataKey="date" stroke="#5B6B80" fontSize={11} />
-          <YAxis stroke="#5B6B80" fontSize={11} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+          <YAxis
+            stroke="#5B6B80"
+            fontSize={11}
+            tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`}
+          />
           <Tooltip
             contentStyle={{ background: "#FFFFFF", border: "1px solid #E6EAF0", borderRadius: 10 }}
             formatter={(v: number) => fmtBRL(v, locale)}
@@ -240,7 +276,9 @@ function StatusPie() {
 
   return (
     <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-4 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
-      <h3 className="mb-3 text-sm font-semibold text-[#1F2933]">{t("admin.freightsByStatus30d")}</h3>
+      <h3 className="mb-3 text-sm font-semibold text-[#1F2933]">
+        {t("admin.freightsByStatus30d")}
+      </h3>
       <ResponsiveContainer width="100%" height={220}>
         <PieChart>
           <Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label>
@@ -277,38 +315,53 @@ function AlertsFeed({ locale }: { locale: string }) {
     low: t("admin.low"),
   };
 
+  // Modulo 3: alertas criticos (SOS) e alertas automaticos das viagens, por RPC
+  // de admin. A tabela legada security_alerts foi congelada; reconhecimento e
+  // encerramento acontecem na Control Tower (com motivo e auditoria).
   const { data = [] } = useQuery({
     queryKey: ["admin-alerts"],
+    refetchInterval: 20_000,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("security_alerts")
-        .select("*")
-        .is("resolved_at", null)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      return data ?? [];
+      const [sos, alerts] = await Promise.all([
+        fetchSosQueue(),
+        fetchOperationalAlerts("open", 50),
+      ]);
+      const rows: {
+        id: string;
+        trip_id: string;
+        severity: string;
+        title: string;
+        description: string;
+        created_at: string;
+      }[] = [];
+      for (const x of sos)
+        rows.push({
+          id: x.exception_id,
+          trip_id: x.trip_id,
+          severity: "critical",
+          title: `ALERTA CRÍTICO · ${x.trip_number}`,
+          description: `${x.carrier_company_name ?? ""} · ${x.driver_label ?? ""} · ${x.acknowledged_at ? "reconhecido" : "NÃO reconhecido"} · nível ${x.escalation_level}`,
+          created_at: x.captured_at,
+        });
+      for (const a of alerts)
+        rows.push({
+          id: a.alert_id,
+          trip_id: a.trip_id,
+          severity: a.severity,
+          title: `${ALERT_KIND_LABEL[a.kind] ?? a.kind} · ${a.trip_number}`,
+          description:
+            a.details &&
+            typeof a.details === "object" &&
+            typeof (a.details as { message?: unknown }).message === "string"
+              ? (a.details as { message: string }).message
+              : "",
+          created_at: a.detected_at,
+        });
+      return rows;
     },
   });
 
-  useEffect(() => {
-    const ch = supabase
-      .channel("admin-alerts")
-      .on("postgres_changes", { event: "*", schema: "public", table: "security_alerts" }, () => {
-        qc.invalidateQueries({ queryKey: ["admin-alerts"] });
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [qc]);
-
   const filtered = filter === "all" ? data : data.filter((a) => a.severity === filter);
-
-  async function resolve(id: string) {
-    await supabase.from("security_alerts").update({ resolved_at: new Date().toISOString() }).eq("id", id);
-    toast.success(t("admin.alertResolved"));
-    qc.invalidateQueries({ queryKey: ["admin-alerts"] });
-  }
 
   return (
     <div className="rounded-[14px] border border-[#E6EAF0] bg-white p-5 shadow-[0_8px_24px_rgba(16,28,48,0.06)]">
@@ -353,16 +406,18 @@ function AlertsFeed({ locale }: { locale: string }) {
                   <Badge variant="amber" className="text-[10px]">
                     {sevLabel[(a.severity ?? "medium") as Severity]}
                   </Badge>
-                  <span className="text-sm font-medium text-[#1F2933]">{a.title ?? a.type}</span>
+                  <span className="text-sm font-medium text-[#1F2933]">{a.title}</span>
                 </div>
                 {a.description && <p className="mt-1 text-xs text-[#5B6B80]">{a.description}</p>}
                 <p className="mt-1 text-[10px] text-[#8190A4]">
-                  {new Date(a.created_at!).toLocaleString(locale)}
+                  {new Date(a.created_at).toLocaleString(locale)}
                 </p>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => resolve(a.id)}>
-                {t("admin.resolve")}
-              </Button>
+              <Link to="/admin/operations/$id" params={{ id: a.trip_id }}>
+                <Button variant="ghost" size="sm">
+                  Abrir viagem
+                </Button>
+              </Link>
             </div>
           ))}
         </div>
@@ -454,10 +509,12 @@ function VerificationQueue() {
                     <td className="py-3 text-right">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="sm" onClick={() => approve(row.id)}>
-                          <CheckCircle2 className="mr-1 h-3 w-3 text-[#2FA98A]" /> {t("admin.approve")}
+                          <CheckCircle2 className="mr-1 h-3 w-3 text-[#2FA98A]" />{" "}
+                          {t("admin.approve")}
                         </Button>
                         <Button variant="ghost" size="sm" onClick={() => reject(row.id)}>
-                          <AlertTriangle className="mr-1 h-3 w-3 text-red-500" /> {t("admin.reject")}
+                          <AlertTriangle className="mr-1 h-3 w-3 text-red-500" />{" "}
+                          {t("admin.reject")}
                         </Button>
                       </div>
                     </td>

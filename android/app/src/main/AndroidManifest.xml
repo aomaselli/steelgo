@@ -39,4 +39,16 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Modulo 3: localizacao em PRIMEIRO PLANO, somente durante viagem ativa (sessao
+         aberta no servidor). Sem provedor nativo homologado NAO ha rastreamento em segundo
+         plano: ACCESS_BACKGROUND_LOCATION / FOREGROUND_SERVICE_LOCATION so entram junto
+         com o provedor (lib/geoTracker.ts mantem o gate de producao). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push (homologacao ponta a ponta com ACK do aparelho) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Fotos do comprovante/checkpoint via <input capture> do WebView -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

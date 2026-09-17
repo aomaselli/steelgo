@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { paymentStatusMeta } from "@/lib/paymentStatus";
+import { fetchMyTrips } from "@/lib/trips";
 import { useLanguage } from "@/lib/i18n";
 
 type Scope = "admin" | "shipper" | "carrier";
@@ -115,56 +116,43 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
       if (!contracts?.length) return [];
 
       const contractIds = contracts.map((contract) => contract.id);
-      const driverIds = contracts
-        .map((contract) => contract.driver_id)
-        .filter((id): id is string => typeof id === "string" && id.length > 0);
-      const [positionsResult, alertsResult, paymentsResult, driversResult] = await Promise.all([
-        supabase
-          .from("driver_positions")
-          .select("contract_id, updated_at")
-          .in("contract_id", contractIds)
-          .order("updated_at", { ascending: false }),
-        supabase
-          .from("security_alerts")
-          .select("contract_id")
-          .in("contract_id", contractIds)
-          .is("resolved_at", null),
+      // Modulo 3: sinal, alertas e motorista vem da viagem operacional
+      // (list_my_trips, RPC sanitizada por papel); driver_positions e
+      // security_alerts foram congeladas.
+      const [tripsResult, paymentsResult] = await Promise.all([
+        fetchMyTrips(scope === "admin" ? "all" : "mine", undefined, 200),
         // Ledger financeiro (payment_intents), nao a tabela legada public.payments.
         supabase
           .from("payment_intents")
           .select("contract_id, internal_status")
           .in("contract_id", contractIds),
-        driverIds.length
-          ? supabase.from("drivers").select("id, full_name").in("id", driverIds)
-          : Promise.resolve({ data: [], error: null }),
       ]);
 
       const latestSignal = new Map<string, string>();
-      for (const position of positionsResult.data ?? []) {
-        if (
-          position.contract_id &&
-          position.updated_at &&
-          !latestSignal.has(position.contract_id)
-        ) {
-          latestSignal.set(position.contract_id, position.updated_at);
-        }
-      }
-
       const alertCount = new Map<string, number>();
-      for (const alert of alertsResult.data ?? []) {
-        if (!alert.contract_id) continue;
-        alertCount.set(alert.contract_id, (alertCount.get(alert.contract_id) ?? 0) + 1);
+      const driverNames = new Map<string, string>();
+      for (const trip of tripsResult) {
+        if (!trip.contract_id) continue;
+        // a viagem viva (maior tentativa) prevalece
+        if (trip.last_location_at && !latestSignal.has(trip.contract_id)) {
+          latestSignal.set(trip.contract_id, trip.last_location_at);
+        }
+        alertCount.set(
+          trip.contract_id,
+          (alertCount.get(trip.contract_id) ?? 0) +
+            (trip.open_alerts ?? 0) +
+            (trip.open_exceptions ?? 0) +
+            (trip.has_open_sos ? 1 : 0),
+        );
+        if (trip.driver_label && !driverNames.has(trip.contract_id)) {
+          driverNames.set(trip.contract_id, trip.driver_label);
+        }
       }
 
       const paymentStatus = new Map<string, string>();
       for (const payment of paymentsResult.data ?? []) {
         if (payment.contract_id)
           paymentStatus.set(payment.contract_id, payment.internal_status ?? "pending");
-      }
-
-      const driverNames = new Map<string, string>();
-      for (const driver of driversResult.data ?? []) {
-        driverNames.set(driver.id, driver.full_name ?? "Motorista");
       }
 
       return contracts.map((contract) => {
@@ -181,7 +169,7 @@ export function OperationsBoard({ scope, companyId, defaultFilter = "all" }: Ope
           originLabel: origin,
           destinationLabel: destination,
           pickupDate: freight?.pickup_date ?? null,
-          driverName: contract.driver_id ? (driverNames.get(contract.driver_id) ?? null) : null,
+          driverName: driverNames.get(contract.id) ?? null,
           amount: Number(contract.total_amount_brl ?? freight?.final_price_brl ?? 0),
           paymentStatus: paymentStatus.get(contract.id) ?? "pending",
           lastSignal: latestSignal.get(contract.id) ?? null,

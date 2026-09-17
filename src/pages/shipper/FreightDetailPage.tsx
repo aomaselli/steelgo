@@ -6,6 +6,8 @@ import { Pencil, Clock, MapPin, ShieldCheck, Map as MapIcon } from "lucide-react
 import { AppShell } from "@/components/layout/AppShell";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 import { supabase } from "@/integrations/supabase/client";
+import { fetchMyTrips } from "@/lib/trips";
+import { tripStatusMeta } from "@/lib/tripStatus";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button, Card, EmptyState, Spinner, Modal, Select, Badge } from "@/components/steel";
 import { StatusPill } from "@/components/steel/StatusPill";
@@ -95,17 +97,15 @@ export function FreightDetailPage() {
     },
   });
 
-  const { data: checkpoints } = useQuery({
-    queryKey: ["freight-checkpoints", contract?.id],
+  // Modulo 3: a viagem operacional do contrato (list_my_trips, RPC sanitizada).
+  // A tabela legada checkpoints foi congelada.
+  const { data: trip } = useQuery({
+    queryKey: ["freight-trip", contract?.id],
     enabled: !!contract?.id,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("checkpoints")
-        .select("*")
-        .eq("contract_id", contract!.id)
-        .order("recorded_at", { ascending: false });
-      return data ?? [];
-    },
+    refetchInterval: 30_000,
+    queryFn: async () =>
+      (await fetchMyTrips("mine", undefined, 200)).find((t) => t.contract_id === contract!.id) ??
+      null,
   });
 
   const sortedBids = useMemo(() => {
@@ -399,22 +399,31 @@ export function FreightDetailPage() {
 
           {/* RIGHT */}
           <aside className="space-y-4">
-            {freight.status === "in_transit" && (
+            {trip && (
               <Card className="p-4">
-                <h3 className="text-sm font-semibold text-[#E6EDF3] mb-3">Rastreamento ao vivo</h3>
-                <div className="bg-[#0F1923] h-40 rounded-[10px] flex flex-col items-center justify-center gap-1">
-                  <MapIcon className="w-6 h-6 text-[#484F58]" />
-                  <span className="text-xs text-[#484F58]">Atualizando...</span>
-                </div>
-                {checkpoints?.[0] && (
-                  <p className="text-xs text-[#8B949E] mt-3">
-                    Último: {checkpoints[0].type} · {timeAgo(checkpoints[0].recorded_at)}
-                  </p>
+                <h3 className="text-sm font-semibold text-[#E6EDF3] mb-3">
+                  Viagem {trip.trip_number}
+                </h3>
+                <p className="text-xs text-[#C9D1D9]">{tripStatusMeta(trip.status).label}</p>
+                <p className="text-xs text-[#8B949E] mt-1">
+                  Motorista: {trip.driver_label ?? "—"} · {trip.truck_plate_masked ?? "—"}
+                </p>
+                <p className="text-xs text-[#8B949E] mt-1">
+                  Último sinal:{" "}
+                  {trip.last_location_at ? timeAgo(trip.last_location_at) : "sem sinal"}
+                </p>
+                <p className="text-xs text-[#484F58] mt-1">
+                  Chegada estimada:{" "}
+                  {trip.eta_at ? new Date(trip.eta_at).toLocaleString("pt-BR") : "—"} (estimativa)
+                </p>
+                {trip.has_open_sos && (
+                  <p className="text-xs text-red-400 mt-1">Alerta crítico aberto</p>
                 )}
-                <p className="text-xs text-[#484F58] mt-1">ETA: —</p>
-                <Button variant="ghost" size="sm" className="w-full mt-3">
-                  Ver mapa completo
-                </Button>
+                <Link to="/shipper/trips/$id" params={{ id: trip.trip_id }}>
+                  <Button variant="ghost" size="sm" className="w-full mt-3">
+                    Abrir viagem (mapa, linha do tempo, comprovante)
+                  </Button>
+                </Link>
               </Card>
             )}
 
@@ -440,15 +449,6 @@ export function FreightDetailPage() {
                   done={freight.status === "delivered" || freight.status === "completed"}
                   label="Entregue"
                 />
-                {checkpoints?.map((c) => (
-                  <li key={c.id} className="flex gap-2 text-xs">
-                    <MapPin className="w-3 h-3 text-steel-blue-200 mt-0.5" />
-                    <div>
-                      <p className="text-[#C9D1D9]">{c.type}</p>
-                      <p className="text-[#484F58]">{timeAgo(c.recorded_at)}</p>
-                    </div>
-                  </li>
-                ))}
               </ol>
             </Card>
 

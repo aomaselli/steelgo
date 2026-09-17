@@ -9,11 +9,16 @@ import { GreenFreightTag } from "@/components/steel/GreenFreightTag";
 import { StatusPill } from "@/components/steel/StatusPill";
 import { steelLabel, formatBRL, formatNum } from "@/lib/steel";
 import { OperationsBoard } from "@/components/operations/OperationsBoard";
+import { MemberDashboard } from "@/components/trip/MemberDashboard";
+import { fetchMyTrips } from "@/lib/trips";
 
 export function CarrierDashboardPage() {
-  const { profile, company } = useAuth();
+  const { profile, company, companyRole } = useAuth();
   const { t } = useLanguage();
   const firstName = profile?.full_name?.split(" ")[0] ?? "transportadora";
+  // Modulo 3: operador/leitor NAO recebem o painel do proprietario (lances,
+  // contratos, recebiveis sao leituras owner-only). Ver MemberDashboard.
+  const isMember = companyRole === "operator" || companyRole === "viewer";
 
   const { data: carrier } = useQuery({
     queryKey: ["carrier-self", company?.id],
@@ -107,6 +112,19 @@ export function CarrierDashboardPage() {
     },
   });
 
+  // viagem operacional viva por contrato (a rota /carrier/trips/$id recebe o id da VIAGEM)
+  const { data: tripByContract = {} } = useQuery({
+    queryKey: ["trips", "carrier-dashboard-map"],
+    enabled: !!company?.id && !isMember,
+    queryFn: async () => {
+      const out: Record<string, string> = {};
+      for (const t of await fetchMyTrips("mine", undefined, 200)) {
+        if (!out[t.contract_id]) out[t.contract_id] = t.trip_id;
+      }
+      return out;
+    },
+  });
+
   const { data: recentPayouts } = useQuery({
     queryKey: ["carrier-recent-payouts", company?.id],
     enabled: !!company?.id,
@@ -133,6 +151,8 @@ export function CarrierDashboardPage() {
   const overall = Number(score?.overall_score ?? 0);
   const scoreColor =
     overall >= 8.5 ? "text-[#2ECC8A]" : overall >= 7 ? "text-[#3B89D4]" : "text-[#F0A500]";
+
+  if (isMember) return <MemberDashboard kind="carrier" />;
 
   return (
     <div className="space-y-8 bg-[#F4F7FB]">
@@ -209,6 +229,8 @@ export function CarrierDashboardPage() {
         ) : !availableFreights?.length ? (
           <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
+              tone="light"
+              inset
               icon={Truck}
               title={t("carrierDashboard.emptyFreightsTitle")}
               description={t("carrierDashboard.emptyFreightsDesc")}
@@ -271,6 +293,8 @@ export function CarrierDashboardPage() {
         {!activeDeliveries?.length ? (
           <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
+              tone="light"
+              inset
               icon={CheckCircle2}
               title={t("carrierDashboard.emptyDeliveriesTitle")}
               description={t("carrierDashboard.emptyDeliveriesDesc")}
@@ -307,9 +331,17 @@ export function CarrierDashboardPage() {
                   <div className="text-xs text-[#5B6B80]">
                     <div>{d?.full_name ?? "—"}</div>
                   </div>
-                  <Link to="/carrier/trips/$id" params={{ id: String(c.id) }}>
-                    <Button size="sm">{t("carrierDashboard.track")}</Button>
-                  </Link>
+                  {tripByContract[String(c.id)] ? (
+                    <Link to="/carrier/trips/$id" params={{ id: tripByContract[String(c.id)] }}>
+                      <Button size="sm">{t("carrierDashboard.track")}</Button>
+                    </Link>
+                  ) : (
+                    <Link to="/carrier/trips">
+                      <Button size="sm" variant="outline">
+                        {t("carrierDashboard.track")}
+                      </Button>
+                    </Link>
+                  )}
                 </Card>
               );
             })}
@@ -325,6 +357,8 @@ export function CarrierDashboardPage() {
         {!recentPayouts?.length ? (
           <Card className="p-6 border-[#E3EAF3] bg-white">
             <EmptyState
+              tone="light"
+              inset
               title={t("carrierDashboard.emptyPayoutsTitle")}
               description={t("carrierDashboard.emptyPayoutsDesc")}
             />

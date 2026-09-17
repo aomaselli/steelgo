@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, MapPin, Radio, TriangleAlert } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { fetchAdminPositions } from "@/lib/trips";
+import { tripStatusMeta } from "@/lib/tripStatus";
 
+// Modulo 3: posicoes vem de list_trip_positions_admin (ultima posicao por
+// viagem ativa, RPC de admin); a tabela legada driver_positions foi congelada.
 const MAPS_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY as string | undefined;
 const BR_CENTER = { lat: -15.7801, lng: -47.9292 };
 
@@ -10,22 +13,15 @@ type MapStatus = "loading" | "ready" | "missing-key" | "error";
 
 export function AdminOperationsMap() {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markersRef = useRef<google.maps.Marker[]>([]);
   const [status, setStatus] = useState<MapStatus>(MAPS_KEY ? "loading" : "missing-key");
 
   const { data: positions = [], isError } = useQuery({
-    queryKey: ["admin-live-driver-positions"],
+    queryKey: ["admin-live-trip-positions"],
     enabled: status === "ready",
     refetchInterval: 30_000,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("driver_positions")
-        .select("contract_id, lat, lng, updated_at")
-        .order("updated_at", { ascending: false });
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: fetchAdminPositions,
   });
 
   useEffect(() => {
@@ -69,24 +65,26 @@ export function AdminOperationsMap() {
     for (const position of positions) {
       if (position.lat == null || position.lng == null) continue;
       const point = { lat: Number(position.lat), lng: Number(position.lng) };
+      const danger = position.has_open_sos || (position.open_alerts ?? 0) > 0;
       const marker = new window.google.maps.Marker({
         position: point,
         map: mapRef.current,
-        title: "Contrato " + String(position.contract_id).slice(0, 8),
+        title: position.trip_number,
         icon: {
           path: window.google.maps.SymbolPath.CIRCLE,
           scale: 9,
-          fillColor: "#2FA98A",
+          fillColor: position.has_open_sos ? "#C23333" : danger ? "#E0A23A" : "#2FA98A",
           fillOpacity: 1,
           strokeColor: "#FFFFFF",
           strokeWeight: 3,
         },
       });
-      const updatedAt = position.updated_at
-        ? new Date(position.updated_at).toLocaleString("pt-BR")
+      const updatedAt = position.last_location_at
+        ? new Date(position.last_location_at).toLocaleString("pt-BR")
         : "Sem horário";
+      const eta = position.eta_at ? new Date(position.eta_at).toLocaleString("pt-BR") : "—";
       const info = new window.google.maps.InfoWindow({
-        content: `<div style="color:#16263F;font:13px sans-serif"><strong>Contrato ${String(position.contract_id).slice(0, 8)}</strong><br/>Última posição: ${updatedAt}</div>`,
+        content: `<div style="color:#16263F;font:13px sans-serif"><strong>${position.trip_number}</strong> · ${tripStatusMeta(position.status).label}<br/>${position.carrier_company_name ?? ""} · ${position.driver_label ?? ""}<br/>Última posição: ${updatedAt}<br/>ETA (estimativa): ${eta}<br/>Alertas abertos: ${position.open_alerts ?? 0}${position.has_open_sos ? " · <b style='color:#C23333'>ALERTA CRÍTICO</b>" : ""}</div>`,
       });
       marker.addListener("click", () => info.open({ map: mapRef.current, anchor: marker }));
       markersRef.current.push(marker);
@@ -94,7 +92,8 @@ export function AdminOperationsMap() {
     }
 
     if (markersRef.current.length === 1) {
-      mapRef.current.setCenter(markersRef.current[0].getPosition());
+      const p = markersRef.current[0].getPosition();
+      if (p) mapRef.current.setCenter(p);
       mapRef.current.setZoom(12);
     } else if (markersRef.current.length > 1) {
       mapRef.current.fitBounds(bounds, 56);
@@ -109,11 +108,13 @@ export function AdminOperationsMap() {
             <MapPin className="h-5 w-5 text-[#1B6CB8]" />
             <h2 className="font-semibold text-[#16263F]">Control Tower</h2>
           </div>
-          <p className="mt-1 text-sm text-[#5B6B80]">Motoristas e viagens em circulação na plataforma</p>
+          <p className="mt-1 text-sm text-[#5B6B80]">
+            Viagens ativas com última posição conhecida (estimativas, não rota exata)
+          </p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full bg-[#2FA98A]/10 px-3 py-1.5 text-sm font-medium text-[#1A7D60]">
           <Radio className="h-4 w-4" />
-          {positions.length} posições ativas
+          {positions.length} viagens com posição
         </div>
       </div>
 

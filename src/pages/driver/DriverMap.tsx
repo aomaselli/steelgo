@@ -13,7 +13,6 @@ type Props = {
 
 const BROWSER_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY ?? "";
 
-
 const DARK_STYLES: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: "#0d1117" }] },
   { elementType: "labels.text.fill", stylers: [{ color: "#8b949e" }] },
@@ -27,7 +26,7 @@ const DARK_STYLES: google.maps.MapTypeStyle[] = [
 type Status = "loading" | "ready" | "error" | "no-key";
 
 let loaderPromise: Promise<typeof google> | null = null;
-function loadGoogleMaps(): Promise<typeof google> {
+export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
   if ((window as any).google?.maps) return Promise.resolve((window as any).google);
   if (loaderPromise) return loaderPromise;
@@ -40,7 +39,7 @@ function loadGoogleMaps(): Promise<typeof google> {
       callback: cbName,
       libraries: "maps,marker",
     });
-    
+
     const script = document.createElement("script");
     script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
     script.async = true;
@@ -75,7 +74,15 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
   const routeMetaRef = useRef<{ durationSecs: number; totalKm: number } | null>(null);
   const [mapEta, setMapEta] = useState<string | null>(null);
-  const [status, setStatus] = useState<Status>((() => { if (!BROWSER_KEY) { console.warn('[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.'); return 'no-key'; } return 'loading'; })());
+  const [status, setStatus] = useState<Status>(
+    (() => {
+      if (!BROWSER_KEY) {
+        console.warn("[SteelGo] VITE_GOOGLE_MAPS_KEY is not set. Map will not load.");
+        return "no-key";
+      }
+      return "loading";
+    })(),
+  );
 
   const recomputeEta = useCallback((driverPos: LatLng, destPos: LatLng) => {
     const meta = routeMetaRef.current;
@@ -160,7 +167,12 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
                     strokeOpacity: 0,
                     icons: [
                       {
-                        icon: { path: "M 0,-1 0,1", strokeOpacity: 1, scale: 3, strokeColor: "#1B6CB8" },
+                        icon: {
+                          path: "M 0,-1 0,1",
+                          strokeOpacity: 1,
+                          scale: 3,
+                          strokeColor: "#1B6CB8",
+                        },
                         offset: "0",
                         repeat: "12px",
                       },
@@ -234,12 +246,23 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
             </pattern>
           </defs>
           <rect width="400" height="200" fill="url(#dgrid)" />
-          <path d="M 40 160 Q 200 50, 360 100" stroke="#1B6CB8" strokeWidth="3" strokeDasharray="8 6" fill="none" />
+          <path
+            d="M 40 160 Q 200 50, 360 100"
+            stroke="#1B6CB8"
+            strokeWidth="3"
+            strokeDasharray="8 6"
+            fill="none"
+          />
         </svg>
         <div className="absolute" style={{ left: 30, bottom: 32 }}>
           <div
             className="rounded-full flex items-center justify-center"
-            style={{ width: 36, height: 36, background: "#1B6CB8", boxShadow: "0 0 0 4px rgba(27,108,184,0.3)" }}
+            style={{
+              width: 36,
+              height: 36,
+              background: "#1B6CB8",
+              boxShadow: "0 0 0 4px rgba(27,108,184,0.3)",
+            }}
           >
             <TruckIcon size={18} className="text-white" />
           </div>
@@ -268,7 +291,9 @@ function haversineKm(a: LatLng, b: LatLng): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const dLat = toRad(b.lat - a.lat);
   const dLng = toRad(b.lng - a.lng);
-  const x = Math.sin(dLat / 2) ** 2 + Math.sin(dLng / 2) ** 2 * Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat));
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.sin(dLng / 2) ** 2 * Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat));
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 

@@ -10,7 +10,11 @@ import { formatBRL } from "@/lib/steel";
 
 const FILTERS = [
   { id: "all", label: "Todos", statuses: null as string[] | null },
-  { id: "signing", label: "Aguardando assinatura", statuses: ["awaiting_shipper_signature", "awaiting_carrier_signature", "draft"] },
+  {
+    id: "signing",
+    label: "Aguardando assinatura",
+    statuses: ["awaiting_shipper_signature", "awaiting_carrier_signature", "draft"],
+  },
   { id: "active", label: "Ativos", statuses: ["active"] },
   { id: "completed", label: "Concluídos", statuses: ["completed"] },
   { id: "disputed", label: "Disputados", statuses: ["disputed"] },
@@ -28,7 +32,9 @@ export function ContractsPage() {
     queryFn: async () => {
       let q = supabase
         .from("contracts")
-        .select("*, freights(id, origin_city, dest_city, origin_state, dest_state), carrier_company:carrier_company_id (name)")
+        .select(
+          "*, freights(id, origin_city, dest_city, origin_state, dest_state), carrier_company:carrier_company_id (name)",
+        )
         .eq("shipper_company_id", company!.id)
         .order("created_at", { ascending: false });
       if (f.statuses) q = q.in("status", f.statuses as never);
@@ -59,9 +65,17 @@ export function ContractsPage() {
 
         <Card className="overflow-hidden border-[#DDE7F2] bg-white shadow-[0_8px_22px_rgba(16,39,74,0.04)]">
           {isLoading ? (
-            <div className="p-8 flex justify-center"><Spinner /></div>
+            <div className="p-8 flex justify-center">
+              <Spinner />
+            </div>
           ) : !data?.length ? (
-            <EmptyState icon={FileText} title="Nenhum contrato" description="Aceite uma proposta para gerar um contrato." />
+            <EmptyState
+              tone="light"
+              inset
+              icon={FileText}
+              title="Nenhum contrato"
+              description="Aceite uma proposta para gerar um contrato."
+            />
           ) : (
             <table className="w-full text-sm">
               <thead className="bg-[#F4F7FB] text-xs uppercase text-[#5B6B80]">
@@ -76,21 +90,37 @@ export function ContractsPage() {
               </thead>
               <tbody>
                 {data.map((c) => {
-                  const fr = c.freights as { id?: string; origin_city?: string; dest_city?: string } | null;
+                  const fr = c.freights as {
+                    id?: string;
+                    origin_city?: string;
+                    dest_city?: string;
+                  } | null;
                   const ca = (c as { carrier_company?: { name?: string } | null }).carrier_company;
                   return (
                     <tr
                       key={c.id}
                       className="border-t border-[#E6EAF0] hover:bg-[#F4F7FB] cursor-pointer"
-                      onClick={() => navigate({ to: "/shipper/contracts/$id", params: { id: String(c.id) } })}
+                      onClick={() =>
+                        navigate({ to: "/shipper/contracts/$id", params: { id: String(c.id) } })
+                      }
                     >
-                      <td className="px-4 py-3 font-mono text-xs text-[#1B4F86]">{c.contract_number ?? String(c.id).slice(0, 8)}</td>
-                      <td className="px-4 py-3 text-[#10274A]">{fr?.origin_city ?? "—"} → {fr?.dest_city ?? "—"}</td>
+                      <td className="px-4 py-3 font-mono text-xs text-[#1B4F86]">
+                        {c.contract_number ?? String(c.id).slice(0, 8)}
+                      </td>
+                      <td className="px-4 py-3 text-[#10274A]">
+                        {fr?.origin_city ?? "—"} → {fr?.dest_city ?? "—"}
+                      </td>
                       <td className="px-4 py-3 text-[#2C3E50]">{ca?.name ?? "—"}</td>
-                      <td className="px-4 py-3 text-right tabular-nums">{formatBRL(c.total_amount_brl)}</td>
-                      <td className="px-4 py-3"><StatusPill status={c.status ?? "draft"} /></td>
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {formatBRL(c.total_amount_brl)}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusPill status={c.status ?? "draft"} />
+                      </td>
                       <td className="px-4 py-3 text-right">
-                        <Button variant="ghost" size="sm">Ver →</Button>
+                        <Button variant="ghost" size="sm">
+                          Ver →
+                        </Button>
                       </td>
                     </tr>
                   );

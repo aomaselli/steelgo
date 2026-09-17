@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
@@ -14,29 +14,42 @@ import {
   X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { rpcPlaceBid } from "@/lib/trips";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
-import {
-  Button,
-  Card,
-  Input,
-  Select,
-  Spinner,
-  Textarea,
-} from "@/components/steel";
+import { Button, Card, Input, Select, Spinner, Textarea } from "@/components/steel";
 import { GreenFreightTag } from "@/components/steel/GreenFreightTag";
 import { StatusPill } from "@/components/steel/StatusPill";
-import {
-  steelLabel,
-  formatBRL,
-  formatNum,
-  STEEL_TYPES,
-  TRUCK_TYPES,
-} from "@/lib/steel";
+import { steelLabel, formatBRL, formatNum, STEEL_TYPES, TRUCK_TYPES } from "@/lib/steel";
 
 const BR_STATES = [
-  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
-  "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 const CATEGORIES = [
@@ -103,6 +116,8 @@ export function MarketplacePage() {
   const [bidHours, setBidHours] = useState("48");
   const [bidTruckId, setBidTruckId] = useState("");
   const [bidDriverId, setBidDriverId] = useState("");
+  // mesmo request_id em toda retentativa desta proposta (idempotencia)
+  const bidRequestId = useRef<string | null>(null);
   const [bidEvCertified, setBidEvCertified] = useState(false);
   const [bidNotes, setBidNotes] = useState("");
 
@@ -136,10 +151,7 @@ export function MarketplacePage() {
     queryKey: ["carrier-trucks", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("trucks")
-        .select("*")
-        .eq("carrier_id", carrier!.id);
+      const { data } = await supabase.from("trucks").select("*").eq("carrier_id", carrier!.id);
       return data ?? [];
     },
   });
@@ -187,10 +199,8 @@ export function MarketplacePage() {
   useEffect(() => {
     const channel = supabase
       .channel("marketplace-freights-rt")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "freights" },
-        () => setNewCount((c) => c + 1),
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "freights" }, () =>
+        setNewCount((c) => c + 1),
       )
       .subscribe();
     return () => {
@@ -198,13 +208,8 @@ export function MarketplacePage() {
     };
   }, []);
 
-  const toggle = (
-    setter: React.Dispatch<React.SetStateAction<string[]>>,
-    v: string,
-  ) =>
-    setter((prev) =>
-      prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v],
-    );
+  const toggle = (setter: React.Dispatch<React.SetStateAction<string[]>>, v: string) =>
+    setter((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
 
   const clearFilters = () => {
     setOriginStates([]);
@@ -219,28 +224,19 @@ export function MarketplacePage() {
 
   const filtered = useMemo(() => {
     let list = freights ?? [];
-    if (originStates.length)
-      list = list.filter((f) => originStates.includes(f.origin_state ?? ""));
-    if (destStates.length)
-      list = list.filter((f) => destStates.includes(f.dest_state ?? ""));
-    if (steelTypes.length)
-      list = list.filter((f) => steelTypes.includes(f.steel_type ?? ""));
+    if (originStates.length) list = list.filter((f) => originStates.includes(f.origin_state ?? ""));
+    if (destStates.length) list = list.filter((f) => destStates.includes(f.dest_state ?? ""));
+    if (steelTypes.length) list = list.filter((f) => steelTypes.includes(f.steel_type ?? ""));
     if (categories.length)
-      list = list.filter((f) =>
-        categories.includes(String(f.category ?? "traditional")),
-      );
+      list = list.filter((f) => categories.includes(String(f.category ?? "traditional")));
     if (truckTypes.length)
       list = list.filter((f) =>
         (f.required_truck ?? []).some((t: string) => truckTypes.includes(t)),
       );
-    if (weightMin)
-      list = list.filter((f) => Number(f.weight_tons ?? 0) >= Number(weightMin));
-    if (weightMax)
-      list = list.filter((f) => Number(f.weight_tons ?? 0) <= Number(weightMax));
+    if (weightMin) list = list.filter((f) => Number(f.weight_tons ?? 0) >= Number(weightMin));
+    if (weightMax) list = list.filter((f) => Number(f.weight_tons ?? 0) <= Number(weightMax));
     if (pickupFrom)
-      list = list.filter(
-        (f) => f.pickup_date && new Date(f.pickup_date) >= new Date(pickupFrom),
-      );
+      list = list.filter((f) => f.pickup_date && new Date(f.pickup_date) >= new Date(pickupFrom));
 
     const sorted = [...list];
     sorted.sort((a, b) => {
@@ -250,10 +246,7 @@ export function MarketplacePage() {
         case "price_asc":
           return Number(a.budget_brl ?? 0) - Number(b.budget_brl ?? 0);
         case "pickup":
-          return (
-            new Date(a.pickup_date ?? 0).getTime() -
-            new Date(b.pickup_date ?? 0).getTime()
-          );
+          return new Date(a.pickup_date ?? 0).getTime() - new Date(b.pickup_date ?? 0).getTime();
         case "weight":
           return Number(b.weight_tons ?? 0) - Number(a.weight_tons ?? 0);
         default:
@@ -295,29 +288,31 @@ export function MarketplacePage() {
       toast.error(t("carrierMarketplace.errorBidAmount"));
       return;
     }
-    if (
-      openFreight.category &&
-      openFreight.category !== "traditional" &&
-      !bidEvCertified
-    ) {
+    if (openFreight.category && openFreight.category !== "traditional" && !bidEvCertified) {
       toast.error(t("carrierMarketplace.errorGreenCert"));
       return;
     }
-    const { error } = await supabase.from("bids").insert({
-      freight_id: openFreight.id,
-      carrier_id: carrier.id,
-      driver_id: bidDriverId || null,
-      truck_id: bidTruckId || null,
-      amount_brl: amt,
-      toll_brl: bidToll ? Number(bidToll) : 0,
-      estimated_hours: bidHours ? Number(bidHours) : null,
-      ev_certified: bidEvCertified,
-      status: "pending",
-    } as never);
-    if (error) {
-      toast.error(error.message);
+    // Modulo 3: INSERT direto em bids foi revogado. place_bid valida no servidor
+    // que o motorista (drivers.id) e o veiculo pertencem a esta transportadora e
+    // grava a identidade canonica (driver_record_id + driver_id = profile).
+    if (bidRequestId.current === null) bidRequestId.current = crypto.randomUUID();
+    try {
+      await rpcPlaceBid({
+        freightId: openFreight.id,
+        amount: amt,
+        toll: bidToll ? Number(bidToll) : 0,
+        estimatedHours: bidHours ? Number(bidHours) : 0,
+        evCertified: bidEvCertified,
+        driverId: bidDriverId || null,
+        truckId: bidTruckId || null,
+        requestId: bidRequestId.current,
+      });
+    } catch (e) {
+      toast.error((e as Error).message);
+      bidRequestId.current = crypto.randomUUID();
       return;
     }
+    bidRequestId.current = null;
     toast.success(t("carrierMarketplace.bidSuccessToast"));
     qc.invalidateQueries({ queryKey: ["carrier-my-bids", carrier.id] });
     closeDrawer();
@@ -330,11 +325,10 @@ export function MarketplacePage() {
       {/* Filters Panel */}
       <aside className="w-72 flex-shrink-0 bg-[#F4F7FB] border-r border-[#DDE7F2] p-5 overflow-y-auto hidden md:block">
         <div className="flex justify-between items-center mb-2">
-          <h3 className="text-sm font-semibold text-[#10274A]">{t("carrierMarketplace.filtersTitle")}</h3>
-          <button
-            onClick={clearFilters}
-            className="text-xs text-[#1B6CB8] hover:underline"
-          >
+          <h3 className="text-sm font-semibold text-[#10274A]">
+            {t("carrierMarketplace.filtersTitle")}
+          </h3>
+          <button onClick={clearFilters} className="text-xs text-[#1B6CB8] hover:underline">
             {t("carrierMarketplace.clear")}
           </button>
         </div>
@@ -461,11 +455,7 @@ export function MarketplacePage() {
         </FilterGroup>
 
         <FilterGroup title={t("carrierMarketplace.pickupDate")}>
-          <Input
-            type="date"
-            value={pickupFrom}
-            onChange={(e) => setPickupFrom(e.target.value)}
-          />
+          <Input type="date" value={pickupFrom} onChange={(e) => setPickupFrom(e.target.value)} />
         </FilterGroup>
       </aside>
 
@@ -474,12 +464,11 @@ export function MarketplacePage() {
         <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
           <div className="text-sm text-[#5B6B80]">
             {filtered.length}{" "}
-            {filtered.length === 1 ? t("carrierMarketplace.freightAvailableOne") : t("carrierMarketplace.freightAvailableMany")}
+            {filtered.length === 1
+              ? t("carrierMarketplace.freightAvailableOne")
+              : t("carrierMarketplace.freightAvailableMany")}
           </div>
-          <Select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-          >
+          <Select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
             <option value="relevance">{t("carrierMarketplace.sortRelevance")}</option>
             <option value="price_desc">{t("carrierMarketplace.sortPriceDesc")}</option>
             <option value="price_asc">{t("carrierMarketplace.sortPriceAsc")}</option>
@@ -496,7 +485,11 @@ export function MarketplacePage() {
             }}
             className="mb-3 inline-flex items-center gap-2 bg-[#1A9B5E]/20 border border-[#1A9B5E] text-[#2ECC8A] text-xs px-3 py-1 rounded-full animate-pulse"
           >
-            ● {newCount} {newCount === 1 ? t("carrierMarketplace.newFreightOne") : t("carrierMarketplace.newFreightMany")} — {t("carrierMarketplace.newFreightCta")}
+            ● {newCount}{" "}
+            {newCount === 1
+              ? t("carrierMarketplace.newFreightOne")
+              : t("carrierMarketplace.newFreightMany")}{" "}
+            — {t("carrierMarketplace.newFreightCta")}
           </button>
         )}
 
@@ -509,8 +502,12 @@ export function MarketplacePage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
               <Package className="h-6 w-6" />
             </div>
-            <h3 className="text-xl font-semibold text-[#10274A]">{t("carrierMarketplace.noFreightTitle")}</h3>
-            <p className="max-w-md text-sm text-[#5B6B80]">{t("carrierMarketplace.noFreightDesc")}</p>
+            <h3 className="text-xl font-semibold text-[#10274A]">
+              {t("carrierMarketplace.noFreightTitle")}
+            </h3>
+            <p className="max-w-md text-sm text-[#5B6B80]">
+              {t("carrierMarketplace.noFreightDesc")}
+            </p>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
@@ -542,9 +539,7 @@ export function MarketplacePage() {
                       )}
                     </div>
                     <div className="text-xs text-[#5B6B80]">
-                      {f.pickup_date
-                        ? new Date(f.pickup_date).toLocaleDateString("pt-BR")
-                        : "—"}
+                      {f.pickup_date ? new Date(f.pickup_date).toLocaleDateString("pt-BR") : "—"}
                     </div>
                   </div>
 
@@ -586,9 +581,7 @@ export function MarketplacePage() {
                       {f.budget_brl ? (
                         <span className="text-sm font-medium text-[#10274A]">
                           {t("carrierMarketplace.budgetLabel")}{" "}
-                          <span className="tabular-nums">
-                            {formatBRL(f.budget_brl)}
-                          </span>
+                          <span className="tabular-nums">{formatBRL(f.budget_brl)}</span>
                         </span>
                       ) : (
                         <span className="text-sm italic text-[#6B7B8A]">
@@ -608,10 +601,7 @@ export function MarketplacePage() {
       {/* Detail Drawer */}
       {openFreight && (
         <>
-          <div
-            className="fixed inset-0 bg-black/50 z-40"
-            onClick={closeDrawer}
-          />
+          <div className="fixed inset-0 bg-black/50 z-40" onClick={closeDrawer} />
           <div className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-[#F8FAFC] border-l border-[#DDE7F2] z-50 p-6 overflow-y-auto">
             <button
               onClick={closeDrawer}
@@ -651,34 +641,26 @@ export function MarketplacePage() {
                 <div className="flex justify-between">
                   <span className="text-[#5B6B80]">{t("carrierMarketplace.origin")}</span>
                   <span className="text-[#10274A]">
-                    {openFreight.origin_city ?? "—"},{" "}
-                    {openFreight.origin_state ?? ""}
+                    {openFreight.origin_city ?? "—"}, {openFreight.origin_state ?? ""}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#5B6B80]">{t("carrierMarketplace.destination")}</span>
                   <span className="text-[#10274A]">
-                    {openFreight.dest_city ?? "—"},{" "}
-                    {openFreight.dest_state ?? ""}
+                    {openFreight.dest_city ?? "—"}, {openFreight.dest_state ?? ""}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8B949E]">{t("carrierMarketplace.distance")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {formatNum(openFreight.distance_km)} km
-                  </span>
+                  <span className="text-[#E6EDF3]">{formatNum(openFreight.distance_km)} km</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8B949E]">{t("carrierMarketplace.steelType")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {steelLabel(openFreight.steel_type)}
-                  </span>
+                  <span className="text-[#E6EDF3]">{steelLabel(openFreight.steel_type)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8B949E]">{t("carrierMarketplace.weight")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {formatNum(openFreight.weight_tons)} t
-                  </span>
+                  <span className="text-[#E6EDF3]">{formatNum(openFreight.weight_tons)} t</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8B949E]">{t("carrierMarketplace.category")}</span>
@@ -688,9 +670,7 @@ export function MarketplacePage() {
                   <span className="text-[#8B949E]">{t("carrierMarketplace.pickup")}</span>
                   <span className="text-[#E6EDF3]">
                     {openFreight.pickup_date
-                      ? new Date(openFreight.pickup_date).toLocaleDateString(
-                          "pt-BR",
-                        )
+                      ? new Date(openFreight.pickup_date).toLocaleDateString("pt-BR")
                       : "—"}
                   </span>
                 </div>
@@ -698,9 +678,7 @@ export function MarketplacePage() {
                   <span className="text-[#8B949E]">{t("carrierMarketplace.delivery")}</span>
                   <span className="text-[#E6EDF3]">
                     {openFreight.delivery_date
-                      ? new Date(openFreight.delivery_date).toLocaleDateString(
-                          "pt-BR",
-                        )
+                      ? new Date(openFreight.delivery_date).toLocaleDateString("pt-BR")
                       : "—"}
                   </span>
                 </div>
@@ -723,11 +701,7 @@ export function MarketplacePage() {
                 <div className="pt-3 border-t border-[#30363D] text-xs text-[#8B949E]">
                   {t("carrierMarketplace.verifiedShipper")}
                 </div>
-                <Button
-                  className="w-full mt-2"
-                  onClick={() => setTab("bid")}
-                  disabled={!carrier}
-                >
+                <Button className="w-full mt-2" onClick={() => setTab("bid")} disabled={!carrier}>
                   {t("carrierMarketplace.makeBidCta")}
                 </Button>
               </div>
@@ -749,8 +723,7 @@ export function MarketplacePage() {
                   </div>
                   {openFreight.budget_brl && (
                     <p className="text-xs text-[#484F58] mt-1">
-                      {t("carrierMarketplace.shipperBudget")}{" "}
-                      {formatBRL(openFreight.budget_brl)}
+                      {t("carrierMarketplace.shipperBudget")} {formatBRL(openFreight.budget_brl)}
                     </p>
                   )}
                 </div>
@@ -771,10 +744,7 @@ export function MarketplacePage() {
                   <label className="text-xs text-[#8B949E] block mb-1">
                     {t("carrierMarketplace.estimatedDeadline")}
                   </label>
-                  <Select
-                    value={bidHours}
-                    onChange={(e) => setBidHours(e.target.value)}
-                  >
+                  <Select value={bidHours} onChange={(e) => setBidHours(e.target.value)}>
                     <option value="24">{t("carrierMarketplace.deadline1")}</option>
                     <option value="48">{t("carrierMarketplace.deadline2")}</option>
                     <option value="72">{t("carrierMarketplace.deadline3")}</option>
@@ -786,15 +756,12 @@ export function MarketplacePage() {
                   <label className="text-xs text-[#8B949E] block mb-1">
                     {t("carrierMarketplace.truckLabel")}
                   </label>
-                  <Select
-                    value={bidTruckId}
-                    onChange={(e) => setBidTruckId(e.target.value)}
-                  >
+                  <Select value={bidTruckId} onChange={(e) => setBidTruckId(e.target.value)}>
                     <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
                     {(trucks ?? []).map((truck) => (
                       <option key={truck.id} value={truck.id}>
-                        {truck.plate ?? "—"} · {truck.type ?? ""} ·{" "}
-                        {formatNum(truck.capacity_tons)}t
+                        {truck.plate ?? "—"} · {truck.type ?? ""} · {formatNum(truck.capacity_tons)}
+                        t
                       </option>
                     ))}
                   </Select>
@@ -804,10 +771,7 @@ export function MarketplacePage() {
                   <label className="text-xs text-[#8B949E] block mb-1">
                     {t("carrierMarketplace.driverLabel")}
                   </label>
-                  <Select
-                    value={bidDriverId}
-                    onChange={(e) => setBidDriverId(e.target.value)}
-                  >
+                  <Select value={bidDriverId} onChange={(e) => setBidDriverId(e.target.value)}>
                     <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
                     {(drivers ?? []).map((d) => (
                       <option key={d.id} value={d.id}>
@@ -844,8 +808,8 @@ export function MarketplacePage() {
                 <div className="bg-[#0D2744] border border-[#1B6CB8]/30 rounded-[10px] p-3">
                   <div className="text-sm text-[#79B8F8]">
                     {t("carrierMarketplace.currentScore")}{" "}
-                    {score ? Number(score.overall_score ?? 0).toFixed(1) : "—"}{" "}
-                    — {score?.badge_tier ?? "standard"}
+                    {score ? Number(score.overall_score ?? 0).toFixed(1) : "—"} —{" "}
+                    {score?.badge_tier ?? "standard"}
                   </div>
                   {score && Number(score.overall_score ?? 0) < 7 && (
                     <div className="text-xs text-[#484F58] mt-1">
@@ -854,12 +818,7 @@ export function MarketplacePage() {
                   )}
                 </div>
 
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={submitBid}
-                  disabled={!carrier}
-                >
+                <Button className="w-full" size="lg" onClick={submitBid} disabled={!carrier}>
                   {t("carrierMarketplace.sendBid")}
                 </Button>
               </div>

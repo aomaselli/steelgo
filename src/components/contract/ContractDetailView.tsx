@@ -21,6 +21,8 @@ import { SignaturePad } from "./SignaturePad";
 import { ReleasePaymentModal } from "@/components/payment/ReleasePaymentModal";
 import { OpenDisputeModal } from "@/components/dispute/OpenDisputeModal";
 import { fetchDisputeCases } from "@/lib/disputes";
+import { fetchMyTrips } from "@/lib/trips";
+import { tripStatusMeta } from "@/lib/tripStatus";
 
 type Role = "shipper" | "carrier";
 
@@ -107,7 +109,7 @@ function TimelineStep({
 }
 
 export function ContractDetailView({ contractId, viewerRole }: Props) {
-  const { user, company } = useAuth();
+  const { user, company, companyRole } = useAuth();
   const qc = useQueryClient();
   const [showClauses, setShowClauses] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
@@ -181,18 +183,27 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
     },
   });
 
-  const { data: lastCheckpoint } = useQuery({
-    queryKey: ["contract-last-checkpoint", contractId],
-    queryFn: async () => {
-      const { data: rows } = await supabase
-        .from("checkpoints")
-        .select("type, recorded_at, photo_url")
-        .eq("contract_id", contractId)
-        .order("recorded_at", { ascending: false })
-        .limit(1);
-      return rows?.[0] ?? null;
-    },
+  // Modulo 3: a viagem operacional do contrato (list_my_trips, RPC sanitizada).
+  // A tabela legada checkpoints foi congelada; a prova de entrega e o
+  // comprovante (POD) da viagem, com foto, assinatura e geofence.
+  const { data: trip } = useQuery({
+    queryKey: ["contract-trip", contractId],
+    refetchInterval: 30_000,
+    queryFn: async () =>
+      (await fetchMyTrips("mine", undefined, 200)).find((t) => t.contract_id === contractId) ??
+      null,
   });
+  const lastCheckpoint = useMemo(
+    () =>
+      data?.delivery_completed_at
+        ? {
+            recorded_at: data.delivery_completed_at,
+            photo_url: null,
+            trip_number: trip?.trip_number ?? null,
+          }
+        : null,
+    [data?.delivery_completed_at, trip?.trip_number],
+  );
 
   // Modulo 2: a disputa deste contrato, se houver (uma por contrato, permanente)
   const { data: disputeRow } = useQuery({
@@ -202,8 +213,17 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
   });
 
   const status = data?.status ?? "draft";
-  const isShipperOwner = viewerRole === "shipper" && company?.id === data?.shipper_company?.id;
-  const isCarrierOwner = viewerRole === "carrier" && company?.id === data?.carrier_company?.id;
+  // Modulo 3: assinatura, pagamento e disputa sao do PROPRIETARIO. Operadores e
+  // leitores (company_members) veem o contrato, mas nao recebem essas acoes
+  // (o servidor tambem recusa: 42501).
+  const isShipperOwner =
+    viewerRole === "shipper" &&
+    companyRole === "owner" &&
+    company?.id === data?.shipper_company?.id;
+  const isCarrierOwner =
+    viewerRole === "carrier" &&
+    companyRole === "owner" &&
+    company?.id === data?.carrier_company?.id;
 
   const banner = useMemo(() => {
     if (status === "awaiting_shipper_signature") {
@@ -467,12 +487,48 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
                 />
               )}
               <TimelineStep
+                done={!!data.delivery_completed_at}
+                current={
+                  status === "active" &&
+                  !!trip &&
+                  ["at_delivery", "unloading"].includes(trip.status)
+                }
+                label="Entrega registrada (comprovante do motorista)"
+                ts={data.delivery_completed_at}
+              />
+              <TimelineStep
                 done={status === "completed"}
                 label="Concluído"
                 ts={data.completed_at}
               />
             </ol>
           </Card>
+
+          {trip && (
+            <Card variant="light" className="p-5 space-y-2">
+              <h4 className="text-sm font-semibold text-[#10274A]">Viagem {trip.trip_number}</h4>
+              <div className="text-sm text-[#54657C]">
+                {tripStatusMeta(trip.status).label}
+                {trip.paused ? " · pausada" : ""}
+                {trip.has_open_sos ? " · ALERTA CRÍTICO ABERTO" : ""}
+                {trip.delivery_exception ? " · divergência de entrega" : ""}
+              </div>
+              <div className="text-xs text-[#54657C]">
+                Motorista {trip.driver_label ?? "—"} · {trip.truck_plate_masked ?? "—"}
+                {trip.eta_at
+                  ? ` · chegada estimada ${new Date(trip.eta_at).toLocaleString("pt-BR")}`
+                  : ""}
+              </div>
+              <Link
+                to={viewerRole === "carrier" ? "/carrier/trips/$id" : "/shipper/trips/$id"}
+                params={{ id: trip.trip_id }}
+              >
+                <Button variant="outline" size="sm" className="w-full">
+                  Abrir viagem (mapa, linha do tempo, comprovante)
+                </Button>
+              </Link>
+            </Card>
+          )}
 
           {(status === "active" || status === "completed") && (
             <Card variant="light" className="p-5 space-y-3">

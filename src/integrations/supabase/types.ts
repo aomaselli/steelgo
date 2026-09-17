@@ -39,6 +39,7 @@ export type Database = {
           amount_brl: number
           carrier_id: string
           driver_id: string | null
+          driver_record_id: string | null
           estimated_hours: number | null
           ev_certified: boolean | null
           expires_at: string | null
@@ -53,6 +54,7 @@ export type Database = {
           amount_brl: number
           carrier_id: string
           driver_id?: string | null
+          driver_record_id?: string | null
           estimated_hours?: number | null
           ev_certified?: boolean | null
           expires_at?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           amount_brl?: number
           carrier_id?: string
           driver_id?: string | null
+          driver_record_id?: string | null
           estimated_hours?: number | null
           ev_certified?: boolean | null
           expires_at?: string | null
@@ -84,6 +87,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "carriers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bids_driver_record_id_fkey"
+            columns: ["driver_record_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bids_driver_record_matches_profile"
+            columns: ["driver_record_id", "driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id", "profile_id"]
           },
           {
             foreignKeyName: "bids_freight_id_fkey"
@@ -236,6 +253,7 @@ export type Database = {
           min_total_amount: number | null
           preferred_destination_countries: string[]
           preferred_destination_subdivisions: string[]
+          reserved_by_trip_id: string | null
           status: string
           truck_id: string
           updated_at: string
@@ -260,6 +278,7 @@ export type Database = {
           min_total_amount?: number | null
           preferred_destination_countries?: string[]
           preferred_destination_subdivisions?: string[]
+          reserved_by_trip_id?: string | null
           status?: string
           truck_id: string
           updated_at?: string
@@ -284,6 +303,7 @@ export type Database = {
           min_total_amount?: number | null
           preferred_destination_countries?: string[]
           preferred_destination_subdivisions?: string[]
+          reserved_by_trip_id?: string | null
           status?: string
           truck_id?: string
           updated_at?: string
@@ -301,6 +321,13 @@ export type Database = {
             columns: ["driver_id"]
             isOneToOne: false
             referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "capacity_availability_reserved_trip_fk"
+            columns: ["reserved_by_trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
             referencedColumns: ["id"]
           },
           {
@@ -406,6 +433,78 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "freight_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cargo_dispositions: {
+        Row: {
+          admin_id: string
+          created_at: string
+          custodian_label: string | null
+          disposition: Database["public"]["Enums"]["cargo_disposition"]
+          event_id: string | null
+          evidence: Json
+          exception_id: string
+          geog: unknown
+          id: string
+          is_emergency: boolean
+          location_text: string | null
+          note: string
+          occurred_at: string
+          reason: string
+          request_id: string
+          trip_id: string
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          custodian_label?: string | null
+          disposition: Database["public"]["Enums"]["cargo_disposition"]
+          event_id?: string | null
+          evidence?: Json
+          exception_id: string
+          geog?: unknown
+          id?: string
+          is_emergency?: boolean
+          location_text?: string | null
+          note: string
+          occurred_at: string
+          reason: string
+          request_id: string
+          trip_id: string
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          custodian_label?: string | null
+          disposition?: Database["public"]["Enums"]["cargo_disposition"]
+          event_id?: string | null
+          evidence?: Json
+          exception_id?: string
+          geog?: unknown
+          id?: string
+          is_emergency?: boolean
+          location_text?: string | null
+          note?: string
+          occurred_at?: string
+          reason?: string
+          request_id?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cargo_dispositions_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "trip_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cargo_dispositions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
             referencedColumns: ["id"]
           },
         ]
@@ -641,6 +740,8 @@ export type Database = {
           is_verified: boolean | null
           logo_url: string | null
           name: string
+          operational_contact_email: string | null
+          operational_contact_phone: string | null
           owner_id: string
           stripe_customer_id: string | null
           tier: Database["public"]["Enums"]["company_tier"] | null
@@ -661,6 +762,8 @@ export type Database = {
           is_verified?: boolean | null
           logo_url?: string | null
           name: string
+          operational_contact_email?: string | null
+          operational_contact_phone?: string | null
           owner_id: string
           stripe_customer_id?: string | null
           tier?: Database["public"]["Enums"]["company_tier"] | null
@@ -681,6 +784,8 @@ export type Database = {
           is_verified?: boolean | null
           logo_url?: string | null
           name?: string
+          operational_contact_email?: string | null
+          operational_contact_phone?: string | null
           owner_id?: string
           stripe_customer_id?: string | null
           tier?: Database["public"]["Enums"]["company_tier"] | null
@@ -692,27 +797,114 @@ export type Database = {
         }
         Relationships: []
       }
+      company_member_events: {
+        Row: {
+          actor_id: string | null
+          after_role: string | null
+          before_role: string | null
+          company_id: string
+          created_at: string
+          event_type: string
+          id: number
+          member_id: string
+          reason: string | null
+          request_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          after_role?: string | null
+          before_role?: string | null
+          company_id: string
+          created_at?: string
+          event_type: string
+          id?: never
+          member_id: string
+          reason?: string | null
+          request_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          after_role?: string | null
+          before_role?: string | null
+          company_id?: string
+          created_at?: string
+          event_type?: string
+          id?: never
+          member_id?: string
+          reason?: string | null
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_member_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_member_events_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "company_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_members: {
         Row: {
+          accepted_at: string | null
           company_id: string
           created_at: string | null
           id: string
-          member_role: string | null
-          user_id: string
+          invite_expires_at: string | null
+          invite_token_hash: string | null
+          invited_at: string | null
+          invited_by: string | null
+          invited_email: string | null
+          member_role: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          revoked_by: string | null
+          status: string
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
+          accepted_at?: string | null
           company_id: string
           created_at?: string | null
           id?: string
-          member_role?: string | null
-          user_id: string
+          invite_expires_at?: string | null
+          invite_token_hash?: string | null
+          invited_at?: string | null
+          invited_by?: string | null
+          invited_email?: string | null
+          member_role?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
+          accepted_at?: string | null
           company_id?: string
           created_at?: string | null
           id?: string
-          member_role?: string | null
-          user_id?: string
+          invite_expires_at?: string | null
+          invite_token_hash?: string | null
+          invited_at?: string | null
+          invited_by?: string | null
+          invited_email?: string | null
+          member_role?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          revoked_by?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -1926,6 +2118,9 @@ export type Database = {
           license_verified_at: string | null
           license_verified_by: string | null
           mopp_certified: boolean | null
+          privacy_notice_acknowledged_at: string | null
+          privacy_notice_sha256: string | null
+          privacy_notice_version: string | null
           profile_id: string | null
           regulatory_attributes: Json
           updated_at: string
@@ -1949,6 +2144,9 @@ export type Database = {
           license_verified_at?: string | null
           license_verified_by?: string | null
           mopp_certified?: boolean | null
+          privacy_notice_acknowledged_at?: string | null
+          privacy_notice_sha256?: string | null
+          privacy_notice_version?: string | null
           profile_id?: string | null
           regulatory_attributes?: Json
           updated_at?: string
@@ -1972,6 +2170,9 @@ export type Database = {
           license_verified_at?: string | null
           license_verified_by?: string | null
           mopp_certified?: boolean | null
+          privacy_notice_acknowledged_at?: string | null
+          privacy_notice_sha256?: string | null
+          privacy_notice_version?: string | null
           profile_id?: string | null
           regulatory_attributes?: Json
           updated_at?: string
@@ -2776,6 +2977,425 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_alerts: {
+        Row: {
+          ack_note: string | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          close_reason: string | null
+          closed_at: string | null
+          created_at: string
+          details: Json
+          detected_at: string
+          exception_id: string | null
+          id: string
+          kind: Database["public"]["Enums"]["trip_alert_kind"]
+          last_evaluated_at: string
+          policy_version: number
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+          status: string
+          trip_id: string
+        }
+        Insert: {
+          ack_note?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          created_at?: string
+          details?: Json
+          detected_at?: string
+          exception_id?: string | null
+          id?: string
+          kind: Database["public"]["Enums"]["trip_alert_kind"]
+          last_evaluated_at?: string
+          policy_version: number
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+          status?: string
+          trip_id: string
+        }
+        Update: {
+          ack_note?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          created_at?: string
+          details?: Json
+          detected_at?: string
+          exception_id?: string | null
+          id?: string
+          kind?: Database["public"]["Enums"]["trip_alert_kind"]
+          last_evaluated_at?: string
+          policy_version?: number
+          severity?: Database["public"]["Enums"]["trip_exception_severity"]
+          status?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_alerts_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "trip_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_alerts_policy_version_fkey"
+            columns: ["policy_version"]
+            isOneToOne: false
+            referencedRelation: "operational_policies"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "operational_alerts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      operational_flags: {
+        Row: {
+          key: string
+          reason: string | null
+          request_id: string | null
+          updated_at: string
+          updated_by: string | null
+          value: boolean
+        }
+        Insert: {
+          key: string
+          reason?: string | null
+          request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value: boolean
+        }
+        Update: {
+          key?: string
+          reason?: string | null
+          request_id?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          value?: boolean
+        }
+        Relationships: []
+      }
+      operational_policies: {
+        Row: {
+          accuracy_primary_m: number
+          accuracy_reject_m: number
+          alert_ack_target_min: number
+          clock_future_tolerance_min: number
+          comm_loss_critical_min: number
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          eta_fallback_speed_kmh: number
+          eta_route_factor: number
+          geofence_radius_m: number
+          id: string
+          impossible_speed_kmh: number
+          legal_hold_tail_days: number
+          location_batch_max_points: number
+          location_max_age_hours: number
+          location_silence_min_stationary: number
+          location_silence_min_transit: number
+          long_stop_min: number
+          moving_away_min_km: number
+          no_progress_min: number
+          raw_retention_days: number
+          reason: string
+          request_id: string | null
+          sos_ack_target_min: number
+          summary_retention_years: number
+          version: number
+        }
+        Insert: {
+          accuracy_primary_m: number
+          accuracy_reject_m: number
+          alert_ack_target_min: number
+          clock_future_tolerance_min: number
+          comm_loss_critical_min: number
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          eta_fallback_speed_kmh: number
+          eta_route_factor: number
+          geofence_radius_m: number
+          id?: string
+          impossible_speed_kmh: number
+          legal_hold_tail_days: number
+          location_batch_max_points: number
+          location_max_age_hours: number
+          location_silence_min_stationary: number
+          location_silence_min_transit: number
+          long_stop_min: number
+          moving_away_min_km: number
+          no_progress_min: number
+          raw_retention_days: number
+          reason: string
+          request_id?: string | null
+          sos_ack_target_min: number
+          summary_retention_years: number
+          version: number
+        }
+        Update: {
+          accuracy_primary_m?: number
+          accuracy_reject_m?: number
+          alert_ack_target_min?: number
+          clock_future_tolerance_min?: number
+          comm_loss_critical_min?: number
+          created_at?: string
+          created_by?: string | null
+          effective_from?: string
+          eta_fallback_speed_kmh?: number
+          eta_route_factor?: number
+          geofence_radius_m?: number
+          id?: string
+          impossible_speed_kmh?: number
+          legal_hold_tail_days?: number
+          location_batch_max_points?: number
+          location_max_age_hours?: number
+          location_silence_min_stationary?: number
+          location_silence_min_transit?: number
+          long_stop_min?: number
+          moving_away_min_km?: number
+          no_progress_min?: number
+          raw_retention_days?: number
+          reason?: string
+          request_id?: string | null
+          sos_ack_target_min?: number
+          summary_retention_years?: number
+          version?: number
+        }
+        Relationships: []
+      }
+      operational_trips: {
+        Row: {
+          attempt_number: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cargo_disposition:
+            | Database["public"]["Enums"]["cargo_disposition"]
+            | null
+          cargo_disposition_at: string | null
+          carrier_company_id: string
+          completed_at: string | null
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          delivery_exception: boolean
+          delivery_geog: unknown
+          departed_pickup_at: string | null
+          driver_id: string | null
+          eta_at: string | null
+          eta_basis: Json | null
+          eta_source: string | null
+          eta_updated_at: string | null
+          freight_id: string
+          has_open_critical_exception: boolean
+          id: string
+          last_event_id: string | null
+          last_location_at: string | null
+          last_location_geog: unknown
+          legal_hold_reason: string | null
+          legal_hold_until: string | null
+          loaded_at: string | null
+          paused_by_contract: boolean
+          paused_by_exception_id: string | null
+          pickup_geog: unknown
+          planned_delivery_at: string | null
+          planned_distance_km: number | null
+          planned_pickup_at: string | null
+          policy_version: number
+          previous_status: Database["public"]["Enums"]["trip_status"] | null
+          raw_locations_purged_at: string | null
+          retention_until: string | null
+          returned_at: string | null
+          shipper_company_id: string
+          status: Database["public"]["Enums"]["trip_status"]
+          summary_retention_until: string | null
+          terminal_reason: string | null
+          tracking_state: string
+          trip_number: string
+          truck_id: string | null
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          attempt_number: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cargo_disposition?:
+            | Database["public"]["Enums"]["cargo_disposition"]
+            | null
+          cargo_disposition_at?: string | null
+          carrier_company_id: string
+          completed_at?: string | null
+          contract_id: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          delivery_exception?: boolean
+          delivery_geog?: unknown
+          departed_pickup_at?: string | null
+          driver_id?: string | null
+          eta_at?: string | null
+          eta_basis?: Json | null
+          eta_source?: string | null
+          eta_updated_at?: string | null
+          freight_id: string
+          has_open_critical_exception?: boolean
+          id?: string
+          last_event_id?: string | null
+          last_location_at?: string | null
+          last_location_geog?: unknown
+          legal_hold_reason?: string | null
+          legal_hold_until?: string | null
+          loaded_at?: string | null
+          paused_by_contract?: boolean
+          paused_by_exception_id?: string | null
+          pickup_geog?: unknown
+          planned_delivery_at?: string | null
+          planned_distance_km?: number | null
+          planned_pickup_at?: string | null
+          policy_version: number
+          previous_status?: Database["public"]["Enums"]["trip_status"] | null
+          raw_locations_purged_at?: string | null
+          retention_until?: string | null
+          returned_at?: string | null
+          shipper_company_id: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          summary_retention_until?: string | null
+          terminal_reason?: string | null
+          tracking_state?: string
+          trip_number: string
+          truck_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          attempt_number?: number
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cargo_disposition?:
+            | Database["public"]["Enums"]["cargo_disposition"]
+            | null
+          cargo_disposition_at?: string | null
+          carrier_company_id?: string
+          completed_at?: string | null
+          contract_id?: string
+          created_at?: string
+          created_by?: string | null
+          delivered_at?: string | null
+          delivery_exception?: boolean
+          delivery_geog?: unknown
+          departed_pickup_at?: string | null
+          driver_id?: string | null
+          eta_at?: string | null
+          eta_basis?: Json | null
+          eta_source?: string | null
+          eta_updated_at?: string | null
+          freight_id?: string
+          has_open_critical_exception?: boolean
+          id?: string
+          last_event_id?: string | null
+          last_location_at?: string | null
+          last_location_geog?: unknown
+          legal_hold_reason?: string | null
+          legal_hold_until?: string | null
+          loaded_at?: string | null
+          paused_by_contract?: boolean
+          paused_by_exception_id?: string | null
+          pickup_geog?: unknown
+          planned_delivery_at?: string | null
+          planned_distance_km?: number | null
+          planned_pickup_at?: string | null
+          policy_version?: number
+          previous_status?: Database["public"]["Enums"]["trip_status"] | null
+          raw_locations_purged_at?: string | null
+          retention_until?: string | null
+          returned_at?: string | null
+          shipper_company_id?: string
+          status?: Database["public"]["Enums"]["trip_status"]
+          summary_retention_until?: string | null
+          terminal_reason?: string | null
+          tracking_state?: string
+          trip_number?: string
+          truck_id?: string | null
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operational_trips_carrier_company_id_fkey"
+            columns: ["carrier_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_freight_id_fkey"
+            columns: ["freight_id"]
+            isOneToOne: false
+            referencedRelation: "freights"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_last_event_fk"
+            columns: ["last_event_id", "id"]
+            isOneToOne: false
+            referencedRelation: "trip_events"
+            referencedColumns: ["id", "trip_id"]
+          },
+          {
+            foreignKeyName: "operational_trips_paused_exception_fk"
+            columns: ["paused_by_exception_id"]
+            isOneToOne: false
+            referencedRelation: "trip_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_policy_version_fkey"
+            columns: ["policy_version"]
+            isOneToOne: false
+            referencedRelation: "operational_policies"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "operational_trips_shipper_company_id_fkey"
+            columns: ["shipper_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operational_trips_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
             referencedColumns: ["id"]
           },
         ]
@@ -3638,6 +4258,45 @@ export type Database = {
           },
         ]
       }
+      privacy_notices: {
+        Row: {
+          body_md: string
+          body_sha256: string
+          effective_from: string
+          id: string
+          legal_basis: string
+          published_at: string
+          published_by: string
+          request_id: string
+          url: string | null
+          version: string
+        }
+        Insert: {
+          body_md: string
+          body_sha256: string
+          effective_from: string
+          id?: string
+          legal_basis?: string
+          published_at?: string
+          published_by: string
+          request_id: string
+          url?: string | null
+          version: string
+        }
+        Update: {
+          body_md?: string
+          body_sha256?: string
+          effective_from?: string
+          id?: string
+          legal_basis?: string
+          published_at?: string
+          published_by?: string
+          request_id?: string
+          url?: string | null
+          version?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -3688,6 +4347,242 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      proof_of_delivery: {
+        Row: {
+          accuracy_m: number | null
+          checkpoint_id: string | null
+          command_id: string | null
+          created_at: string
+          delivered_at: string
+          derived_from_attempt_id: string | null
+          device_id: string | null
+          event_id: string | null
+          geofence_override_reason: string | null
+          geog: unknown
+          id: string
+          inside_geofence: boolean
+          is_current: boolean
+          notes: string | null
+          outcome: Database["public"]["Enums"]["pod_outcome"]
+          photos: Json
+          quantity_declared: number | null
+          quantity_received: number | null
+          received_at: string
+          receiver_document_kind: string | null
+          receiver_document_last4: string | null
+          receiver_name: string
+          request_id: string | null
+          signature_object_path: string | null
+          signature_sha256: string | null
+          submitted_by: string
+          submitted_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          supersede_reason: string | null
+          superseded_at: string | null
+          superseded_by: string | null
+          supersedes_id: string | null
+          trip_id: string
+          version: number
+        }
+        Insert: {
+          accuracy_m?: number | null
+          checkpoint_id?: string | null
+          command_id?: string | null
+          created_at?: string
+          delivered_at: string
+          derived_from_attempt_id?: string | null
+          device_id?: string | null
+          event_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence: boolean
+          is_current?: boolean
+          notes?: string | null
+          outcome: Database["public"]["Enums"]["pod_outcome"]
+          photos: Json
+          quantity_declared?: number | null
+          quantity_received?: number | null
+          received_at?: string
+          receiver_document_kind?: string | null
+          receiver_document_last4?: string | null
+          receiver_name: string
+          request_id?: string | null
+          signature_object_path?: string | null
+          signature_sha256?: string | null
+          submitted_by: string
+          submitted_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          supersede_reason?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          supersedes_id?: string | null
+          trip_id: string
+          version: number
+        }
+        Update: {
+          accuracy_m?: number | null
+          checkpoint_id?: string | null
+          command_id?: string | null
+          created_at?: string
+          delivered_at?: string
+          derived_from_attempt_id?: string | null
+          device_id?: string | null
+          event_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence?: boolean
+          is_current?: boolean
+          notes?: string | null
+          outcome?: Database["public"]["Enums"]["pod_outcome"]
+          photos?: Json
+          quantity_declared?: number | null
+          quantity_received?: number | null
+          received_at?: string
+          receiver_document_kind?: string | null
+          receiver_document_last4?: string | null
+          receiver_name?: string
+          request_id?: string | null
+          signature_object_path?: string | null
+          signature_sha256?: string | null
+          submitted_by?: string
+          submitted_by_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          supersede_reason?: string | null
+          superseded_at?: string | null
+          superseded_by?: string | null
+          supersedes_id?: string | null
+          trip_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_derived_fk"
+            columns: ["derived_from_attempt_id"]
+            isOneToOne: false
+            referencedRelation: "proof_of_delivery_attempts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_of_delivery_checkpoint_id_fkey"
+            columns: ["checkpoint_id"]
+            isOneToOne: false
+            referencedRelation: "trip_checkpoints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_of_delivery_supersedes_id_fkey"
+            columns: ["supersedes_id"]
+            isOneToOne: false
+            referencedRelation: "proof_of_delivery"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_of_delivery_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      proof_of_delivery_attempts: {
+        Row: {
+          accuracy_m: number | null
+          attempt_seq: number
+          captured_at: string
+          command_id: string | null
+          created_at: string
+          device_id: string | null
+          event_id: string | null
+          exception_id: string | null
+          geofence_override_reason: string | null
+          geog: unknown
+          id: string
+          inside_geofence: boolean
+          notes: string
+          outcome: Database["public"]["Enums"]["pod_outcome"]
+          photos: Json
+          quantity_declared: number | null
+          quantity_received: number | null
+          received_at: string
+          receiver_document_kind: string | null
+          receiver_document_last4: string | null
+          receiver_name: string | null
+          signature_object_path: string | null
+          signature_sha256: string | null
+          submitted_by: string
+          trip_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          attempt_seq: number
+          captured_at: string
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          event_id?: string | null
+          exception_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence: boolean
+          notes: string
+          outcome: Database["public"]["Enums"]["pod_outcome"]
+          photos: Json
+          quantity_declared?: number | null
+          quantity_received?: number | null
+          received_at?: string
+          receiver_document_kind?: string | null
+          receiver_document_last4?: string | null
+          receiver_name?: string | null
+          signature_object_path?: string | null
+          signature_sha256?: string | null
+          submitted_by: string
+          trip_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          attempt_seq?: number
+          captured_at?: string
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          event_id?: string | null
+          exception_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence?: boolean
+          notes?: string
+          outcome?: Database["public"]["Enums"]["pod_outcome"]
+          photos?: Json
+          quantity_declared?: number | null
+          quantity_received?: number | null
+          received_at?: string
+          receiver_document_kind?: string | null
+          receiver_document_last4?: string | null
+          receiver_name?: string | null
+          signature_object_path?: string | null
+          signature_sha256?: string | null
+          submitted_by?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pod_attempts_exception_fk"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "trip_exceptions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "proof_of_delivery_attempts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       provider_webhook_conflicts: {
         Row: {
@@ -3835,6 +4730,237 @@ export type Database = {
             referencedColumns: ["code"]
           },
         ]
+      }
+      push_devices: {
+        Row: {
+          app_version: string | null
+          build: string | null
+          device_id: string
+          id: string
+          last_seen_at: string
+          platform: string
+          profile_id: string
+          registered_at: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          token: string
+        }
+        Insert: {
+          app_version?: string | null
+          build?: string | null
+          device_id: string
+          id?: string
+          last_seen_at?: string
+          platform: string
+          profile_id: string
+          registered_at?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          token: string
+        }
+        Update: {
+          app_version?: string | null
+          build?: string | null
+          device_id?: string
+          id?: string
+          last_seen_at?: string
+          platform?: string
+          profile_id?: string
+          registered_at?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
+      push_dispatch_nonces: {
+        Row: {
+          nonce: string
+          seen_at: string
+          ts: number
+        }
+        Insert: {
+          nonce: string
+          seen_at?: string
+          ts: number
+        }
+        Update: {
+          nonce?: string
+          seen_at?: string
+          ts?: number
+        }
+        Relationships: []
+      }
+      push_homologation: {
+        Row: {
+          acked_by: string | null
+          app_version: string | null
+          build: string | null
+          device_received_at: string | null
+          error: string | null
+          expires_at: string
+          fcm_accepted_at: string | null
+          id: string
+          nonce: string
+          outbox_id: number | null
+          platform: string
+          profile_id: string
+          push_device_id: string
+          requested_at: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          acked_by?: string | null
+          app_version?: string | null
+          build?: string | null
+          device_received_at?: string | null
+          error?: string | null
+          expires_at: string
+          fcm_accepted_at?: string | null
+          id?: string
+          nonce: string
+          outbox_id?: number | null
+          platform: string
+          profile_id: string
+          push_device_id: string
+          requested_at?: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          acked_by?: string | null
+          app_version?: string | null
+          build?: string | null
+          device_received_at?: string | null
+          error?: string | null
+          expires_at?: string
+          fcm_accepted_at?: string | null
+          id?: string
+          nonce?: string
+          outbox_id?: number | null
+          platform?: string
+          profile_id?: string
+          push_device_id?: string
+          requested_at?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_homologation_outbox_id_fkey"
+            columns: ["outbox_id"]
+            isOneToOne: false
+            referencedRelation: "push_outbox"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "push_homologation_push_device_id_fkey"
+            columns: ["push_device_id"]
+            isOneToOne: false
+            referencedRelation: "push_devices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_outbox: {
+        Row: {
+          attempts: number
+          body: string
+          created_at: string
+          data: Json
+          fcm_accepted_at: string | null
+          fcm_message_ids: Json
+          id: number
+          idempotency_key: string
+          kind: string
+          last_error: string | null
+          lease_expires_at: string | null
+          lease_token: string | null
+          max_attempts: number
+          next_attempt_at: string
+          priority: string
+          profile_id: string
+          sent_at: string | null
+          status: string
+          title: string
+          trip_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          body: string
+          created_at?: string
+          data?: Json
+          fcm_accepted_at?: string | null
+          fcm_message_ids?: Json
+          id?: never
+          idempotency_key: string
+          kind: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          priority?: string
+          profile_id: string
+          sent_at?: string | null
+          status?: string
+          title: string
+          trip_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          body?: string
+          created_at?: string
+          data?: Json
+          fcm_accepted_at?: string | null
+          fcm_message_ids?: Json
+          id?: never
+          idempotency_key?: string
+          kind?: string
+          last_error?: string | null
+          lease_expires_at?: string | null
+          lease_token?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          priority?: string
+          profile_id?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+          trip_id?: string | null
+        }
+        Relationships: []
+      }
+      push_required_platforms: {
+        Row: {
+          homologated_at: string | null
+          homologation_id: string | null
+          note: string | null
+          platform: string
+          publishable: boolean
+          required: boolean
+          updated_at: string
+        }
+        Insert: {
+          homologated_at?: string | null
+          homologation_id?: string | null
+          note?: string | null
+          platform: string
+          publishable?: boolean
+          required: boolean
+          updated_at?: string
+        }
+        Update: {
+          homologated_at?: string | null
+          homologation_id?: string | null
+          note?: string | null
+          platform?: string
+          publishable?: boolean
+          required?: boolean
+          updated_at?: string
+        }
+        Relationships: []
       }
       regulatory_acts: {
         Row: {
@@ -4603,6 +5729,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduler_runs: {
+        Row: {
+          alerts_closed: number
+          alerts_escalated: number
+          alerts_opened: number
+          error: string | null
+          finished_at: string | null
+          id: number
+          kind: string
+          outcome: string
+          purges: number
+          pushes_enqueued: number
+          started_at: string
+          trips_scanned: number
+        }
+        Insert: {
+          alerts_closed?: number
+          alerts_escalated?: number
+          alerts_opened?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          kind: string
+          outcome?: string
+          purges?: number
+          pushes_enqueued?: number
+          started_at?: string
+          trips_scanned?: number
+        }
+        Update: {
+          alerts_closed?: number
+          alerts_escalated?: number
+          alerts_opened?: number
+          error?: string | null
+          finished_at?: string | null
+          id?: never
+          kind?: string
+          outcome?: string
+          purges?: number
+          pushes_enqueued?: number
+          started_at?: string
+          trips_scanned?: number
+        }
+        Relationships: []
+      }
       security_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -4836,6 +6007,976 @@ export type Database = {
           },
         ]
       }
+      trip_access_log: {
+        Row: {
+          actor_id: string | null
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          at: string
+          id: number
+          object_ref: string | null
+          rpc_name: string
+          trip_id: string
+          what: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          at?: string
+          id?: never
+          object_ref?: string | null
+          rpc_name: string
+          trip_id: string
+          what: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          at?: string
+          id?: never
+          object_ref?: string | null
+          rpc_name?: string
+          trip_id?: string
+          what?: string
+        }
+        Relationships: []
+      }
+      trip_admin_actions: {
+        Row: {
+          action: string
+          admin_id: string
+          after_state: Json | null
+          before_state: Json | null
+          created_at: string
+          id: string
+          reason: string
+          request_id: string
+          trip_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          reason: string
+          request_id: string
+          trip_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string
+          after_state?: Json | null
+          before_state?: Json | null
+          created_at?: string
+          id?: string
+          reason?: string
+          request_id?: string
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_admin_actions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_assignments: {
+        Row: {
+          accepted_at: string | null
+          assigned_at: string
+          assigned_by: string
+          assigned_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          carrier_company_id_at_assignment: string
+          carrier_id_at_assignment: string
+          decline_reason: string | null
+          declined_at: string | null
+          driver_id: string
+          driver_label_at_assignment: string
+          driver_profile_id: string
+          id: string
+          note: string | null
+          request_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          state: Database["public"]["Enums"]["trip_assignment_state"]
+          superseded_by: string | null
+          trip_id: string
+          truck_id: string
+          truck_plate_at_assignment: string | null
+        }
+        Insert: {
+          accepted_at?: string | null
+          assigned_at?: string
+          assigned_by: string
+          assigned_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          carrier_company_id_at_assignment: string
+          carrier_id_at_assignment: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          driver_id: string
+          driver_label_at_assignment: string
+          driver_profile_id: string
+          id?: string
+          note?: string | null
+          request_id: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          state?: Database["public"]["Enums"]["trip_assignment_state"]
+          superseded_by?: string | null
+          trip_id: string
+          truck_id: string
+          truck_plate_at_assignment?: string | null
+        }
+        Update: {
+          accepted_at?: string | null
+          assigned_at?: string
+          assigned_by?: string
+          assigned_by_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          carrier_company_id_at_assignment?: string
+          carrier_id_at_assignment?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          driver_id?: string
+          driver_label_at_assignment?: string
+          driver_profile_id?: string
+          id?: string
+          note?: string | null
+          request_id?: string
+          revoke_reason?: string | null
+          revoked_at?: string | null
+          state?: Database["public"]["Enums"]["trip_assignment_state"]
+          superseded_by?: string | null
+          trip_id?: string
+          truck_id?: string
+          truck_plate_at_assignment?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_assignments_carrier_company_id_at_assignment_fkey"
+            columns: ["carrier_company_id_at_assignment"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_carrier_id_at_assignment_fkey"
+            columns: ["carrier_id_at_assignment"]
+            isOneToOne: false
+            referencedRelation: "carriers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_driver_identity"
+            columns: ["driver_id", "driver_profile_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id", "profile_id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "trip_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_assignments_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_checkpoints: {
+        Row: {
+          accuracy_m: number | null
+          actor_id: string
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          captured_at: string
+          command_id: string | null
+          created_at: string
+          device_id: string | null
+          distance_to_target_m: number | null
+          event_id: string | null
+          geofence_override_reason: string | null
+          geog: unknown
+          id: string
+          inside_geofence: boolean | null
+          kind: Database["public"]["Enums"]["trip_checkpoint_kind"]
+          note: string | null
+          photo_mime: string | null
+          photo_object_path: string | null
+          photo_sha256: string | null
+          photo_size_bytes: number | null
+          received_at: string
+          seal_code: string | null
+          seal_verified: boolean | null
+          seq: number
+          trip_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          actor_id: string
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          captured_at: string
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          distance_to_target_m?: number | null
+          event_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence?: boolean | null
+          kind: Database["public"]["Enums"]["trip_checkpoint_kind"]
+          note?: string | null
+          photo_mime?: string | null
+          photo_object_path?: string | null
+          photo_sha256?: string | null
+          photo_size_bytes?: number | null
+          received_at?: string
+          seal_code?: string | null
+          seal_verified?: boolean | null
+          seq: number
+          trip_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          actor_id?: string
+          actor_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          captured_at?: string
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          distance_to_target_m?: number | null
+          event_id?: string | null
+          geofence_override_reason?: string | null
+          geog?: unknown
+          id?: string
+          inside_geofence?: boolean | null
+          kind?: Database["public"]["Enums"]["trip_checkpoint_kind"]
+          note?: string | null
+          photo_mime?: string | null
+          photo_object_path?: string | null
+          photo_sha256?: string | null
+          photo_size_bytes?: number | null
+          received_at?: string
+          seal_code?: string | null
+          seal_verified?: boolean | null
+          seq?: number
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_checkpoints_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_documents: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          issued_at: string | null
+          kind: string
+          mime: string
+          note: string | null
+          number: string | null
+          object_path: string
+          request_id: string
+          sha256: string
+          size_bytes: number
+          superseded_at: string | null
+          superseded_by: string | null
+          trip_id: string
+          uploaded_by: string
+          uploaded_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          visibility: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          issued_at?: string | null
+          kind: string
+          mime: string
+          note?: string | null
+          number?: string | null
+          object_path: string
+          request_id: string
+          sha256: string
+          size_bytes: number
+          superseded_at?: string | null
+          superseded_by?: string | null
+          trip_id: string
+          uploaded_by: string
+          uploaded_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          issued_at?: string | null
+          kind?: string
+          mime?: string
+          note?: string | null
+          number?: string | null
+          object_path?: string
+          request_id?: string
+          sha256?: string
+          size_bytes?: number
+          superseded_at?: string | null
+          superseded_by?: string | null
+          trip_id?: string
+          uploaded_by?: string
+          uploaded_by_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_documents_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "trip_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_documents_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_events: {
+        Row: {
+          accuracy_m: number | null
+          actor_id: string | null
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          alert_id: string | null
+          assignment_id: string | null
+          captured_at: string | null
+          checkpoint_id: string | null
+          command_id: string | null
+          created_at: string
+          device_id: string | null
+          document_id: string | null
+          event_type: Database["public"]["Enums"]["trip_event_type"]
+          exception_id: string | null
+          from_status: Database["public"]["Enums"]["trip_status"] | null
+          geog: unknown
+          id: string
+          internal_note: string | null
+          note: string | null
+          params_fingerprint: string | null
+          payload: Json
+          pod_id: string | null
+          received_at: string
+          request_id: string | null
+          rpc_name: string
+          seq: number
+          seq_device: number | null
+          to_status: Database["public"]["Enums"]["trip_status"] | null
+          trip_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          actor_id?: string | null
+          actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          alert_id?: string | null
+          assignment_id?: string | null
+          captured_at?: string | null
+          checkpoint_id?: string | null
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          document_id?: string | null
+          event_type: Database["public"]["Enums"]["trip_event_type"]
+          exception_id?: string | null
+          from_status?: Database["public"]["Enums"]["trip_status"] | null
+          geog?: unknown
+          id?: string
+          internal_note?: string | null
+          note?: string | null
+          params_fingerprint?: string | null
+          payload?: Json
+          pod_id?: string | null
+          received_at?: string
+          request_id?: string | null
+          rpc_name: string
+          seq: number
+          seq_device?: number | null
+          to_status?: Database["public"]["Enums"]["trip_status"] | null
+          trip_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          actor_id?: string | null
+          actor_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          alert_id?: string | null
+          assignment_id?: string | null
+          captured_at?: string | null
+          checkpoint_id?: string | null
+          command_id?: string | null
+          created_at?: string
+          device_id?: string | null
+          document_id?: string | null
+          event_type?: Database["public"]["Enums"]["trip_event_type"]
+          exception_id?: string | null
+          from_status?: Database["public"]["Enums"]["trip_status"] | null
+          geog?: unknown
+          id?: string
+          internal_note?: string | null
+          note?: string | null
+          params_fingerprint?: string | null
+          payload?: Json
+          pod_id?: string | null
+          received_at?: string
+          request_id?: string | null
+          rpc_name?: string
+          seq?: number
+          seq_device?: number | null
+          to_status?: Database["public"]["Enums"]["trip_status"] | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_events_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "trip_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_exception_evidence: {
+        Row: {
+          captured_at: string | null
+          created_at: string
+          exception_id: string
+          id: string
+          mime: string
+          object_path: string
+          sha256: string
+          size_bytes: number
+          uploaded_by: string
+        }
+        Insert: {
+          captured_at?: string | null
+          created_at?: string
+          exception_id: string
+          id?: string
+          mime: string
+          object_path: string
+          sha256: string
+          size_bytes: number
+          uploaded_by: string
+        }
+        Update: {
+          captured_at?: string | null
+          created_at?: string
+          exception_id?: string
+          id?: string
+          mime?: string
+          object_path?: string
+          sha256?: string
+          size_bytes?: number
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_exception_evidence_exception_id_fkey"
+            columns: ["exception_id"]
+            isOneToOne: false
+            referencedRelation: "trip_exceptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_exceptions: {
+        Row: {
+          ack_target_at: string | null
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          acknowledged_by_kind:
+            | Database["public"]["Enums"]["trip_actor_kind"]
+            | null
+          assigned_admin: string | null
+          blocks_delivery: boolean
+          captured_at: string
+          command_id: string | null
+          created_at: string
+          description: string
+          device_id: string | null
+          dispute_case_id: string | null
+          escalated_at: string | null
+          escalation_level: number
+          event_id: string | null
+          geog: unknown
+          id: string
+          kind: Database["public"]["Enums"]["trip_exception_kind"]
+          opened_by: string | null
+          opened_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          pauses_trip: boolean
+          received_at: string
+          request_id: string | null
+          resolution_kind: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+          status: Database["public"]["Enums"]["trip_exception_status"]
+          trip_id: string
+          visibility: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Insert: {
+          ack_target_at?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledged_by_kind?:
+            | Database["public"]["Enums"]["trip_actor_kind"]
+            | null
+          assigned_admin?: string | null
+          blocks_delivery?: boolean
+          captured_at: string
+          command_id?: string | null
+          created_at?: string
+          description: string
+          device_id?: string | null
+          dispute_case_id?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          event_id?: string | null
+          geog?: unknown
+          id?: string
+          kind: Database["public"]["Enums"]["trip_exception_kind"]
+          opened_by?: string | null
+          opened_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          pauses_trip?: boolean
+          received_at?: string
+          request_id?: string | null
+          resolution_kind?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+          status?: Database["public"]["Enums"]["trip_exception_status"]
+          trip_id: string
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Update: {
+          ack_target_at?: string | null
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          acknowledged_by_kind?:
+            | Database["public"]["Enums"]["trip_actor_kind"]
+            | null
+          assigned_admin?: string | null
+          blocks_delivery?: boolean
+          captured_at?: string
+          command_id?: string | null
+          created_at?: string
+          description?: string
+          device_id?: string | null
+          dispute_case_id?: string | null
+          escalated_at?: string | null
+          escalation_level?: number
+          event_id?: string | null
+          geog?: unknown
+          id?: string
+          kind?: Database["public"]["Enums"]["trip_exception_kind"]
+          opened_by?: string | null
+          opened_by_kind?: Database["public"]["Enums"]["trip_actor_kind"]
+          pauses_trip?: boolean
+          received_at?: string
+          request_id?: string | null
+          resolution_kind?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: Database["public"]["Enums"]["trip_exception_severity"]
+          status?: Database["public"]["Enums"]["trip_exception_status"]
+          trip_id?: string
+          visibility?: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_exceptions_dispute_case_id_fkey"
+            columns: ["dispute_case_id"]
+            isOneToOne: false
+            referencedRelation: "dispute_cases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_exceptions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_geofences: {
+        Row: {
+          area_geog: unknown
+          center_geog: unknown
+          created_at: string
+          created_by: string | null
+          id: string
+          is_current: boolean
+          kind: string
+          radius_m: number | null
+          source: string
+          trip_id: string
+        }
+        Insert: {
+          area_geog?: unknown
+          center_geog?: unknown
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          kind: string
+          radius_m?: number | null
+          source: string
+          trip_id: string
+        }
+        Update: {
+          area_geog?: unknown
+          center_geog?: unknown
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_current?: boolean
+          kind?: string
+          radius_m?: number | null
+          source?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_geofences_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_location_summaries: {
+        Row: {
+          avg_speed_kmh: number | null
+          created_at: string
+          distance_km: number
+          first_at: string
+          hour_bucket: string
+          last_at: string
+          max_speed_kmh: number | null
+          n_accepted: number
+          n_points: number
+          path_simplified: unknown
+          stops_count: number
+          trip_id: string
+        }
+        Insert: {
+          avg_speed_kmh?: number | null
+          created_at?: string
+          distance_km?: number
+          first_at: string
+          hour_bucket: string
+          last_at: string
+          max_speed_kmh?: number | null
+          n_accepted: number
+          n_points: number
+          path_simplified?: unknown
+          stops_count?: number
+          trip_id: string
+        }
+        Update: {
+          avg_speed_kmh?: number | null
+          created_at?: string
+          distance_km?: number
+          first_at?: string
+          hour_bucket?: string
+          last_at?: string
+          max_speed_kmh?: number | null
+          n_accepted?: number
+          n_points?: number
+          path_simplified?: unknown
+          stops_count?: number
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_location_summaries_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_locations: {
+        Row: {
+          accepted: boolean
+          accuracy_m: number
+          altitude_m: number | null
+          batch_id: string
+          battery_pct: number | null
+          captured_at: string
+          device_id: string
+          flags: string[]
+          geog: unknown
+          heading: number | null
+          is_moving: boolean | null
+          received_at: string
+          seq_device: number
+          session_id: string
+          speed_mps: number | null
+          trip_id: string
+        }
+        Insert: {
+          accepted: boolean
+          accuracy_m: number
+          altitude_m?: number | null
+          batch_id: string
+          battery_pct?: number | null
+          captured_at: string
+          device_id: string
+          flags?: string[]
+          geog: unknown
+          heading?: number | null
+          is_moving?: boolean | null
+          received_at?: string
+          seq_device: number
+          session_id: string
+          speed_mps?: number | null
+          trip_id: string
+        }
+        Update: {
+          accepted?: boolean
+          accuracy_m?: number
+          altitude_m?: number | null
+          batch_id?: string
+          battery_pct?: number | null
+          captured_at?: string
+          device_id?: string
+          flags?: string[]
+          geog?: unknown
+          heading?: number | null
+          is_moving?: boolean | null
+          received_at?: string
+          seq_device?: number
+          session_id?: string
+          speed_mps?: number | null
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_locations_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "trip_tracking_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_locations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_operational_facts: {
+        Row: {
+          aggregated_distance_km: number | null
+          computed_at: string
+          computed_by_rpc: string
+          distance_source: string
+          duration_min: number | null
+          gaps_over_silence: number
+          gps_distance_km: number | null
+          moving_min: number | null
+          planned_distance_km: number | null
+          points_accepted: number
+          points_flagged: number
+          points_low_accuracy: number
+          points_total: number
+          sample_quality: string
+          stops_count: number | null
+          trip_id: string
+          version: number
+        }
+        Insert: {
+          aggregated_distance_km?: number | null
+          computed_at?: string
+          computed_by_rpc: string
+          distance_source: string
+          duration_min?: number | null
+          gaps_over_silence?: number
+          gps_distance_km?: number | null
+          moving_min?: number | null
+          planned_distance_km?: number | null
+          points_accepted?: number
+          points_flagged?: number
+          points_low_accuracy?: number
+          points_total?: number
+          sample_quality: string
+          stops_count?: number | null
+          trip_id: string
+          version?: number
+        }
+        Update: {
+          aggregated_distance_km?: number | null
+          computed_at?: string
+          computed_by_rpc?: string
+          distance_source?: string
+          duration_min?: number | null
+          gaps_over_silence?: number
+          gps_distance_km?: number | null
+          moving_min?: number | null
+          planned_distance_km?: number | null
+          points_accepted?: number
+          points_flagged?: number
+          points_low_accuracy?: number
+          points_total?: number
+          sample_quality?: string
+          stops_count?: number | null
+          trip_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_operational_facts_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: true
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_tracking_sessions: {
+        Row: {
+          app_version: string | null
+          assignment_id: string
+          created_at: string
+          device_id: string
+          driver_id: string
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          last_point_at: string | null
+          platform: string
+          points_received: number
+          privacy_notice_acknowledged_at: string
+          privacy_notice_sha256: string
+          privacy_notice_version: string
+          provider: Database["public"]["Enums"]["tracking_provider"]
+          started_at: string
+          trip_id: string
+        }
+        Insert: {
+          app_version?: string | null
+          assignment_id: string
+          created_at?: string
+          device_id: string
+          driver_id: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          last_point_at?: string | null
+          platform: string
+          points_received?: number
+          privacy_notice_acknowledged_at: string
+          privacy_notice_sha256: string
+          privacy_notice_version: string
+          provider: Database["public"]["Enums"]["tracking_provider"]
+          started_at?: string
+          trip_id: string
+        }
+        Update: {
+          app_version?: string | null
+          assignment_id?: string
+          created_at?: string
+          device_id?: string
+          driver_id?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          last_point_at?: string | null
+          platform?: string
+          points_received?: number
+          privacy_notice_acknowledged_at?: string
+          privacy_notice_sha256?: string
+          privacy_notice_version?: string
+          provider?: Database["public"]["Enums"]["tracking_provider"]
+          started_at?: string
+          trip_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracking_sessions_notice_fk"
+            columns: ["privacy_notice_version"]
+            isOneToOne: false
+            referencedRelation: "privacy_notices"
+            referencedColumns: ["version"]
+          },
+          {
+            foreignKeyName: "trip_tracking_sessions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "trip_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_tracking_sessions_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_tracking_sessions_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "operational_trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trucks: {
         Row: {
           body_type: string | null
@@ -4949,6 +7090,14 @@ export type Database = {
         Args: { p_bid_id: string; p_freight_id: string; p_request_id: string }
         Returns: string
       }
+      accept_company_member_invitation: {
+        Args: { p_token: string }
+        Returns: {
+          company_id: string
+          member_id: string
+          member_role: string
+        }[]
+      }
       accept_driver_invitation: {
         Args: {
           p_cpf: string
@@ -4960,6 +7109,39 @@ export type Database = {
           carrier_id: string
           driver_id: string
           linked_at: string
+        }[]
+      }
+      ack_push_homologation: {
+        Args: {
+          p_device_id: string
+          p_homologation_id: string
+          p_nonce: string
+        }
+        Returns: {
+          device_received_at: string
+          status: string
+        }[]
+      }
+      acknowledge_privacy_notice: {
+        Args: { p_sha256: string; p_version: string }
+        Returns: {
+          acknowledged: boolean
+          version: string
+        }[]
+      }
+      acknowledge_sos: {
+        Args: { p_exception_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          acknowledged_at: string
+          acknowledged_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          was_replayed: boolean
+        }[]
+      }
+      acknowledge_trip_exception: {
+        Args: { p_exception_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          status: Database["public"]["Enums"]["trip_exception_status"]
+          was_replayed: boolean
         }[]
       }
       add_dispute_claim: {
@@ -5015,6 +7197,23 @@ export type Database = {
           p_request_id: string
         }
         Returns: string
+      }
+      add_trip_document: {
+        Args: {
+          p_issued_at: string
+          p_kind: string
+          p_note: string
+          p_number: string
+          p_object_path: string
+          p_request_id: string
+          p_sha256: string
+          p_trip_id: string
+          p_visibility: Database["public"]["Enums"]["trip_visibility"]
+        }
+        Returns: {
+          document_id: string
+          was_replayed: boolean
+        }[]
       }
       admin_close_pricing_rule: {
         Args: {
@@ -5102,6 +7301,22 @@ export type Database = {
           size_bytes: number
         }[]
       }
+      assert_trip_media: {
+        Args: {
+          p_command_id: string
+          p_kind: string
+          p_min_bytes?: number
+          p_object_path: string
+          p_sha256: string
+          p_trip_id: string
+          p_uploader: string
+        }
+        Returns: {
+          etag: string
+          mime: string
+          size_bytes: number
+        }[]
+      }
       assign_dispute_case: {
         Args: {
           p_assignee: string
@@ -5113,6 +7328,20 @@ export type Database = {
           assignee_label: string
           case_id: string
           was_reassigned: boolean
+          was_replayed: boolean
+        }[]
+      }
+      assign_trip: {
+        Args: {
+          p_driver_id: string
+          p_note: string
+          p_request_id: string
+          p_trip_id: string
+          p_truck_id: string
+        }
+        Returns: {
+          assignment_id: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
           was_replayed: boolean
         }[]
       }
@@ -5142,6 +7371,40 @@ export type Database = {
         Args: { p_freight_id: string; p_reason: string; p_request_id: string }
         Returns: string
       }
+      cancel_trip: {
+        Args: { p_reason: string; p_request_id: string; p_trip_id: string }
+        Returns: {
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
+      }
+      change_company_member_role: {
+        Args: {
+          p_member_id: string
+          p_reason: string
+          p_request_id: string
+          p_role: string
+        }
+        Returns: {
+          member_role: string
+          was_replayed: boolean
+        }[]
+      }
+      claim_push_batch: {
+        Args: { p_lease_seconds: number; p_limit: number }
+        Returns: {
+          attempts: number
+          body: string
+          data: Json
+          devices: Json
+          kind: string
+          lease_token: string
+          outbox_id: number
+          priority: string
+          profile_id: string
+          title: string
+        }[]
+      }
       close_dispute_case: {
         Args: { p_case_id: string; p_note: string; p_request_id: string }
         Returns: {
@@ -5150,6 +7413,27 @@ export type Database = {
           new_contract_status: Database["public"]["Enums"]["contract_status"]
           was_replayed: boolean
         }[]
+      }
+      company_member_event_append: {
+        Args: {
+          p_actor: string
+          p_after: string
+          p_before: string
+          p_company_id: string
+          p_member_id: string
+          p_reason: string
+          p_request_id: string
+          p_type: string
+        }
+        Returns: undefined
+      }
+      company_operational_role: {
+        Args: { p_company_id: string }
+        Returns: string
+      }
+      company_operational_users: {
+        Args: { p_company_id: string }
+        Returns: string[]
       }
       complete_company_registration: { Args: never; Returns: Json }
       complete_contract_delivery: {
@@ -5161,6 +7445,20 @@ export type Database = {
           new_escrow_status: string
           new_status: Database["public"]["Enums"]["contract_status"]
           was_replayed: boolean
+        }[]
+      }
+      complete_contract_delivery_core: {
+        Args: {
+          p_actor: string
+          p_actor_kind: string
+          p_contract_id: string
+          p_fp: string
+          p_request_id: string
+          p_rpc: string
+        }
+        Returns: {
+          contract_completed: boolean
+          delivery_at: string
         }[]
       }
       confirm_dispute_recovery: {
@@ -5233,6 +7531,10 @@ export type Database = {
           was_replayed: boolean
         }[]
       }
+      consume_push_nonce: {
+        Args: { p_nonce: string; p_ts: number }
+        Returns: boolean
+      }
       contract_dispute_role: {
         Args: { p_contract_id: string }
         Returns: string
@@ -5299,6 +7601,74 @@ export type Database = {
           p_rpc_name: string
         }
         Returns: string
+      }
+      create_trip_for_contract: {
+        Args: { p_contract_id: string; p_request_id: string }
+        Returns: {
+          attempt_number: number
+          trip_id: string
+          trip_number: string
+          was_replayed: boolean
+        }[]
+      }
+      current_operational_policy: {
+        Args: never
+        Returns: {
+          accuracy_primary_m: number
+          accuracy_reject_m: number
+          alert_ack_target_min: number
+          clock_future_tolerance_min: number
+          comm_loss_critical_min: number
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          eta_fallback_speed_kmh: number
+          eta_route_factor: number
+          geofence_radius_m: number
+          id: string
+          impossible_speed_kmh: number
+          legal_hold_tail_days: number
+          location_batch_max_points: number
+          location_max_age_hours: number
+          location_silence_min_stationary: number
+          location_silence_min_transit: number
+          long_stop_min: number
+          moving_away_min_km: number
+          no_progress_min: number
+          raw_retention_days: number
+          reason: string
+          request_id: string | null
+          sos_ack_target_min: number
+          summary_retention_years: number
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "operational_policies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      current_privacy_notice: {
+        Args: never
+        Returns: {
+          body_md: string
+          body_sha256: string
+          effective_from: string
+          id: string
+          legal_basis: string
+          published_at: string
+          published_by: string
+          request_id: string
+          url: string | null
+          version: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "privacy_notices"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       decide_dispute_case: {
         Args: {
@@ -5401,6 +7771,7 @@ export type Database = {
         }[]
       }
       dispute_upload_allowed: { Args: { p_case: string }; Returns: boolean }
+      driver_label: { Args: { p_full_name: string }; Returns: string }
       emergency_withdraw_offers_by_ids: {
         Args: {
           p_freight_ids: string[]
@@ -5408,6 +7779,13 @@ export type Database = {
           p_request_id: string
         }
         Returns: number
+      }
+      enable_push_dispatch: {
+        Args: { p_request_id: string }
+        Returns: {
+          enabled: boolean
+          gates: Json
+        }[]
       }
       ensure_driver_record: {
         Args: never
@@ -5475,10 +7853,18 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      escalate_sos: {
+        Args: { p_exception_id: string; p_note: string; p_request_id: string }
+        Returns: {
+          escalation_level: number
+          was_replayed: boolean
+        }[]
+      }
       execute_bulk_withdrawal: {
         Args: { p_preview_id: string; p_request_id: string }
         Returns: number
       }
+      export_my_trip_data: { Args: never; Returns: Json }
       fail_dispute_settlement_transaction: {
         Args: {
           p_contract_id: string
@@ -5508,11 +7894,37 @@ export type Database = {
           was_replayed: boolean
         }[]
       }
+      force_trip_transition: {
+        Args: {
+          p_reason: string
+          p_request_id: string
+          p_to: Database["public"]["Enums"]["trip_status"]
+          p_trip_id: string
+        }
+        Returns: {
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
+      }
       freight_offer_snapshot: {
         Args: { p_f: Database["public"]["Tables"]["freights"]["Row"] }
         Returns: Json
       }
+      freight_operational_transition: {
+        Args: {
+          p_actor: string
+          p_freight_id: string
+          p_new: Database["public"]["Enums"]["freight_status"]
+          p_request_id: string
+          p_rpc: string
+        }
+        Returns: undefined
+      }
+      get_current_privacy_notice: { Args: never; Returns: Json }
       get_dispute_case: { Args: { p_case_id: string }; Returns: Json }
+      get_my_driver_trip: { Args: never; Returns: Json }
+      get_push_activation_gates: { Args: never; Returns: Json }
+      get_trip: { Args: { p_trip_id: string }; Returns: Json }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -5524,6 +7936,39 @@ export type Database = {
         }
         Returns: boolean
       }
+      ingest_trip_locations: {
+        Args: {
+          p_batch_id: string
+          p_device_id: string
+          p_points: Json
+          p_trip_id: string
+        }
+        Returns: {
+          accepted: number
+          duplicates: number
+          rejected: Json
+          stored_flagged: number
+          tracking_active: boolean
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      invite_company_member: {
+        Args: {
+          p_company_id: string
+          p_email: string
+          p_expires_in_hours: number
+          p_request_id: string
+          p_role: string
+        }
+        Returns: {
+          expires_at: string
+          invite_token: string
+          member_id: string
+          was_replayed: boolean
+        }[]
+      }
+      is_company_operator: { Args: { p_company_id: string }; Returns: boolean }
+      is_company_viewer: { Args: { p_company_id: string }; Returns: boolean }
       is_contract_visible: { Args: { p_contract_id: string }; Returns: boolean }
       is_current_user_company_member: {
         Args: { _company_id: string }
@@ -5534,6 +7979,20 @@ export type Database = {
         Returns: boolean
       }
       is_dispute_visible: { Args: { p_case_id: string }; Returns: boolean }
+      list_company_members: {
+        Args: { p_company_id: string }
+        Returns: {
+          accepted_at: string
+          email_masked: string
+          invited_at: string
+          is_me: boolean
+          label: string
+          member_id: string
+          member_role: string
+          revoked_at: string
+          status: string
+        }[]
+      }
       list_dispute_admins: {
         Args: never
         Returns: {
@@ -5570,6 +8029,10 @@ export type Database = {
           updated_at: string
         }[]
       }
+      list_legacy_operational_records: {
+        Args: { p_kind: string; p_limit?: number }
+        Returns: Json[]
+      }
       list_my_notifications: {
         Args: { p_limit?: number; p_unread_only?: boolean }
         Returns: {
@@ -5585,6 +8048,56 @@ export type Database = {
           type: string
         }[]
       }
+      list_my_trips: {
+        Args: {
+          p_limit?: number
+          p_scope?: string
+          p_status?: Database["public"]["Enums"]["trip_status"][]
+        }
+        Returns: {
+          attempt_number: number
+          carrier_company_name: string
+          contract_id: string
+          contract_number: string
+          delivery_exception: boolean
+          destination: string
+          driver_label: string
+          eta_at: string
+          eta_source: string
+          eta_updated_at: string
+          has_open_sos: boolean
+          last_location_at: string
+          my_role: string
+          open_alerts: number
+          open_exceptions: number
+          origin: string
+          paused: boolean
+          planned_delivery_at: string
+          planned_pickup_at: string
+          shipper_company_name: string
+          status: Database["public"]["Enums"]["trip_status"]
+          tracking_state: string
+          trip_id: string
+          trip_number: string
+          truck_plate_masked: string
+          updated_at: string
+        }[]
+      }
+      list_operational_alerts: {
+        Args: { p_limit?: number; p_status?: string }
+        Returns: {
+          acknowledged_at: string
+          alert_id: string
+          details: Json
+          detected_at: string
+          kind: Database["public"]["Enums"]["trip_alert_kind"]
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+          status: string
+          trip_id: string
+          trip_number: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
       list_recovery_evidence_refs: { Args: never; Returns: string[] }
       list_settled_release_amounts: {
         Args: never
@@ -5595,6 +8108,54 @@ export type Database = {
           platform_amount: number
           release_amount: number
           transaction_id: string
+        }[]
+      }
+      list_sos_queue: {
+        Args: never
+        Returns: {
+          ack_target_at: string
+          acknowledged_at: string
+          acknowledged_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          captured_at: string
+          carrier_company_name: string
+          driver_label: string
+          escalation_level: number
+          exception_id: string
+          lat: number
+          lng: number
+          seconds_open: number
+          sos_mode: string
+          status: Database["public"]["Enums"]["trip_exception_status"]
+          trip_id: string
+          trip_number: string
+        }[]
+      }
+      list_trip_positions: {
+        Args: { p_since?: string; p_trip_id: string }
+        Returns: {
+          accepted: boolean
+          accuracy_m: number
+          captured_at: string
+          flags: string[]
+          lat: number
+          lng: number
+          speed_kmh: number
+        }[]
+      }
+      list_trip_positions_admin: {
+        Args: never
+        Returns: {
+          carrier_company_name: string
+          driver_label: string
+          eta_at: string
+          has_open_sos: boolean
+          last_location_at: string
+          lat: number
+          lng: number
+          open_alerts: number
+          status: Database["public"]["Enums"]["trip_status"]
+          trip_id: string
+          trip_number: string
         }[]
       }
       list_visible_contract_counterparties: {
@@ -5608,6 +8169,18 @@ export type Database = {
         }[]
       }
       mark_notifications_read: { Args: { p_ids: string[] }; Returns: number }
+      mark_push_result: {
+        Args: {
+          p_dead_tokens: string[]
+          p_error: string
+          p_fcm_message_ids: Json
+          p_lease_token: string
+          p_outbox_id: number
+          p_result: string
+        }
+        Returns: boolean
+      }
+      mask_plate: { Args: { p_plate: string }; Returns: string }
       match_capacity_for_freight: {
         Args: {
           p_freight_id: string
@@ -5656,6 +8229,21 @@ export type Database = {
         }
         Returns: number
       }
+      notify_trip: {
+        Args: {
+          p_body: string
+          p_exclude?: string
+          p_priority?: string
+          p_title: string
+          p_to_admins: boolean
+          p_to_carrier: boolean
+          p_to_driver: boolean
+          p_to_shipper: boolean
+          p_trip_id: string
+          p_type: string
+        }
+        Returns: number
+      }
       notify_user: {
         Args: {
           p_body: string
@@ -5673,6 +8261,7 @@ export type Database = {
           p_contract_id: string
           p_description: string
           p_disputed_amount: number
+          p_exception_id?: string
           p_reason_code: Database["public"]["Enums"]["dispute_reason_code"]
           p_request_id: string
           p_statement: string
@@ -5697,6 +8286,99 @@ export type Database = {
           p_transaction_id?: string
         }
         Returns: string
+      }
+      open_sos: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_lat: number
+          p_lng: number
+          p_note: string
+          p_trip_id: string
+        }
+        Returns: {
+          ack_target_at: string
+          applied: boolean
+          duplicate: boolean
+          exception_id: string
+          rejection_code: string
+          sos_mode: string
+        }[]
+      }
+      open_trip_exception: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_description: string
+          p_device_id: string
+          p_evidence: Json
+          p_kind: Database["public"]["Enums"]["trip_exception_kind"]
+          p_lat: number
+          p_lng: number
+          p_severity: Database["public"]["Enums"]["trip_exception_severity"]
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          duplicate: boolean
+          exception_id: string
+          rejection_code: string
+          severity: Database["public"]["Enums"]["trip_exception_severity"]
+        }[]
+      }
+      operational_flag: { Args: { p_key: string }; Returns: boolean }
+      operational_policy_version: {
+        Args: { p_version: number }
+        Returns: {
+          accuracy_primary_m: number
+          accuracy_reject_m: number
+          alert_ack_target_min: number
+          clock_future_tolerance_min: number
+          comm_loss_critical_min: number
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          eta_fallback_speed_kmh: number
+          eta_route_factor: number
+          geofence_radius_m: number
+          id: string
+          impossible_speed_kmh: number
+          legal_hold_tail_days: number
+          location_batch_max_points: number
+          location_max_age_hours: number
+          location_silence_min_stationary: number
+          location_silence_min_transit: number
+          long_stop_min: number
+          moving_away_min_km: number
+          no_progress_min: number
+          raw_retention_days: number
+          reason: string
+          request_id: string | null
+          sos_ack_target_min: number
+          summary_retention_years: number
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "operational_policies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      pause_trip: {
+        Args: {
+          p_exception_id: string
+          p_reason: string
+          p_request_id: string
+          p_trip_id: string
+        }
+        Returns: {
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
       }
       payment_event_append: {
         Args: {
@@ -5726,6 +8408,22 @@ export type Database = {
           p_status: Database["public"]["Enums"]["payment_internal_status"]
         }
         Returns: number
+      }
+      place_bid: {
+        Args: {
+          p_amount: number
+          p_driver_id: string
+          p_estimated_hours: number
+          p_ev_certified: boolean
+          p_freight_id: string
+          p_request_id: string
+          p_toll: number
+          p_truck_id: string
+        }
+        Returns: {
+          bid_id: string
+          was_replayed: boolean
+        }[]
       }
       platform_pricing_rule_for: {
         Args: {
@@ -5811,6 +8509,62 @@ export type Database = {
         }
         Returns: string
       }
+      publish_operational_policy: {
+        Args: { p_reason: string; p_request_id: string; p_values: Json }
+        Returns: {
+          version: number
+          was_replayed: boolean
+        }[]
+      }
+      publish_privacy_notice: {
+        Args: {
+          p_body_md: string
+          p_effective_from: string
+          p_request_id: string
+          p_url: string
+          p_version: string
+        }
+        Returns: {
+          body_sha256: string
+          version: string
+          was_replayed: boolean
+        }[]
+      }
+      purge_trip_raw_locations: {
+        Args: { p_request_id: string; p_trip_id: string }
+        Returns: {
+          points_deleted: number
+          was_replayed: boolean
+        }[]
+      }
+      push_activation_gates: { Args: never; Returns: Json }
+      push_enqueue: {
+        Args: {
+          p_body: string
+          p_data: Json
+          p_idempotency_key: string
+          p_kind: string
+          p_priority: string
+          p_profile_id: string
+          p_title: string
+          p_trip_id: string
+        }
+        Returns: number
+      }
+      reassign_trip: {
+        Args: {
+          p_driver_id: string
+          p_reason: string
+          p_request_id: string
+          p_trip_id: string
+          p_truck_id: string
+        }
+        Returns: {
+          assignment_id: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
+      }
       record_provider_webhook: {
         Args: {
           p_amount: number
@@ -5832,6 +8586,93 @@ export type Database = {
           new_internal_status: Database["public"]["Enums"]["payment_internal_status"]
           outcome: string
           webhook_id: string
+        }[]
+      }
+      record_push_dispatch_run: {
+        Args: { p_error: string; p_pushes: number }
+        Returns: undefined
+      }
+      record_trip_checkpoint: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_geofence_override_reason?: string
+          p_kind: Database["public"]["Enums"]["trip_checkpoint_kind"]
+          p_lat: number
+          p_lng: number
+          p_note: string
+          p_photo_path: string
+          p_photo_sha256: string
+          p_seal_code: string
+          p_seq: number
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          checkpoint_id: string
+          duplicate: boolean
+          rejection_code: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      register_push_device: {
+        Args: {
+          p_app_version: string
+          p_build: string
+          p_device_id: string
+          p_platform: string
+          p_token: string
+        }
+        Returns: {
+          push_device_id: string
+          was_existing: boolean
+        }[]
+      }
+      register_transshipment: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_exception_id: string
+          p_lat: number
+          p_lng: number
+          p_new_driver_id: string
+          p_new_truck_id: string
+          p_note: string
+          p_photo_path: string
+          p_photo_sha256: string
+          p_seal_code: string
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          assignment_id: string
+          checkpoint_id: string
+          duplicate: boolean
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      release_trip_legal_hold: {
+        Args: { p_note: string; p_request_id: string; p_trip_id: string }
+        Returns: {
+          legal_hold_until: string
+          was_replayed: boolean
+        }[]
+      }
+      report_trip_eta: {
+        Args: {
+          p_eta_at: string
+          p_note: string
+          p_request_id: string
+          p_trip_id: string
+        }
+        Returns: {
+          eta_at: string
+          eta_source: string
+          was_replayed: boolean
         }[]
       }
       reprice_published_freight: {
@@ -5892,7 +8733,59 @@ export type Database = {
           was_replayed: boolean
         }[]
       }
+      request_push_homologation: {
+        Args: { p_device_id: string }
+        Returns: {
+          expires_at: string
+          homologation_id: string
+        }[]
+      }
+      request_trip_media_access: {
+        Args: { p_object_path: string }
+        Returns: {
+          expires_in_seconds: number
+          granted: boolean
+        }[]
+      }
       require_steelgo_admin: { Args: { p_rpc_name: string }; Returns: string }
+      resolve_cargo_disposition: {
+        Args: {
+          p_custodian_label: string
+          p_disposition: Database["public"]["Enums"]["cargo_disposition"]
+          p_evidence: Json
+          p_is_emergency: boolean
+          p_lat: number
+          p_lng: number
+          p_location_text: string
+          p_note: string
+          p_occurred_at: string
+          p_reason: string
+          p_request_id: string
+          p_trip_id: string
+        }
+        Returns: {
+          disposition: Database["public"]["Enums"]["cargo_disposition"]
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
+      }
+      resolve_delivery_exception: {
+        Args: {
+          p_exception_id: string
+          p_new_delivery_lat: number
+          p_new_delivery_lng: number
+          p_note: string
+          p_request_id: string
+          p_resolution: Database["public"]["Enums"]["delivery_exception_resolution"]
+        }
+        Returns: {
+          contract_completed: boolean
+          delivery_completed: boolean
+          resolution: Database["public"]["Enums"]["delivery_exception_resolution"]
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
+      }
       resolve_payment_reconciliation: {
         Args: {
           p_note: string
@@ -5901,6 +8794,52 @@ export type Database = {
           p_status: string
         }
         Returns: string
+      }
+      resolve_sos: {
+        Args: {
+          p_exception_id: string
+          p_note: string
+          p_outcome: string
+          p_request_id: string
+        }
+        Returns: {
+          status: Database["public"]["Enums"]["trip_exception_status"]
+          was_replayed: boolean
+        }[]
+      }
+      resolve_trip_exception: {
+        Args: {
+          p_exception_id: string
+          p_note: string
+          p_request_id: string
+          p_resolution_kind: string
+        }
+        Returns: {
+          status: Database["public"]["Enums"]["trip_exception_status"]
+          was_replayed: boolean
+        }[]
+      }
+      respond_trip_assignment: {
+        Args: {
+          p_accept: boolean
+          p_assignment_id: string
+          p_captured_at: string
+          p_command_id: string
+          p_reason: string
+        }
+        Returns: {
+          applied: boolean
+          duplicate: boolean
+          rejection_code: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      resume_trip: {
+        Args: { p_reason: string; p_request_id: string; p_trip_id: string }
+        Returns: {
+          trip_status: Database["public"]["Enums"]["trip_status"]
+          was_replayed: boolean
+        }[]
       }
       retry_dispute_settlement_transaction: {
         Args: {
@@ -5951,6 +8890,21 @@ export type Database = {
           verified_at: string
         }[]
       }
+      revoke_company_member: {
+        Args: { p_member_id: string; p_reason: string; p_request_id: string }
+        Returns: {
+          revoked: boolean
+          was_replayed: boolean
+        }[]
+      }
+      revoke_push_device: {
+        Args: { p_device_id: string; p_reason: string }
+        Returns: number
+      }
+      revoke_push_devices_of: {
+        Args: { p_profile_id: string; p_reason: string }
+        Returns: number
+      }
       rpc_idempotency_probe: {
         Args: {
           p_actor_id: string
@@ -5979,6 +8933,29 @@ export type Database = {
         }
       }
       rpc_params_fingerprint: { Args: { p_params: Json }; Returns: string }
+      run_operational_scheduler: {
+        Args: never
+        Returns: {
+          alerts_closed: number
+          alerts_escalated: number
+          alerts_opened: number
+          outcome: string
+          purges: number
+          trips_scanned: number
+        }[]
+      }
+      run_push_dispatch_tick: { Args: never; Returns: string }
+      scheduler_health: {
+        Args: never
+        Returns: {
+          kind: string
+          last_error: string
+          last_outcome: string
+          last_started_at: string
+          seconds_since_last: number
+          stale: boolean
+        }[]
+      }
       search_carriers_for_driver: {
         Args: { p_country_code?: string; p_limit?: number; p_query?: string }
         Returns: {
@@ -6025,6 +9002,37 @@ export type Database = {
           updated_at: string
         }[]
       }
+      set_company_operational_contact: {
+        Args: {
+          p_company_id: string
+          p_email: string
+          p_phone: string
+          p_request_id: string
+        }
+        Returns: {
+          was_replayed: boolean
+        }[]
+      }
+      set_operational_flag: {
+        Args: {
+          p_key: string
+          p_reason: string
+          p_request_id: string
+          p_value: boolean
+        }
+        Returns: {
+          key: string
+          value: boolean
+          was_replayed: boolean
+        }[]
+      }
+      set_trip_legal_hold: {
+        Args: { p_note: string; p_request_id: string; p_trip_id: string }
+        Returns: {
+          legal_hold_reason: string
+          was_replayed: boolean
+        }[]
+      }
       settle_dispute_decision: {
         Args: { p_case_id: string; p_request_id: string }
         Returns: {
@@ -6057,6 +9065,486 @@ export type Database = {
           was_replayed: boolean
         }[]
       }
+      start_tracking_session: {
+        Args: {
+          p_app_version: string
+          p_device_id: string
+          p_platform: string
+          p_provider: Database["public"]["Enums"]["tracking_provider"]
+          p_trip_id: string
+        }
+        Returns: {
+          policy: Json
+          session_id: string
+          was_existing: boolean
+        }[]
+      }
+      steelgo_now: { Args: never; Returns: string }
+      submit_proof_of_delivery: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_geofence_override_reason?: string
+          p_lat: number
+          p_lng: number
+          p_notes: string
+          p_outcome: Database["public"]["Enums"]["pod_outcome"]
+          p_photos: Json
+          p_qty_declared: number
+          p_qty_received: number
+          p_receiver_document_kind: string
+          p_receiver_document_last4: string
+          p_receiver_name: string
+          p_seq: number
+          p_signature_path: string
+          p_signature_sha256: string
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          attempt_id: string
+          contract_completed: boolean
+          delivery_completed: boolean
+          duplicate: boolean
+          outcome: Database["public"]["Enums"]["pod_outcome"]
+          pod_id: string
+          rejection_code: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      submit_return_receipt: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_geofence_override_reason?: string
+          p_lat: number
+          p_lng: number
+          p_note: string
+          p_photo_path: string
+          p_photo_sha256: string
+          p_receiver_name: string
+          p_seq: number
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          duplicate: boolean
+          rejection_code: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      supersede_proof_of_delivery: {
+        Args: {
+          p_notes: string
+          p_photos: Json
+          p_qty_declared: number
+          p_qty_received: number
+          p_reason: string
+          p_receiver_document_kind: string
+          p_receiver_document_last4: string
+          p_receiver_name: string
+          p_request_id: string
+          p_signature_path: string
+          p_signature_sha256: string
+          p_trip_id: string
+        }
+        Returns: {
+          pod_id: string
+          version: number
+          was_replayed: boolean
+        }[]
+      }
+      transition_trip: {
+        Args: {
+          p_accuracy_m: number
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_geofence_override_reason?: string
+          p_lat: number
+          p_lng: number
+          p_note: string
+          p_seq: number
+          p_to: Database["public"]["Enums"]["trip_status"]
+          p_trip_id: string
+        }
+        Returns: {
+          alert_kind: string
+          applied: boolean
+          duplicate: boolean
+          rejection_code: string
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
+      trip_access_append: {
+        Args: {
+          p_actor_id: string
+          p_actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          p_object_ref: string
+          p_rpc_name: string
+          p_trip_id: string
+          p_what: string
+        }
+        Returns: undefined
+      }
+      trip_actor_kind_of: {
+        Args: { p_role: string }
+        Returns: Database["public"]["Enums"]["trip_actor_kind"]
+      }
+      trip_alert_close: {
+        Args: {
+          p_kind: Database["public"]["Enums"]["trip_alert_kind"]
+          p_reason: string
+          p_rpc: string
+          p_trip_id: string
+        }
+        Returns: boolean
+      }
+      trip_alert_open: {
+        Args: {
+          p_details: Json
+          p_kind: Database["public"]["Enums"]["trip_alert_kind"]
+          p_rpc: string
+          p_severity: Database["public"]["Enums"]["trip_exception_severity"]
+          p_trip: Database["public"]["Tables"]["operational_trips"]["Row"]
+        }
+        Returns: boolean
+      }
+      trip_apply_legal_hold: {
+        Args: {
+          p_actor: string
+          p_reason: string
+          p_rpc: string
+          p_trip_id: string
+        }
+        Returns: undefined
+      }
+      trip_assign_core: {
+        Args: {
+          p_actor: string
+          p_actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          p_driver_id: string
+          p_fp: string
+          p_is_reassignment: boolean
+          p_note: string
+          p_request_id: string
+          p_rpc: string
+          p_trip: Database["public"]["Tables"]["operational_trips"]["Row"]
+          p_truck_id: string
+        }
+        Returns: {
+          accepted_at: string | null
+          assigned_at: string
+          assigned_by: string
+          assigned_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          carrier_company_id_at_assignment: string
+          carrier_id_at_assignment: string
+          decline_reason: string | null
+          declined_at: string | null
+          driver_id: string
+          driver_label_at_assignment: string
+          driver_profile_id: string
+          id: string
+          note: string | null
+          request_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          state: Database["public"]["Enums"]["trip_assignment_state"]
+          superseded_by: string | null
+          trip_id: string
+          truck_id: string
+          truck_plate_at_assignment: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      trip_compute_eta: {
+        Args: { p_rpc: string; p_trip_id: string }
+        Returns: undefined
+      }
+      trip_create_core: {
+        Args: {
+          p_actor: string
+          p_actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          p_contract_id: string
+          p_fp: string
+          p_request_id: string
+          p_rpc: string
+        }
+        Returns: {
+          attempt_number: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cargo_disposition:
+            | Database["public"]["Enums"]["cargo_disposition"]
+            | null
+          cargo_disposition_at: string | null
+          carrier_company_id: string
+          completed_at: string | null
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          delivery_exception: boolean
+          delivery_geog: unknown
+          departed_pickup_at: string | null
+          driver_id: string | null
+          eta_at: string | null
+          eta_basis: Json | null
+          eta_source: string | null
+          eta_updated_at: string | null
+          freight_id: string
+          has_open_critical_exception: boolean
+          id: string
+          last_event_id: string | null
+          last_location_at: string | null
+          last_location_geog: unknown
+          legal_hold_reason: string | null
+          legal_hold_until: string | null
+          loaded_at: string | null
+          paused_by_contract: boolean
+          paused_by_exception_id: string | null
+          pickup_geog: unknown
+          planned_delivery_at: string | null
+          planned_distance_km: number | null
+          planned_pickup_at: string | null
+          policy_version: number
+          previous_status: Database["public"]["Enums"]["trip_status"] | null
+          raw_locations_purged_at: string | null
+          retention_until: string | null
+          returned_at: string | null
+          shipper_company_id: string
+          status: Database["public"]["Enums"]["trip_status"]
+          summary_retention_until: string | null
+          terminal_reason: string | null
+          tracking_state: string
+          trip_number: string
+          truck_id: string | null
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "operational_trips"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      trip_driver_block: {
+        Args: {
+          p_role: string
+          p_trip: Database["public"]["Tables"]["operational_trips"]["Row"]
+        }
+        Returns: Json
+      }
+      trip_end_tracking_sessions: {
+        Args: { p_reason: string; p_trip_id: string }
+        Returns: number
+      }
+      trip_evaluate_alerts: {
+        Args: { p_rpc: string; p_trip_id: string }
+        Returns: {
+          closed: number
+          opened: number
+        }[]
+      }
+      trip_event_append: {
+        Args: {
+          p_accuracy_m?: number
+          p_actor_id: string
+          p_actor_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          p_alert_id?: string
+          p_assignment_id?: string
+          p_captured_at?: string
+          p_checkpoint_id?: string
+          p_command_id?: string
+          p_device_id?: string
+          p_document_id?: string
+          p_event_type: Database["public"]["Enums"]["trip_event_type"]
+          p_exception_id?: string
+          p_fingerprint?: string
+          p_from_status?: Database["public"]["Enums"]["trip_status"]
+          p_internal_note?: string
+          p_lat?: number
+          p_lng?: number
+          p_note?: string
+          p_payload?: Json
+          p_pod_id?: string
+          p_request_id?: string
+          p_rpc_name: string
+          p_seq_device?: number
+          p_to_status?: Database["public"]["Enums"]["trip_status"]
+          p_trip_id: string
+        }
+        Returns: string
+      }
+      trip_is_active: {
+        Args: { p_status: Database["public"]["Enums"]["trip_status"] }
+        Returns: boolean
+      }
+      trip_live_assignment_of_caller: {
+        Args: { p_trip_id: string }
+        Returns: {
+          accepted_at: string | null
+          assigned_at: string
+          assigned_by: string
+          assigned_by_kind: Database["public"]["Enums"]["trip_actor_kind"]
+          carrier_company_id_at_assignment: string
+          carrier_id_at_assignment: string
+          decline_reason: string | null
+          declined_at: string | null
+          driver_id: string
+          driver_label_at_assignment: string
+          driver_profile_id: string
+          id: string
+          note: string | null
+          request_id: string
+          revoke_reason: string | null
+          revoked_at: string | null
+          state: Database["public"]["Enums"]["trip_assignment_state"]
+          superseded_by: string | null
+          trip_id: string
+          truck_id: string
+          truck_plate_at_assignment: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "trip_assignments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      trip_lock: {
+        Args: { p_trip_id: string }
+        Returns: {
+          attempt_number: number
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cargo_disposition:
+            | Database["public"]["Enums"]["cargo_disposition"]
+            | null
+          cargo_disposition_at: string | null
+          carrier_company_id: string
+          completed_at: string | null
+          contract_id: string
+          created_at: string
+          created_by: string | null
+          delivered_at: string | null
+          delivery_exception: boolean
+          delivery_geog: unknown
+          departed_pickup_at: string | null
+          driver_id: string | null
+          eta_at: string | null
+          eta_basis: Json | null
+          eta_source: string | null
+          eta_updated_at: string | null
+          freight_id: string
+          has_open_critical_exception: boolean
+          id: string
+          last_event_id: string | null
+          last_location_at: string | null
+          last_location_geog: unknown
+          legal_hold_reason: string | null
+          legal_hold_until: string | null
+          loaded_at: string | null
+          paused_by_contract: boolean
+          paused_by_exception_id: string | null
+          pickup_geog: unknown
+          planned_delivery_at: string | null
+          planned_distance_km: number | null
+          planned_pickup_at: string | null
+          policy_version: number
+          previous_status: Database["public"]["Enums"]["trip_status"] | null
+          raw_locations_purged_at: string | null
+          retention_until: string | null
+          returned_at: string | null
+          shipper_company_id: string
+          status: Database["public"]["Enums"]["trip_status"]
+          summary_retention_until: string | null
+          terminal_reason: string | null
+          tracking_state: string
+          trip_number: string
+          truck_id: string | null
+          updated_at: string
+          version: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "operational_trips"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      trip_object_visible: { Args: { p_name: string }; Returns: boolean }
+      trip_policy: {
+        Args: {
+          p_trip: Database["public"]["Tables"]["operational_trips"]["Row"]
+        }
+        Returns: {
+          accuracy_primary_m: number
+          accuracy_reject_m: number
+          alert_ack_target_min: number
+          clock_future_tolerance_min: number
+          comm_loss_critical_min: number
+          created_at: string
+          created_by: string | null
+          effective_from: string
+          eta_fallback_speed_kmh: number
+          eta_route_factor: number
+          geofence_radius_m: number
+          id: string
+          impossible_speed_kmh: number
+          legal_hold_tail_days: number
+          location_batch_max_points: number
+          location_max_age_hours: number
+          location_silence_min_stationary: number
+          location_silence_min_transit: number
+          long_stop_min: number
+          moving_away_min_km: number
+          no_progress_min: number
+          raw_retention_days: number
+          reason: string
+          request_id: string | null
+          sos_ack_target_min: number
+          summary_retention_years: number
+          version: number
+        }
+        SetofOptions: {
+          from: "operational_trips"
+          to: "operational_policies"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      trip_purge_core: {
+        Args: {
+          p_actor: string
+          p_request_id: string
+          p_rpc: string
+          p_trip_id: string
+        }
+        Returns: number
+      }
+      trip_release_capacity: { Args: { p_trip_id: string }; Returns: undefined }
+      trip_reserve_capacity: {
+        Args: { p_driver_id: string; p_trip_id: string; p_truck_id: string }
+        Returns: undefined
+      }
+      trip_role_of: { Args: { p_trip_id: string }; Returns: string }
+      trip_settle_legal_hold: {
+        Args: { p_actor: string; p_rpc: string; p_trip_id: string }
+        Returns: undefined
+      }
+      trip_upload_allowed: { Args: { p_trip: string }; Returns: boolean }
+      trip_visible: { Args: { p_trip_id: string }; Returns: boolean }
       try_complete_contract: {
         Args: {
           p_actor_id: string
@@ -6139,6 +9627,12 @@ export type Database = {
       app_role: "shipper" | "carrier" | "driver" | "admin"
       badge_tier: "standard" | "silver" | "gold" | "platinum"
       bid_status: "pending" | "accepted" | "rejected" | "expired" | "withdrawn"
+      cargo_disposition:
+        | "delivered_by_resolution"
+        | "returned_to_origin"
+        | "transferred_to_custodian"
+        | "transshipped"
+        | "emergency_release"
       checkpoint_type:
         | "origin_loading"
         | "waypoint"
@@ -6177,6 +9671,12 @@ export type Database = {
         | "completed"
         | "disputed"
         | "cancelled"
+      delivery_exception_resolution:
+        | "accept_delivery"
+        | "retry_delivery"
+        | "return_to_origin"
+        | "transshipment"
+        | "open_dispute"
       dispute_decision_outcome:
         | "release_to_carrier"
         | "refund_to_shipper"
@@ -6212,6 +9712,9 @@ export type Database = {
         | "cancel"
         | "contract_pending"
         | "contracted"
+        | "in_transit"
+        | "delivered"
+        | "completed"
       freight_status:
         | "draft"
         | "published"
@@ -6252,6 +9755,11 @@ export type Database = {
         | "confirmed"
         | "failed"
         | "cancelled"
+      pod_outcome:
+        | "accepted"
+        | "accepted_with_notes"
+        | "partially_refused"
+        | "refused"
       security_alert_type:
         | "route_deviation"
         | "panic_button"
@@ -6270,6 +9778,125 @@ export type Database = {
         | "tubo_galvanizado"
         | "blank_estampagem"
         | "outro"
+      tracking_provider: "web" | "community-dev" | "transistorsoft" | "unknown"
+      trip_actor_kind: "driver" | "carrier" | "shipper" | "admin" | "system"
+      trip_alert_kind:
+        | "no_update"
+        | "late_eta"
+        | "route_deviation"
+        | "long_stop"
+        | "no_progress"
+        | "moving_away"
+        | "geofence_exit"
+        | "low_battery"
+        | "gps_anomaly"
+        | "pod_outside_geofence"
+        | "sos_ack_overdue"
+        | "cargo_without_progress"
+        | "scheduler_stale"
+        | "sos"
+      trip_assignment_state:
+        | "offered"
+        | "accepted"
+        | "declined"
+        | "superseded"
+        | "revoked"
+      trip_checkpoint_kind:
+        | "arrived_pickup"
+        | "loading_started"
+        | "loaded"
+        | "departed_pickup"
+        | "waypoint"
+        | "border"
+        | "rest_stop"
+        | "arrived_delivery"
+        | "unloading_started"
+        | "unloaded"
+        | "transshipment"
+        | "return_receipt"
+        | "custom"
+      trip_event_type:
+        | "trip_created"
+        | "policy_frozen"
+        | "assigned"
+        | "reassigned"
+        | "assignment_accepted"
+        | "assignment_declined"
+        | "assignment_revoked"
+        | "transition"
+        | "checkpoint"
+        | "transshipment_registered"
+        | "tracking_started"
+        | "tracking_ended"
+        | "eta_reported"
+        | "exception_opened"
+        | "exception_acknowledged"
+        | "exception_resolved"
+        | "exception_escalated"
+        | "sos_opened"
+        | "sos_acknowledged"
+        | "sos_escalated"
+        | "sos_resolved"
+        | "document_added"
+        | "pod_submitted"
+        | "pod_attempt_refused"
+        | "pod_superseded"
+        | "delivery_exception_resolved"
+        | "paused"
+        | "resumed"
+        | "cancelled"
+        | "completed"
+        | "contract_terminal_hold"
+        | "cargo_disposition_resolved"
+        | "emergency_release"
+        | "admin_override"
+        | "command_rejected"
+        | "alert_opened"
+        | "alert_acknowledged"
+        | "alert_closed"
+        | "legal_hold_set"
+        | "legal_hold_released"
+        | "raw_locations_purged"
+        | "notification_sent"
+      trip_exception_kind:
+        | "delay"
+        | "cargo_damage"
+        | "cargo_refusal"
+        | "document_issue"
+        | "vehicle_breakdown"
+        | "accident"
+        | "theft"
+        | "route_deviation"
+        | "long_stop"
+        | "comm_loss"
+        | "delivery_mismatch"
+        | "sos"
+        | "cargo_disposition_required"
+        | "other"
+      trip_exception_severity: "low" | "medium" | "high" | "critical"
+      trip_exception_status:
+        | "open"
+        | "acknowledged"
+        | "in_progress"
+        | "escalated"
+        | "resolved"
+        | "converted_to_dispute"
+      trip_status:
+        | "planned"
+        | "assigned"
+        | "driver_accepted"
+        | "en_route_to_pickup"
+        | "at_pickup"
+        | "loading"
+        | "in_transit"
+        | "at_delivery"
+        | "unloading"
+        | "returning"
+        | "delivered"
+        | "returned"
+        | "completed"
+        | "cancelled"
+      trip_visibility: "parties" | "carrier_admin" | "admin_only"
       truck_type:
         | "truck_simples"
         | "toco"
@@ -6425,6 +10052,13 @@ export const Constants = {
       app_role: ["shipper", "carrier", "driver", "admin"],
       badge_tier: ["standard", "silver", "gold", "platinum"],
       bid_status: ["pending", "accepted", "rejected", "expired", "withdrawn"],
+      cargo_disposition: [
+        "delivered_by_resolution",
+        "returned_to_origin",
+        "transferred_to_custodian",
+        "transshipped",
+        "emergency_release",
+      ],
       checkpoint_type: [
         "origin_loading",
         "waypoint",
@@ -6467,6 +10101,13 @@ export const Constants = {
         "disputed",
         "cancelled",
       ],
+      delivery_exception_resolution: [
+        "accept_delivery",
+        "retry_delivery",
+        "return_to_origin",
+        "transshipment",
+        "open_dispute",
+      ],
       dispute_decision_outcome: [
         "release_to_carrier",
         "refund_to_shipper",
@@ -6506,6 +10147,9 @@ export const Constants = {
         "cancel",
         "contract_pending",
         "contracted",
+        "in_transit",
+        "delivered",
+        "completed",
       ],
       freight_status: [
         "draft",
@@ -6551,6 +10195,12 @@ export const Constants = {
         "failed",
         "cancelled",
       ],
+      pod_outcome: [
+        "accepted",
+        "accepted_with_notes",
+        "partially_refused",
+        "refused",
+      ],
       security_alert_type: [
         "route_deviation",
         "panic_button",
@@ -6571,6 +10221,132 @@ export const Constants = {
         "blank_estampagem",
         "outro",
       ],
+      tracking_provider: ["web", "community-dev", "transistorsoft", "unknown"],
+      trip_actor_kind: ["driver", "carrier", "shipper", "admin", "system"],
+      trip_alert_kind: [
+        "no_update",
+        "late_eta",
+        "route_deviation",
+        "long_stop",
+        "no_progress",
+        "moving_away",
+        "geofence_exit",
+        "low_battery",
+        "gps_anomaly",
+        "pod_outside_geofence",
+        "sos_ack_overdue",
+        "cargo_without_progress",
+        "scheduler_stale",
+        "sos",
+      ],
+      trip_assignment_state: [
+        "offered",
+        "accepted",
+        "declined",
+        "superseded",
+        "revoked",
+      ],
+      trip_checkpoint_kind: [
+        "arrived_pickup",
+        "loading_started",
+        "loaded",
+        "departed_pickup",
+        "waypoint",
+        "border",
+        "rest_stop",
+        "arrived_delivery",
+        "unloading_started",
+        "unloaded",
+        "transshipment",
+        "return_receipt",
+        "custom",
+      ],
+      trip_event_type: [
+        "trip_created",
+        "policy_frozen",
+        "assigned",
+        "reassigned",
+        "assignment_accepted",
+        "assignment_declined",
+        "assignment_revoked",
+        "transition",
+        "checkpoint",
+        "transshipment_registered",
+        "tracking_started",
+        "tracking_ended",
+        "eta_reported",
+        "exception_opened",
+        "exception_acknowledged",
+        "exception_resolved",
+        "exception_escalated",
+        "sos_opened",
+        "sos_acknowledged",
+        "sos_escalated",
+        "sos_resolved",
+        "document_added",
+        "pod_submitted",
+        "pod_attempt_refused",
+        "pod_superseded",
+        "delivery_exception_resolved",
+        "paused",
+        "resumed",
+        "cancelled",
+        "completed",
+        "contract_terminal_hold",
+        "cargo_disposition_resolved",
+        "emergency_release",
+        "admin_override",
+        "command_rejected",
+        "alert_opened",
+        "alert_acknowledged",
+        "alert_closed",
+        "legal_hold_set",
+        "legal_hold_released",
+        "raw_locations_purged",
+        "notification_sent",
+      ],
+      trip_exception_kind: [
+        "delay",
+        "cargo_damage",
+        "cargo_refusal",
+        "document_issue",
+        "vehicle_breakdown",
+        "accident",
+        "theft",
+        "route_deviation",
+        "long_stop",
+        "comm_loss",
+        "delivery_mismatch",
+        "sos",
+        "cargo_disposition_required",
+        "other",
+      ],
+      trip_exception_severity: ["low", "medium", "high", "critical"],
+      trip_exception_status: [
+        "open",
+        "acknowledged",
+        "in_progress",
+        "escalated",
+        "resolved",
+        "converted_to_dispute",
+      ],
+      trip_status: [
+        "planned",
+        "assigned",
+        "driver_accepted",
+        "en_route_to_pickup",
+        "at_pickup",
+        "loading",
+        "in_transit",
+        "at_delivery",
+        "unloading",
+        "returning",
+        "delivered",
+        "returned",
+        "completed",
+        "cancelled",
+      ],
+      trip_visibility: ["parties", "carrier_admin", "admin_only"],
       truck_type: [
         "truck_simples",
         "toco",

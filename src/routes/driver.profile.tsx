@@ -2,6 +2,10 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LogOut, Star, BadgeCheck, Truck, Settings, ChevronRight } from "lucide-react";
 import { DriverShell } from "@/components/driver/DriverShell";
 import { useAuth } from "@/contexts/AuthContext";
+import { DriverPrivacyCard } from "@/components/trip/DriverPrivacyCard";
+import { unregisterPush } from "@/lib/pushClient";
+import { clearOutbox } from "@/lib/outbox";
+import { tripTracker } from "@/lib/geoTracker";
 
 export const Route = createFileRoute("/driver/profile")({ component: ProfilePage });
 
@@ -9,7 +13,12 @@ function ProfilePage() {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const name = profile?.full_name ?? "Motorista";
-  const initials = name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
+  const initials = name
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <DriverShell activeTab="profile">
@@ -35,14 +44,38 @@ function ProfilePage() {
       </div>
 
       <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
-        <Stat icon={<Star size={20} className="text-amber-400 fill-amber-400" />} value="4.9" label="Avaliação" />
-        <Stat icon={<Truck size={20} className="text-steel-blue-400" />} value="127" label="Entregas" />
+        <Stat
+          icon={<Star size={20} className="text-amber-400 fill-amber-400" />}
+          value="4.9"
+          label="Avaliação"
+        />
+        <Stat
+          icon={<Truck size={20} className="text-steel-blue-400" />}
+          value="127"
+          label="Entregas"
+        />
       </div>
 
+      <DriverPrivacyCard />
+
       <nav className="mx-4 mt-4 rounded-[14px] bg-bg-surface overflow-hidden">
-        <Row icon={<BadgeCheck size={20} />} label="Meus documentos" onClick={() => navigate({ to: "/driver/docs" })} />
+        <Row
+          icon={<BadgeCheck size={20} />}
+          label="Meus documentos"
+          onClick={() => navigate({ to: "/driver/docs" })}
+        />
         <Row icon={<Settings size={20} />} label="Preferências" />
-        <Row icon={<LogOut size={20} />} label="Sair" danger onClick={() => signOut().then(() => navigate({ to: "/login" }))} last />
+        <Row
+          icon={<LogOut size={20} />}
+          label="Sair"
+          danger
+          onClick={() =>
+            Promise.all([tripTracker.stop("logout"), unregisterPush("logout"), clearOutbox()])
+              .then(() => signOut())
+              .then(() => navigate({ to: "/login" }))
+          }
+          last
+        />
       </nav>
     </DriverShell>
   );
@@ -61,8 +94,18 @@ function Stat({ icon, value, label }: { icon: React.ReactNode; value: string; la
 }
 
 function Row({
-  icon, label, onClick, danger, last,
-}: { icon: React.ReactNode; label: string; onClick?: () => void; danger?: boolean; last?: boolean }) {
+  icon,
+  label,
+  onClick,
+  danger,
+  last,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  danger?: boolean;
+  last?: boolean;
+}) {
   return (
     <button
       onClick={onClick}

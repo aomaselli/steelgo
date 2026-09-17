@@ -1,10 +1,16 @@
+// Alerta critico do motorista (Modulo 3). Abre open_sos: posicao + ocorrencia
+// critica, notifica transportadora e SteelGo, preserva a trilha.
+// NAO e central 24h e NAO aciona servicos de emergencia: 190 / 192 / 193.
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { AlertTriangle, MapPin, Phone, MessageCircle, CheckCircle2 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { useGeolocation } from "@/hooks/useGeolocation";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { AlertTriangle, CheckCircle2, MapPin, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { useGeolocation } from "@/hooks/useGeolocation";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { enqueueCommand, flushOutbox, listCommands, newCaptureCtx } from "@/lib/outbox";
+import { fetchMyDriverTrip } from "@/lib/trips";
+import { fmtDateTime, rejectionMessage } from "@/lib/tripStatus";
 
 export const Route = createFileRoute("/driver/panic")({ component: PanicPage });
 
@@ -12,41 +18,40 @@ const HOLD_MS = 3000;
 
 function PanicPage() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
   const geo = useGeolocation(true);
+  const online = useOnlineStatus();
   const [holding, setHolding] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activated, setActivated] = useState(false);
-  const [alertId, setAlertId] = useState<string | null>(null);
+  const [activated, setActivated] = useState<{ ackTarget: string | null; queued: boolean } | null>(
+    null,
+  );
   const timerRef = useRef<number | null>(null);
   const startRef = useRef<number>(0);
+  const { data, refetch } = useQuery({
+    queryKey: ["driver-trip", "panic"],
+    queryFn: fetchMyDriverTrip,
+    refetchInterval: 10_000,
+  });
+  const trip = data?.has_trip ? data.trip : null;
+  const sosMode = data?.sos_mode ?? "homologation";
+  const openSos =
+    trip?.exceptions.find(
+      (x) => x.kind === "sos" && !["resolved", "converted_to_dispute"].includes(x.status),
+    ) ?? null;
 
-  // Send GPS pings while activated
   useEffect(() => {
-    if (!activated || !alertId || !user) return;
-    const interval = setInterval(() => {
-      if (geo.lat != null && geo.lng != null) {
-        supabase.from("security_alerts_tracking" as any).insert({
-          alert_id: alertId,
-          driver_id: user.id,
-          lat: geo.lat,
-          lng: geo.lng,
-        });
-      }
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [activated, alertId, geo.lat, geo.lng, user]);
+    if (openSos && !activated) setActivated({ ackTarget: openSos.ack_target_at, queued: false });
+  }, [openSos, activated]);
 
   const start = () => {
-    if (activated) return;
+    if (activated || !trip) return;
     setHolding(true);
     startRef.current = Date.now();
     const tick = () => {
-      const elapsed = Date.now() - startRef.current;
-      const p = Math.min(elapsed / HOLD_MS, 1);
+      const p = Math.min((Date.now() - startRef.current) / HOLD_MS, 1);
       setProgress(p);
       if (p >= 1) {
-        triggerAlert();
+        void trigger();
         setHolding(false);
         return;
       }
@@ -54,60 +59,115 @@ function PanicPage() {
     };
     timerRef.current = requestAnimationFrame(tick);
   };
-
   const cancel = () => {
     if (timerRef.current) cancelAnimationFrame(timerRef.current);
     setHolding(false);
     setProgress(0);
   };
 
-  async function triggerAlert() {
+  async function trigger() {
+    if (!trip) return;
     try {
-      const { data, error } = await supabase
-        .from("security_alerts")
-        .insert({
-          type: "panic_button" as never,
-          severity: "critical" as never,
-          lat: geo.lat,
-          lng: geo.lng,
-          title: "Botão de pânico",
-          description: `${profile?.full_name ?? "Motorista"} acionou o botão de pânico`,
-        })
-        .select("id")
-        .single();
-      if (error) throw error;
-      setAlertId(data.id);
-      setActivated(true);
-      const msg = `🚨 EMERGÊNCIA SteelGo: ${profile?.full_name ?? "Motorista"} ativou pânico. Ver: https://maps.google.com/?q=${geo.lat},${geo.lng}`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+      const ctx = await newCaptureCtx({ lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy });
+      await enqueueCommand({
+        command_id: ctx.commandId,
+        trip_id: trip.id,
+        seq: ctx.seq,
+        captured_at: ctx.capturedAt,
+        lat: ctx.lat,
+        lng: ctx.lng,
+        accuracy_m: ctx.accuracyM,
+        device_id: ctx.deviceId,
+        kind: "sos",
+        payload: { note: null },
+        media: [],
+      });
       if (navigator.vibrate) navigator.vibrate([300, 100, 300]);
-    } catch (e: any) {
-      toast.error(e.message ?? "Erro ao enviar alerta");
+      if (!online) {
+        setActivated({ ackTarget: null, queued: true });
+        return;
+      }
+      const rep = await flushOutbox();
+      if (rep.sent || rep.duplicates) {
+        await refetch();
+        setActivated({ ackTarget: null, queued: false });
+      } else if (rep.rejected) {
+        const c = (await listCommands()).find((x) => x.command_id === ctx.commandId);
+        toast.error(rejectionMessage(c?.outcome?.rejection_code));
+        if (c?.outcome?.rejection_code === "sos_already_open") await refetch();
+      } else setActivated({ ackTarget: null, queued: true });
+    } catch (e) {
+      toast.error((e as Error).message ?? "Erro ao enviar o alerta");
     }
   }
 
   return (
     <div
       className="mx-auto w-full max-w-[430px] min-h-[100dvh] relative flex flex-col"
-      style={{ background: "#1F0A0A", color: "#F87171", WebkitTapHighlightColor: "transparent", userSelect: "none" }}
+      style={{
+        background: "#1F0A0A",
+        color: "#F87171",
+        WebkitTapHighlightColor: "transparent",
+        userSelect: "none",
+      }}
     >
       <header className="flex items-center justify-between px-4 pt-5">
-        {!activated && (
-          <button
-            onClick={() => navigate({ to: "/driver" })}
-            className="rounded-[10px] px-3 py-2 text-[13px]"
-            style={{ background: "rgba(194,51,51,0.2)", border: "1px solid #C23333", color: "#F87171" }}
-          >
-            ← Voltar
-          </button>
-        )}
-        <div className="ml-auto px-3 py-1 rounded-full text-[12px] font-bold" style={{ background: "#C23333", color: "white" }}>
-          SOS
+        <button
+          onClick={() => navigate({ to: "/driver" })}
+          className="rounded-[10px] px-3 py-2 text-[13px]"
+          style={{
+            background: "rgba(194,51,51,0.2)",
+            border: "1px solid #C23333",
+            color: "#F87171",
+          }}
+        >
+          ← Voltar
+        </button>
+        <div
+          className="ml-auto px-3 py-1 rounded-full text-[12px] font-bold"
+          style={{ background: "#C23333", color: "white" }}
+        >
+          ALERTA CRÍTICO
         </div>
       </header>
 
+      <div
+        className="mx-4 mt-4 rounded-[12px] p-3 text-[12px]"
+        style={{ background: "rgba(0,0,0,0.35)", border: "1px solid #C23333", color: "#FECACA" }}
+      >
+        <div className="font-medium">
+          {sosMode === "homologation"
+            ? "Alerta crítico operacional — EM HOMOLOGAÇÃO"
+            : "Alerta crítico operacional"}
+        </div>
+        <div className="mt-1">
+          Este botão avisa a transportadora e a SteelGo e preserva sua trilha.{" "}
+          <b>Não é central 24h e não aciona polícia, bombeiros ou SAMU.</b> Em emergência, ligue:
+        </div>
+        <div className="mt-2 flex gap-2">
+          {[
+            ["190", "Polícia"],
+            ["192", "SAMU"],
+            ["193", "Bombeiros"],
+          ].map(([n, l]) => (
+            <a
+              key={n}
+              href={`tel:${n}`}
+              className="flex-1 flex items-center justify-center gap-1 rounded-[10px] py-2 font-bold"
+              style={{ background: "#C23333", color: "white" }}
+            >
+              <Phone size={14} /> {n} <span className="font-normal text-[11px]">{l}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
       <div className="flex-1 flex flex-col items-center justify-center px-6">
-        {!activated ? (
+        {!trip ? (
+          <div className="text-center text-[14px]" style={{ color: "#FECACA" }}>
+            Sem viagem ativa: o alerta crítico só pode ser aberto durante uma viagem.
+          </div>
+        ) : !activated ? (
           <>
             <button
               onPointerDown={start}
@@ -115,142 +175,61 @@ function PanicPage() {
               onPointerCancel={cancel}
               onPointerLeave={cancel}
               className="relative flex items-center justify-center"
-              style={{ width: 160, height: 160, touchAction: "manipulation" }}
+              style={{ width: 180, height: 180, touchAction: "manipulation" }}
             >
-              {/* Outer ring */}
               <div
                 className="absolute inset-0 rounded-full"
                 style={{
-                  border: "3px solid #C23333",
-                  boxShadow: holding ? "0 0 0 8px rgba(194,51,51,0.3)" : "0 0 0 0 rgba(194,51,51,0.5)",
-                  animation: holding ? undefined : "pulse 2s ease-in-out infinite",
+                  background: `conic-gradient(#F87171 ${progress * 360}deg, rgba(194,51,51,0.25) 0deg)`,
                 }}
               />
-              {/* Progress ring */}
-              {holding && (
-                <svg className="absolute inset-0" viewBox="0 0 160 160">
-                  <circle
-                    cx="80"
-                    cy="80"
-                    r="76"
-                    fill="none"
-                    stroke="#fff"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray={2 * Math.PI * 76}
-                    strokeDashoffset={2 * Math.PI * 76 * (1 - progress)}
-                    transform="rotate(-90 80 80)"
-                    style={{ transition: "stroke-dashoffset 0.1s linear" }}
-                  />
-                </svg>
-              )}
-              {/* Inner */}
               <div
-                className="rounded-full flex flex-col items-center justify-center"
-                style={{ width: 120, height: 120, background: "#C23333" }}
+                className="absolute inset-[10px] rounded-full flex flex-col items-center justify-center"
+                style={{ background: holding ? "#C23333" : "#7A1F1F" }}
               >
-                <AlertTriangle size={44} className="text-white" />
-                <div className="text-white text-[13px] font-bold mt-1">PÂNICO</div>
+                <AlertTriangle size={44} style={{ color: "white" }} />
+                <div className="text-[12px] font-bold mt-1" style={{ color: "white" }}>
+                  {holding ? "SEGURE" : "SEGURAR 3 s"}
+                </div>
               </div>
             </button>
-            <div className="mt-6 text-center text-[14px] text-graphite-200">
-              {holding
-                ? `Segure ${Math.max(1, Math.ceil(HOLD_MS / 1000 - (progress * HOLD_MS) / 1000))}...`
-                : "Segure por 3 segundos para ativar"}
+            <div className="mt-6 text-center text-[13px]" style={{ color: "#FECACA" }}>
+              Viagem {trip.trip_number}. Segure o botão por 3 segundos para acionar.
             </div>
-
-            <div
-              className="mt-10 w-full rounded-[14px] p-4"
-              style={{ background: "rgba(194,51,51,0.12)", border: "1px solid rgba(194,51,51,0.3)" }}
-            >
-              <div className="text-[12px] text-red-400 font-semibold mb-2">O que acontece:</div>
-              <Row icon={<MapPin size={16} />} text="Sua localização em tempo real" />
-              <Row icon={<Phone size={16} />} text="Central SteelGo e transportadora alertadas" />
-              <Row icon={<MessageCircle size={16} />} text="WhatsApp com sua localização" />
-            </div>
-
-            <div className="mt-8 text-center">
-              <div className="text-[12px] text-graphite-200">Central 24h</div>
-              <a href="tel:+551199999999" className="text-[20px] text-graphite-50 font-medium tabular-nums">
-                (11) 9 9999-9999
-              </a>
+            <div className="mt-3 flex items-center gap-1 text-[12px]" style={{ color: "#FCA5A5" }}>
+              <MapPin size={14} />{" "}
+              {geo.lat != null
+                ? `${geo.lat.toFixed(4)}, ${geo.lng?.toFixed(4)} (±${Math.round(geo.accuracy ?? 0)} m)`
+                : (geo.error ?? "obtendo posição…")}
             </div>
           </>
         ) : (
-          <ActivatedView lat={geo.lat} lng={geo.lng} onCancel={() => setActivated(false)} />
+          <div
+            className="w-full rounded-[16px] p-5 text-center"
+            style={{ background: "rgba(0,0,0,0.35)", border: "1px solid #C23333" }}
+          >
+            <CheckCircle2 size={40} style={{ color: "#FECACA", margin: "0 auto" }} />
+            <div className="text-[18px] font-medium mt-3" style={{ color: "white" }}>
+              {activated.queued ? "Alerta salvo — sem internet" : "Alerta enviado"}
+            </div>
+            <div className="text-[13px] mt-2" style={{ color: "#FECACA" }}>
+              {activated.queued
+                ? "Será enviado assim que a conexão voltar. Enquanto isso, use os telefones de emergência acima."
+                : openSos?.acknowledged_at
+                  ? `Recebido pela ${openSos.acknowledged_by_kind === "carrier" ? "transportadora" : "SteelGo"} em ${fmtDateTime(openSos.acknowledged_at)}.`
+                  : `Aguardando reconhecimento. Meta: ${fmtDateTime(openSos?.ack_target_at ?? activated.ackTarget)} (meta interna, não garantia).`}
+            </div>
+            {openSos && openSos.escalation_level > 0 && (
+              <div className="text-[12px] mt-2" style={{ color: "#FCA5A5" }}>
+                Escalonado internamente (nível {openSos.escalation_level}).
+              </div>
+            )}
+            <div className="text-[12px] mt-3" style={{ color: "#FCA5A5" }}>
+              Sua trilha está preservada. A viagem fica pausada até o encerramento do alerta.
+            </div>
+          </div>
         )}
       </div>
-      <style>{`@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,51,51,0.5)}50%{box-shadow:0 0 0 16px rgba(194,51,51,0)}}`}</style>
-    </div>
-  );
-}
-
-function Row({ icon, text }: { icon: React.ReactNode; text: string }) {
-  return (
-    <div className="flex items-center gap-2 py-1 text-[13px] text-graphite-100">
-      <span className="text-red-400">{icon}</span>
-      {text}
-    </div>
-  );
-}
-
-function ActivatedView({ lat, lng, onCancel }: { lat: number | null; lng: number | null; onCancel: () => void }) {
-  const [pinInput, setPinInput] = useState("");
-  const [showPin, setShowPin] = useState(false);
-  return (
-    <div className="w-full flex flex-col items-center">
-      <div className="relative flex items-center justify-center" style={{ width: 160, height: 160 }}>
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{ border: "3px solid #1A9B5E", animation: "pulse-g 2s ease-in-out infinite" }}
-        />
-        <div className="rounded-full flex items-center justify-center bg-esg-green" style={{ width: 120, height: 120 }}>
-          <CheckCircle2 size={56} className="text-white" />
-        </div>
-      </div>
-      <div className="text-[24px] text-graphite-50 font-medium mt-6">Alerta enviado!</div>
-      <div
-        className="mt-4 px-3 py-1.5 rounded-full text-[11px] tabular-nums"
-        style={{ background: "rgba(46,204,138,0.15)", color: "#2ECC8A" }}
-      >
-        📍 {lat?.toFixed(5)}, {lng?.toFixed(5)}
-      </div>
-      <div className="mt-4 space-y-1 text-[13px] text-esg-green-400">
-        <div>✓ Central notificada</div>
-        <div>✓ Transportadora notificada</div>
-      </div>
-      {!showPin ? (
-        <button
-          onClick={() => setShowPin(true)}
-          className="mt-8 px-5 py-2.5 rounded-[10px] bg-bg-input text-graphite-200 text-[13px]"
-        >
-          Cancelar emergência (PIN)
-        </button>
-      ) : (
-        <div className="mt-6 w-full max-w-xs">
-          <input
-            value={pinInput}
-            onChange={(e) => setPinInput(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            inputMode="numeric"
-            placeholder="••••"
-            className="w-full text-center tracking-[0.5em] text-[24px] rounded-[12px] bg-bg-input border border-graphite-600 text-graphite-50 outline-none"
-            style={{ height: 56 }}
-          />
-          <button
-            onClick={() => {
-              if (pinInput === "1234") {
-                toast.success("Emergência cancelada");
-                onCancel();
-              } else toast.error("PIN incorreto");
-            }}
-            className="mt-3 w-full rounded-[12px] bg-graphite-700 text-graphite-100"
-            style={{ height: 48 }}
-          >
-            Confirmar
-          </button>
-        </div>
-      )}
-      <style>{`@keyframes pulse-g{0%,100%{box-shadow:0 0 0 0 rgba(26,155,94,0.5)}50%{box-shadow:0 0 0 16px rgba(26,155,94,0)}}`}</style>
     </div>
   );
 }

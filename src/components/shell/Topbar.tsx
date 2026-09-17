@@ -8,7 +8,15 @@ import { BrandLogo } from "@/components/brand/BrandLogo";
 import { NotificationsMenu } from "./NotificationsMenu";
 
 export function Topbar() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, company, companyRole, companies, selectCompany } = useAuth();
+  const roleLabel =
+    companyRole === "owner"
+      ? "Proprietário"
+      : companyRole === "operator"
+        ? "Operador"
+        : companyRole === "viewer"
+          ? "Leitor"
+          : null;
   const { language, setLanguage, t } = useLanguage();
 
   return (
@@ -45,6 +53,45 @@ export function Topbar() {
             );
           })}
         </div>
+        {company && (
+          <div className="hidden items-center gap-2 sm:flex" data-testid="company-context">
+            {companies.length > 1 ? (
+              <select
+                aria-label="Empresa"
+                value={company.id}
+                onChange={(e) => selectCompany(e.target.value)}
+                className="max-w-[220px] rounded-full border border-[#D4DAE3] bg-white px-3 py-1 text-xs text-[#1F2933]"
+              >
+                {companies.map((a) => (
+                  <option key={a.company.id} value={a.company.id}>
+                    {a.company.trade_name ?? a.company.name} ·{" "}
+                    {a.role === "owner"
+                      ? "proprietário"
+                      : a.role === "operator"
+                        ? "operador"
+                        : "leitor"}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="max-w-[220px] truncate text-xs text-[#1F2933]">
+                {company.trade_name ?? company.name}
+              </span>
+            )}
+            {roleLabel && (
+              <span
+                data-testid="company-role"
+                className={
+                  companyRole === "owner"
+                    ? "rounded-full bg-[#16263F] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#E6EAF0]"
+                    : "rounded-full bg-[#E0A23A]/20 px-2 py-0.5 text-[10px] font-semibold uppercase text-[#A5731D]"
+                }
+              >
+                {roleLabel}
+              </span>
+            )}
+          </div>
+        )}
         <NotificationsMenu ariaLabel={t("admin.notifications")} />
         <div className="hidden items-center gap-2 sm:flex">
           <Avatar name={profile?.full_name ?? profile?.email ?? "?"} size="sm" />

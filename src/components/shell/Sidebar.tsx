@@ -17,9 +17,11 @@ import {
   Gavel as GavelIcon,
   Settings as SettingsIcon,
   HandHelping,
+  Radar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n";
+import { useAuth } from "@/contexts/AuthContext";
 
 export type ShellRole = "shipper" | "carrier" | "admin";
 
@@ -28,23 +30,52 @@ interface NavItem {
   labelKey: string;
   icon: LucideIcon;
   disabled?: boolean;
+  /** Modulo 3: item exclusivo do proprietario (financeiro, disputa, contratacao). Membros nao veem. */
+  ownerOnly?: boolean;
 }
 
 const NAV: Record<ShellRole, NavItem[]> = {
   shipper: [
     { to: "/shipper", labelKey: "personaNav.shipper.dashboard", icon: LayoutDashboard },
-    { to: "/shipper/freights/new", labelKey: "personaNav.shipper.requestFreight", icon: Plus },
-    { to: "/shipper/freights", labelKey: "personaNav.shipper.shipments", icon: Package },
+    {
+      to: "/shipper/freights/new",
+      labelKey: "personaNav.shipper.requestFreight",
+      icon: Plus,
+      ownerOnly: true,
+    },
+    {
+      to: "/shipper/freights",
+      labelKey: "personaNav.shipper.shipments",
+      icon: Package,
+      ownerOnly: true,
+    },
     {
       to: "/shipper/carriers",
       labelKey: "personaNav.shipper.carriers",
       icon: Building2,
       disabled: true,
     },
-    { to: "/shipper/contracts", labelKey: "personaNav.shipper.documents", icon: FileText },
-    { to: "/shipper/esg", labelKey: "personaNav.shipper.esg", icon: Leaf },
-    { to: "/shipper/payments", labelKey: "personaNav.shipper.payments", icon: CreditCard },
-    { to: "/shipper/disputes", labelKey: "personaNav.shipper.disputes", icon: GavelIcon },
+    { to: "/shipper/trips", labelKey: "personaNav.shipper.trips", icon: Radar },
+    {
+      to: "/shipper/contracts",
+      labelKey: "personaNav.shipper.documents",
+      icon: FileText,
+      ownerOnly: true,
+    },
+    { to: "/shipper/esg", labelKey: "personaNav.shipper.esg", icon: Leaf, ownerOnly: true },
+    {
+      to: "/shipper/payments",
+      labelKey: "personaNav.shipper.payments",
+      icon: CreditCard,
+      ownerOnly: true,
+    },
+    {
+      to: "/shipper/disputes",
+      labelKey: "personaNav.shipper.disputes",
+      icon: GavelIcon,
+      ownerOnly: true,
+    },
+    { to: "/shipper/settings", labelKey: "personaNav.shipper.settings", icon: SettingsIcon },
     {
       to: "/shipper/support",
       labelKey: "personaNav.shipper.support",
@@ -54,14 +85,46 @@ const NAV: Record<ShellRole, NavItem[]> = {
   ],
   carrier: [
     { to: "/carrier", labelKey: "personaNav.carrier.dashboard", icon: LayoutDashboard },
-    { to: "/carrier/marketplace", labelKey: "personaNav.carrier.availableFreights", icon: Package },
-    { to: "/carrier/active", labelKey: "personaNav.carrier.activeLoads", icon: Truck },
-    { to: "/carrier/drivers", labelKey: "personaNav.carrier.drivers", icon: Users },
-    { to: "/carrier/vehicles", labelKey: "personaNav.carrier.trucks", icon: Car },
-    { to: "/carrier/contracts", labelKey: "personaNav.carrier.documents", icon: FileText },
-    { to: "/carrier/payouts", labelKey: "personaNav.carrier.receivables", icon: CreditCard },
-    { to: "/carrier/disputes", labelKey: "personaNav.carrier.disputes", icon: GavelIcon },
-    { to: "/carrier/score", labelKey: "personaNav.carrier.esg", icon: Leaf },
+    {
+      to: "/carrier/marketplace",
+      labelKey: "personaNav.carrier.availableFreights",
+      icon: Package,
+      ownerOnly: true,
+    },
+    {
+      to: "/carrier/active",
+      labelKey: "personaNav.carrier.activeLoads",
+      icon: Truck,
+      ownerOnly: true,
+    },
+    { to: "/carrier/trips", labelKey: "personaNav.carrier.trips", icon: Radar },
+    {
+      to: "/carrier/drivers",
+      labelKey: "personaNav.carrier.drivers",
+      icon: Users,
+      ownerOnly: true,
+    },
+    { to: "/carrier/vehicles", labelKey: "personaNav.carrier.trucks", icon: Car, ownerOnly: true },
+    {
+      to: "/carrier/contracts",
+      labelKey: "personaNav.carrier.documents",
+      icon: FileText,
+      ownerOnly: true,
+    },
+    {
+      to: "/carrier/payouts",
+      labelKey: "personaNav.carrier.receivables",
+      icon: CreditCard,
+      ownerOnly: true,
+    },
+    {
+      to: "/carrier/disputes",
+      labelKey: "personaNav.carrier.disputes",
+      icon: GavelIcon,
+      ownerOnly: true,
+    },
+    { to: "/carrier/settings", labelKey: "personaNav.carrier.settings", icon: SettingsIcon },
+    { to: "/carrier/score", labelKey: "personaNav.carrier.esg", icon: Leaf, ownerOnly: true },
     {
       to: "/carrier/support",
       labelKey: "personaNav.carrier.support",
@@ -76,6 +139,7 @@ const NAV: Record<ShellRole, NavItem[]> = {
     { to: "/admin/carriers", labelKey: "personaNav.admin.carriers", icon: Truck },
     { to: "/admin/drivers", labelKey: "personaNav.admin.drivers", icon: Car, disabled: true },
     { to: "/admin/freights", labelKey: "personaNav.admin.freights", icon: Package },
+    { to: "/admin/operations", labelKey: "personaNav.admin.operations", icon: Radar },
     { to: "/admin/disputes", labelKey: "personaNav.admin.disputes", icon: GavelIcon },
     { to: "/admin/payments", labelKey: "personaNav.admin.payments", icon: CreditCard },
     { to: "/admin/esg", labelKey: "personaNav.admin.esg", icon: Leaf },
@@ -88,7 +152,11 @@ const NAV: Record<ShellRole, NavItem[]> = {
 export function Sidebar({ role }: { role: ShellRole }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { t } = useLanguage();
-  const items = NAV[role];
+  const { companyRole } = useAuth();
+  // membro (operator/viewer) nao ve itens financeiros, de disputa ou de contratacao
+  const items = NAV[role].filter(
+    (item) => !item.ownerOnly || role === "admin" || companyRole === "owner",
+  );
   return (
     <aside className="hidden w-60 shrink-0 border-r border-[#22334A] bg-[#16263F] md:flex md:flex-col">
       <div className="flex h-14 items-center gap-2 border-b border-[#22334A] px-5">

@@ -27,11 +27,15 @@ import { Route as ShipperIndexRouteImport } from './routes/shipper.index'
 import { Route as DriverIndexRouteImport } from './routes/driver.index'
 import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as ShipperSettingsRouteImport } from './routes/shipper.settings'
 import { Route as ShipperPaymentsRouteImport } from './routes/shipper.payments'
 import { Route as ShipperEsgRouteImport } from './routes/shipper.esg'
+import { Route as DriverReturnReceiptRouteImport } from './routes/driver.return-receipt'
 import { Route as DriverProfileRouteImport } from './routes/driver.profile'
+import { Route as DriverPodRouteImport } from './routes/driver.pod'
 import { Route as DriverPanicRouteImport } from './routes/driver.panic'
 import { Route as DriverHistoryRouteImport } from './routes/driver.history'
+import { Route as DriverExceptionRouteImport } from './routes/driver.exception'
 import { Route as DriverDocsRouteImport } from './routes/driver.docs'
 import { Route as DriverDeliveryCompleteRouteImport } from './routes/driver.delivery-complete'
 import { Route as DriverCheckpointRouteImport } from './routes/driver.checkpoint'
@@ -55,13 +59,16 @@ import { Route as AdminEsgRouteImport } from './routes/admin.esg'
 import { Route as AdminContractsRouteImport } from './routes/admin.contracts'
 import { Route as AdminCarriersRouteImport } from './routes/admin.carriers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as ShipperTripsIndexRouteImport } from './routes/shipper.trips.index'
 import { Route as ShipperFreightsIndexRouteImport } from './routes/shipper.freights.index'
 import { Route as ShipperDisputesIndexRouteImport } from './routes/shipper.disputes.index'
 import { Route as ShipperContractsIndexRouteImport } from './routes/shipper.contracts.index'
 import { Route as CarrierTripsIndexRouteImport } from './routes/carrier.trips.index'
 import { Route as CarrierDisputesIndexRouteImport } from './routes/carrier.disputes.index'
 import { Route as CarrierContractsIndexRouteImport } from './routes/carrier.contracts.index'
+import { Route as AdminOperationsIndexRouteImport } from './routes/admin.operations.index'
 import { Route as AdminDisputesIndexRouteImport } from './routes/admin.disputes.index'
+import { Route as ShipperTripsIdRouteImport } from './routes/shipper.trips.$id'
 import { Route as ShipperReviewContractIdRouteImport } from './routes/shipper.review.$contractId'
 import { Route as ShipperPaymentContractIdRouteImport } from './routes/shipper.payment.$contractId'
 import { Route as ShipperFreightsNewRouteImport } from './routes/shipper.freights.new'
@@ -71,6 +78,8 @@ import { Route as ShipperContractsIdRouteImport } from './routes/shipper.contrac
 import { Route as CarrierTripsIdRouteImport } from './routes/carrier.trips.$id'
 import { Route as CarrierDisputesIdRouteImport } from './routes/carrier.disputes.$id'
 import { Route as CarrierContractsIdRouteImport } from './routes/carrier.contracts.$id'
+import { Route as AdminOperationsGovernanceRouteImport } from './routes/admin.operations.governance'
+import { Route as AdminOperationsIdRouteImport } from './routes/admin.operations.$id'
 import { Route as AdminDisputesIdRouteImport } from './routes/admin.disputes.$id'
 
 const TermsRoute = TermsRouteImport.update({
@@ -163,6 +172,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const ShipperSettingsRoute = ShipperSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ShipperRoute,
+} as any)
 const ShipperPaymentsRoute = ShipperPaymentsRouteImport.update({
   id: '/payments',
   path: '/payments',
@@ -173,9 +187,19 @@ const ShipperEsgRoute = ShipperEsgRouteImport.update({
   path: '/esg',
   getParentRoute: () => ShipperRoute,
 } as any)
+const DriverReturnReceiptRoute = DriverReturnReceiptRouteImport.update({
+  id: '/return-receipt',
+  path: '/return-receipt',
+  getParentRoute: () => DriverRoute,
+} as any)
 const DriverProfileRoute = DriverProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverPodRoute = DriverPodRouteImport.update({
+  id: '/pod',
+  path: '/pod',
   getParentRoute: () => DriverRoute,
 } as any)
 const DriverPanicRoute = DriverPanicRouteImport.update({
@@ -186,6 +210,11 @@ const DriverPanicRoute = DriverPanicRouteImport.update({
 const DriverHistoryRoute = DriverHistoryRouteImport.update({
   id: '/history',
   path: '/history',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverExceptionRoute = DriverExceptionRouteImport.update({
+  id: '/exception',
+  path: '/exception',
   getParentRoute: () => DriverRoute,
 } as any)
 const DriverDocsRoute = DriverDocsRouteImport.update({
@@ -303,6 +332,11 @@ const AdminAuditRoute = AdminAuditRouteImport.update({
   path: '/audit',
   getParentRoute: () => AdminRoute,
 } as any)
+const ShipperTripsIndexRoute = ShipperTripsIndexRouteImport.update({
+  id: '/trips/',
+  path: '/trips/',
+  getParentRoute: () => ShipperRoute,
+} as any)
 const ShipperFreightsIndexRoute = ShipperFreightsIndexRouteImport.update({
   id: '/freights/',
   path: '/freights/',
@@ -333,10 +367,20 @@ const CarrierContractsIndexRoute = CarrierContractsIndexRouteImport.update({
   path: '/contracts/',
   getParentRoute: () => CarrierRoute,
 } as any)
+const AdminOperationsIndexRoute = AdminOperationsIndexRouteImport.update({
+  id: '/operations/',
+  path: '/operations/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDisputesIndexRoute = AdminDisputesIndexRouteImport.update({
   id: '/disputes/',
   path: '/disputes/',
   getParentRoute: () => AdminRoute,
+} as any)
+const ShipperTripsIdRoute = ShipperTripsIdRouteImport.update({
+  id: '/trips/$id',
+  path: '/trips/$id',
+  getParentRoute: () => ShipperRoute,
 } as any)
 const ShipperReviewContractIdRoute = ShipperReviewContractIdRouteImport.update({
   id: '/review/$contractId',
@@ -384,6 +428,17 @@ const CarrierContractsIdRoute = CarrierContractsIdRouteImport.update({
   path: '/contracts/$id',
   getParentRoute: () => CarrierRoute,
 } as any)
+const AdminOperationsGovernanceRoute =
+  AdminOperationsGovernanceRouteImport.update({
+    id: '/operations/governance',
+    path: '/operations/governance',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminOperationsIdRoute = AdminOperationsIdRouteImport.update({
+  id: '/operations/$id',
+  path: '/operations/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminDisputesIdRoute = AdminDisputesIdRouteImport.update({
   id: '/disputes/$id',
   path: '/disputes/$id',
@@ -428,16 +483,22 @@ export interface FileRoutesByFullPath {
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
+  '/driver/exception': typeof DriverExceptionRoute
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
+  '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
+  '/driver/return-receipt': typeof DriverReturnReceiptRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
+  '/shipper/settings': typeof ShipperSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
   '/shipper/': typeof ShipperIndexRoute
   '/admin/disputes/$id': typeof AdminDisputesIdRoute
+  '/admin/operations/$id': typeof AdminOperationsIdRoute
+  '/admin/operations/governance': typeof AdminOperationsGovernanceRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
   '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
@@ -447,13 +508,16 @@ export interface FileRoutesByFullPath {
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/shipper/trips/$id': typeof ShipperTripsIdRoute
   '/admin/disputes/': typeof AdminDisputesIndexRoute
+  '/admin/operations/': typeof AdminOperationsIndexRoute
   '/carrier/contracts/': typeof CarrierContractsIndexRoute
   '/carrier/disputes/': typeof CarrierDisputesIndexRoute
   '/carrier/trips/': typeof CarrierTripsIndexRoute
   '/shipper/contracts/': typeof ShipperContractsIndexRoute
   '/shipper/disputes/': typeof ShipperDisputesIndexRoute
   '/shipper/freights/': typeof ShipperFreightsIndexRoute
+  '/shipper/trips/': typeof ShipperTripsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -489,16 +553,22 @@ export interface FileRoutesByTo {
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
+  '/driver/exception': typeof DriverExceptionRoute
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
+  '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
+  '/driver/return-receipt': typeof DriverReturnReceiptRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
+  '/shipper/settings': typeof ShipperSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/carrier': typeof CarrierIndexRoute
   '/driver': typeof DriverIndexRoute
   '/shipper': typeof ShipperIndexRoute
   '/admin/disputes/$id': typeof AdminDisputesIdRoute
+  '/admin/operations/$id': typeof AdminOperationsIdRoute
+  '/admin/operations/governance': typeof AdminOperationsGovernanceRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
   '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
@@ -508,13 +578,16 @@ export interface FileRoutesByTo {
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/shipper/trips/$id': typeof ShipperTripsIdRoute
   '/admin/disputes': typeof AdminDisputesIndexRoute
+  '/admin/operations': typeof AdminOperationsIndexRoute
   '/carrier/contracts': typeof CarrierContractsIndexRoute
   '/carrier/disputes': typeof CarrierDisputesIndexRoute
   '/carrier/trips': typeof CarrierTripsIndexRoute
   '/shipper/contracts': typeof ShipperContractsIndexRoute
   '/shipper/disputes': typeof ShipperDisputesIndexRoute
   '/shipper/freights': typeof ShipperFreightsIndexRoute
+  '/shipper/trips': typeof ShipperTripsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -555,16 +628,22 @@ export interface FileRoutesById {
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
+  '/driver/exception': typeof DriverExceptionRoute
   '/driver/history': typeof DriverHistoryRoute
   '/driver/panic': typeof DriverPanicRoute
+  '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
+  '/driver/return-receipt': typeof DriverReturnReceiptRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
+  '/shipper/settings': typeof ShipperSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
   '/shipper/': typeof ShipperIndexRoute
   '/admin/disputes/$id': typeof AdminDisputesIdRoute
+  '/admin/operations/$id': typeof AdminOperationsIdRoute
+  '/admin/operations/governance': typeof AdminOperationsGovernanceRoute
   '/carrier/contracts/$id': typeof CarrierContractsIdRoute
   '/carrier/disputes/$id': typeof CarrierDisputesIdRoute
   '/carrier/trips/$id': typeof CarrierTripsIdRoute
@@ -574,13 +653,16 @@ export interface FileRoutesById {
   '/shipper/freights/new': typeof ShipperFreightsNewRoute
   '/shipper/payment/$contractId': typeof ShipperPaymentContractIdRoute
   '/shipper/review/$contractId': typeof ShipperReviewContractIdRoute
+  '/shipper/trips/$id': typeof ShipperTripsIdRoute
   '/admin/disputes/': typeof AdminDisputesIndexRoute
+  '/admin/operations/': typeof AdminOperationsIndexRoute
   '/carrier/contracts/': typeof CarrierContractsIndexRoute
   '/carrier/disputes/': typeof CarrierDisputesIndexRoute
   '/carrier/trips/': typeof CarrierTripsIndexRoute
   '/shipper/contracts/': typeof ShipperContractsIndexRoute
   '/shipper/disputes/': typeof ShipperDisputesIndexRoute
   '/shipper/freights/': typeof ShipperFreightsIndexRoute
+  '/shipper/trips/': typeof ShipperTripsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -622,16 +704,22 @@ export interface FileRouteTypes {
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
+    | '/driver/exception'
     | '/driver/history'
     | '/driver/panic'
+    | '/driver/pod'
     | '/driver/profile'
+    | '/driver/return-receipt'
     | '/shipper/esg'
     | '/shipper/payments'
+    | '/shipper/settings'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
     | '/shipper/'
     | '/admin/disputes/$id'
+    | '/admin/operations/$id'
+    | '/admin/operations/governance'
     | '/carrier/contracts/$id'
     | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
@@ -641,13 +729,16 @@ export interface FileRouteTypes {
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/shipper/trips/$id'
     | '/admin/disputes/'
+    | '/admin/operations/'
     | '/carrier/contracts/'
     | '/carrier/disputes/'
     | '/carrier/trips/'
     | '/shipper/contracts/'
     | '/shipper/disputes/'
     | '/shipper/freights/'
+    | '/shipper/trips/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -683,16 +774,22 @@ export interface FileRouteTypes {
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
+    | '/driver/exception'
     | '/driver/history'
     | '/driver/panic'
+    | '/driver/pod'
     | '/driver/profile'
+    | '/driver/return-receipt'
     | '/shipper/esg'
     | '/shipper/payments'
+    | '/shipper/settings'
     | '/admin'
     | '/carrier'
     | '/driver'
     | '/shipper'
     | '/admin/disputes/$id'
+    | '/admin/operations/$id'
+    | '/admin/operations/governance'
     | '/carrier/contracts/$id'
     | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
@@ -702,13 +799,16 @@ export interface FileRouteTypes {
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/shipper/trips/$id'
     | '/admin/disputes'
+    | '/admin/operations'
     | '/carrier/contracts'
     | '/carrier/disputes'
     | '/carrier/trips'
     | '/shipper/contracts'
     | '/shipper/disputes'
     | '/shipper/freights'
+    | '/shipper/trips'
   id:
     | '__root__'
     | '/'
@@ -748,16 +848,22 @@ export interface FileRouteTypes {
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
+    | '/driver/exception'
     | '/driver/history'
     | '/driver/panic'
+    | '/driver/pod'
     | '/driver/profile'
+    | '/driver/return-receipt'
     | '/shipper/esg'
     | '/shipper/payments'
+    | '/shipper/settings'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
     | '/shipper/'
     | '/admin/disputes/$id'
+    | '/admin/operations/$id'
+    | '/admin/operations/governance'
     | '/carrier/contracts/$id'
     | '/carrier/disputes/$id'
     | '/carrier/trips/$id'
@@ -767,13 +873,16 @@ export interface FileRouteTypes {
     | '/shipper/freights/new'
     | '/shipper/payment/$contractId'
     | '/shipper/review/$contractId'
+    | '/shipper/trips/$id'
     | '/admin/disputes/'
+    | '/admin/operations/'
     | '/carrier/contracts/'
     | '/carrier/disputes/'
     | '/carrier/trips/'
     | '/shipper/contracts/'
     | '/shipper/disputes/'
     | '/shipper/freights/'
+    | '/shipper/trips/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -922,6 +1031,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/shipper/settings': {
+      id: '/shipper/settings'
+      path: '/settings'
+      fullPath: '/shipper/settings'
+      preLoaderRoute: typeof ShipperSettingsRouteImport
+      parentRoute: typeof ShipperRoute
+    }
     '/shipper/payments': {
       id: '/shipper/payments'
       path: '/payments'
@@ -936,11 +1052,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShipperEsgRouteImport
       parentRoute: typeof ShipperRoute
     }
+    '/driver/return-receipt': {
+      id: '/driver/return-receipt'
+      path: '/return-receipt'
+      fullPath: '/driver/return-receipt'
+      preLoaderRoute: typeof DriverReturnReceiptRouteImport
+      parentRoute: typeof DriverRoute
+    }
     '/driver/profile': {
       id: '/driver/profile'
       path: '/profile'
       fullPath: '/driver/profile'
       preLoaderRoute: typeof DriverProfileRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/pod': {
+      id: '/driver/pod'
+      path: '/pod'
+      fullPath: '/driver/pod'
+      preLoaderRoute: typeof DriverPodRouteImport
       parentRoute: typeof DriverRoute
     }
     '/driver/panic': {
@@ -955,6 +1085,13 @@ declare module '@tanstack/react-router' {
       path: '/history'
       fullPath: '/driver/history'
       preLoaderRoute: typeof DriverHistoryRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/exception': {
+      id: '/driver/exception'
+      path: '/exception'
+      fullPath: '/driver/exception'
+      preLoaderRoute: typeof DriverExceptionRouteImport
       parentRoute: typeof DriverRoute
     }
     '/driver/docs': {
@@ -1118,6 +1255,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/shipper/trips/': {
+      id: '/shipper/trips/'
+      path: '/trips'
+      fullPath: '/shipper/trips/'
+      preLoaderRoute: typeof ShipperTripsIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
     '/shipper/freights/': {
       id: '/shipper/freights/'
       path: '/freights'
@@ -1160,12 +1304,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarrierContractsIndexRouteImport
       parentRoute: typeof CarrierRoute
     }
+    '/admin/operations/': {
+      id: '/admin/operations/'
+      path: '/operations'
+      fullPath: '/admin/operations/'
+      preLoaderRoute: typeof AdminOperationsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/disputes/': {
       id: '/admin/disputes/'
       path: '/disputes'
       fullPath: '/admin/disputes/'
       preLoaderRoute: typeof AdminDisputesIndexRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/shipper/trips/$id': {
+      id: '/shipper/trips/$id'
+      path: '/trips/$id'
+      fullPath: '/shipper/trips/$id'
+      preLoaderRoute: typeof ShipperTripsIdRouteImport
+      parentRoute: typeof ShipperRoute
     }
     '/shipper/review/$contractId': {
       id: '/shipper/review/$contractId'
@@ -1230,6 +1388,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarrierContractsIdRouteImport
       parentRoute: typeof CarrierRoute
     }
+    '/admin/operations/governance': {
+      id: '/admin/operations/governance'
+      path: '/operations/governance'
+      fullPath: '/admin/operations/governance'
+      preLoaderRoute: typeof AdminOperationsGovernanceRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/operations/$id': {
+      id: '/admin/operations/$id'
+      path: '/operations/$id'
+      fullPath: '/admin/operations/$id'
+      preLoaderRoute: typeof AdminOperationsIdRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/disputes/$id': {
       id: '/admin/disputes/$id'
       path: '/disputes/$id'
@@ -1252,7 +1424,10 @@ interface AdminRouteChildren {
   AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminDisputesIdRoute: typeof AdminDisputesIdRoute
+  AdminOperationsIdRoute: typeof AdminOperationsIdRoute
+  AdminOperationsGovernanceRoute: typeof AdminOperationsGovernanceRoute
   AdminDisputesIndexRoute: typeof AdminDisputesIndexRoute
+  AdminOperationsIndexRoute: typeof AdminOperationsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -1267,7 +1442,10 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminDisputesIdRoute: AdminDisputesIdRoute,
+  AdminOperationsIdRoute: AdminOperationsIdRoute,
+  AdminOperationsGovernanceRoute: AdminOperationsGovernanceRoute,
   AdminDisputesIndexRoute: AdminDisputesIndexRoute,
+  AdminOperationsIndexRoute: AdminOperationsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -1319,9 +1497,12 @@ interface DriverRouteChildren {
   DriverCheckpointRoute: typeof DriverCheckpointRoute
   DriverDeliveryCompleteRoute: typeof DriverDeliveryCompleteRoute
   DriverDocsRoute: typeof DriverDocsRoute
+  DriverExceptionRoute: typeof DriverExceptionRoute
   DriverHistoryRoute: typeof DriverHistoryRoute
   DriverPanicRoute: typeof DriverPanicRoute
+  DriverPodRoute: typeof DriverPodRoute
   DriverProfileRoute: typeof DriverProfileRoute
+  DriverReturnReceiptRoute: typeof DriverReturnReceiptRoute
   DriverIndexRoute: typeof DriverIndexRoute
 }
 
@@ -1329,9 +1510,12 @@ const DriverRouteChildren: DriverRouteChildren = {
   DriverCheckpointRoute: DriverCheckpointRoute,
   DriverDeliveryCompleteRoute: DriverDeliveryCompleteRoute,
   DriverDocsRoute: DriverDocsRoute,
+  DriverExceptionRoute: DriverExceptionRoute,
   DriverHistoryRoute: DriverHistoryRoute,
   DriverPanicRoute: DriverPanicRoute,
+  DriverPodRoute: DriverPodRoute,
   DriverProfileRoute: DriverProfileRoute,
+  DriverReturnReceiptRoute: DriverReturnReceiptRoute,
   DriverIndexRoute: DriverIndexRoute,
 }
 
@@ -1341,6 +1525,7 @@ const DriverRouteWithChildren =
 interface ShipperRouteChildren {
   ShipperEsgRoute: typeof ShipperEsgRoute
   ShipperPaymentsRoute: typeof ShipperPaymentsRoute
+  ShipperSettingsRoute: typeof ShipperSettingsRoute
   ShipperIndexRoute: typeof ShipperIndexRoute
   ShipperContractsIdRoute: typeof ShipperContractsIdRoute
   ShipperDisputesIdRoute: typeof ShipperDisputesIdRoute
@@ -1348,14 +1533,17 @@ interface ShipperRouteChildren {
   ShipperFreightsNewRoute: typeof ShipperFreightsNewRoute
   ShipperPaymentContractIdRoute: typeof ShipperPaymentContractIdRoute
   ShipperReviewContractIdRoute: typeof ShipperReviewContractIdRoute
+  ShipperTripsIdRoute: typeof ShipperTripsIdRoute
   ShipperContractsIndexRoute: typeof ShipperContractsIndexRoute
   ShipperDisputesIndexRoute: typeof ShipperDisputesIndexRoute
   ShipperFreightsIndexRoute: typeof ShipperFreightsIndexRoute
+  ShipperTripsIndexRoute: typeof ShipperTripsIndexRoute
 }
 
 const ShipperRouteChildren: ShipperRouteChildren = {
   ShipperEsgRoute: ShipperEsgRoute,
   ShipperPaymentsRoute: ShipperPaymentsRoute,
+  ShipperSettingsRoute: ShipperSettingsRoute,
   ShipperIndexRoute: ShipperIndexRoute,
   ShipperContractsIdRoute: ShipperContractsIdRoute,
   ShipperDisputesIdRoute: ShipperDisputesIdRoute,
@@ -1363,9 +1551,11 @@ const ShipperRouteChildren: ShipperRouteChildren = {
   ShipperFreightsNewRoute: ShipperFreightsNewRoute,
   ShipperPaymentContractIdRoute: ShipperPaymentContractIdRoute,
   ShipperReviewContractIdRoute: ShipperReviewContractIdRoute,
+  ShipperTripsIdRoute: ShipperTripsIdRoute,
   ShipperContractsIndexRoute: ShipperContractsIndexRoute,
   ShipperDisputesIndexRoute: ShipperDisputesIndexRoute,
   ShipperFreightsIndexRoute: ShipperFreightsIndexRoute,
+  ShipperTripsIndexRoute: ShipperTripsIndexRoute,
 }
 
 const ShipperRouteWithChildren =

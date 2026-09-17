@@ -45,5 +45,15 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>A SteelGo usa sua localização apenas durante uma viagem ativa, para acompanhamento da carga, segurança e comprovante de entrega.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>A câmera é usada para fotografar a carga carregada, avarias e o comprovante de entrega.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Permite anexar fotos já existentes ao comprovante de entrega ou a uma ocorrência.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>
