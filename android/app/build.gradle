@@ -21,6 +21,28 @@ android {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        // Homologacao local do Modulo 3 (emulador -> Supabase local em 10.0.2.2):
+        // applicationId e rotulo proprios, assinatura debug, assets exclusivos em
+        // src/homolog (gerados por scripts/homolog-android.mjs, nunca os de producao).
+        // Cleartext existe SOMENTE neste build type, via src/homolog/AndroidManifest.xml
+        // + res/xml/network_security_config.xml restrito a 10.0.2.2.
+        homolog {
+            initWith debug
+            applicationIdSuffix ".homolog"
+            versionNameSuffix "-homolog"
+            debuggable true
+            signingConfig signingConfigs.debug
+            matchingFallbacks = ['debug']
+        }
+    }
+    // Cada variante embarca UMA unica arvore de assets web: "main" nao contribui;
+    // debug/release leem src/main/assets (destino do "cap sync", producao);
+    // homolog le apenas src/homolog/assets. Sem uniao de bundles com hashes diferentes.
+    sourceSets {
+        main    { assets.srcDirs = [] }
+        debug   { assets.srcDirs = ['src/main/assets'] }
+        release { assets.srcDirs = ['src/main/assets'] }
+        homolog { assets.srcDirs = ['src/homolog/assets'] }
     }
 }
 

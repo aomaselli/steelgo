@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <!-- Rotulo exclusivo do build type "homolog": impossivel confundir com producao. -->
+    <string name="app_name">SteelGo HOMOLOG</string>
+    <string name="title_activity_main">SteelGo HOMOLOG</string>
+</resources>

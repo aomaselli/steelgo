@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Overlay do build type "homolog" (homologacao local do Modulo 3).
+         Libera trafego em claro SOMENTE para 10.0.2.2 (host visto pelo emulador),
+         conforme res/xml/network_security_config.xml. debug/release nao incluem
+         este source set: o APK normal segue sem cleartext. -->
+    <application
+        android:networkSecurityConfig="@xml/network_security_config"
+        tools:node="merge" />
+
+</manifest>
