@@ -754,14 +754,78 @@ export async function rpcIngestLocations(
     p_points: points as unknown as Json,
   });
   if (error) raise(error);
-  return firstRow(data) as {
-    accepted: number;
-    stored_flagged: number;
-    duplicates: number;
-    rejected: unknown;
-    tracking_active: boolean;
-    trip_status: TripStatus;
-  };
+  return firstRow(data) as IngestLocationsResult | null;
+}
+
+/** Retorno de ingest_trip_locations (migration 82): downsampled = descartados pela amostragem do servidor. */
+export type IngestLocationsResult = {
+  accepted: number;
+  stored_flagged: number;
+  duplicates: number;
+  downsampled: number;
+  /** [{seq, code}] com code in ('malformed','accuracy_rejected','too_old') - rejeicao PERMANENTE por ponto */
+  rejected: Array<{ seq: number; code: string }> | unknown;
+  tracking_active: boolean;
+  trip_status: TripStatus;
+};
+
+/**
+ * Inicio ATOMICO do deslocamento (migration 83): sessao (nova ou compativel) +
+ * tracking_state=active + transicao driver_accepted->en_route_to_pickup + primeiro
+ * ponto, em uma transacao. Idempotente por command_id (aplicado OU rejeitado =>
+ * duplicate=true). Rejeicoes de negocio consomem o command_id: nova tentativa
+ * apos corrigir a causa DEVE usar um novo command_id. Excecoes duras (42501/22004/
+ * 22023/P0002) nao gravam nada; 22023 inclui privacy_notice_required/unpublished e
+ * session_context_mismatch (sessao aberta incompativel - NAO abrir outra).
+ */
+export type StartTripTrackingResult = {
+  applied: boolean;
+  duplicate: boolean;
+  rejection_code: string | null;
+  trip_status: TripStatus;
+  session_id: string | null;
+  session_was_existing: boolean;
+  point_accepted: boolean;
+  point_flags: string[];
+  policy: Record<string, unknown> | null;
+};
+export async function rpcStartTripTracking(i: {
+  tripId: string;
+  commandId: string;
+  deviceId: string;
+  platform: string;
+  provider: Database["public"]["Enums"]["tracking_provider"];
+  appVersion: string;
+  seq: number;
+  capturedAt: string;
+  lat: number;
+  lng: number;
+  accuracyM: number;
+  speedMps?: number | null;
+  heading?: number | null;
+  altitudeM?: number | null;
+}): Promise<StartTripTrackingResult> {
+  const { data, error } = await call("start_trip_tracking", {
+    p_trip_id: i.tripId,
+    p_command_id: i.commandId,
+    p_device_id: i.deviceId,
+    p_platform: i.platform,
+    p_provider: i.provider,
+    p_app_version: i.appVersion,
+    p_seq: i.seq,
+    p_captured_at: i.capturedAt,
+    p_lat: i.lat,
+    p_lng: i.lng,
+    p_accuracy_m: i.accuracyM,
+    p_speed_mps: i.speedMps ?? undefined,
+    p_heading: i.heading ?? undefined,
+    p_altitude_m: i.altitudeM ?? undefined,
+  });
+  if (error) raise(error);
+  const row = firstRow(data) as StartTripTrackingResult | null;
+  if (!row)
+    throw Object.assign(new Error("start_trip_tracking: resposta vazia"), { code: "XX000" });
+  return { ...row, point_flags: row.point_flags ?? [] };
 }
 
 // ----------------------------------------------------------------------------- transportadora / embarcador / admin (request_id idempotente)

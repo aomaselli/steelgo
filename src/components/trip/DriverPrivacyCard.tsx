@@ -9,18 +9,20 @@ import { PrivacyNoticeModal } from "./PrivacyNoticeModal";
 import { isNativePlatform, platformName } from "@/lib/device";
 import { selectLocationProvider } from "@/lib/geoTracker";
 import {
+  enablePush,
   getPushStatus,
-  registerPush,
   requestHomologation,
   subscribePush,
   type PushStatus,
 } from "@/lib/pushClient";
+import { PermissionExplainerModal } from "./PermissionExplainerModal";
 import { exportMyTripData, fetchCurrentPrivacyNotice } from "@/lib/trips";
 import { fmtDateTime } from "@/lib/tripStatus";
 
 export function DriverPrivacyCard() {
   const [open, setOpen] = useState(false);
   const [push, setPush] = useState<PushStatus>(getPushStatus());
+  const [pushExplain, setPushExplain] = useState(false); // explicacao ANTES de pedir POST_NOTIFICATIONS
   const [busy, setBusy] = useState(false);
   const { data: notice, refetch } = useQuery({
     queryKey: ["privacy-notice", "current"],
@@ -101,22 +103,39 @@ export function DriverPrivacyCard() {
             <div className="text-graphite-200 text-[12px]">
               {push.registered
                 ? "Aparelho registrado."
-                : push.supported
-                  ? "Aparelho ainda não registrado."
-                  : "Plugin de push indisponível nesta build."}
+                : push.attempt === "not_granted" || push.permission === "denied"
+                  ? "Permissão de notificações não concedida (pode tentar de novo)."
+                  : push.supported
+                    ? "Notificações ainda não ativadas."
+                    : "Plugin de push indisponível nesta build."}
               {push.lastAck
                 ? ` Homologação confirmada por este aparelho em ${fmtDateTime(push.lastAck)}.`
                 : ""}
               {push.error ? ` Erro: ${push.error}` : ""}
             </div>
             <div className="flex gap-2 flex-wrap">
+              <PermissionExplainerModal
+                kind={pushExplain ? "push" : null}
+                busy={push.busy}
+                onCancel={() => setPushExplain(false)}
+                onConfirm={() => {
+                  setPushExplain(false);
+                  void enablePush().then((s) => {
+                    if (s.registered) toast.success("Aparelho registrado para push.");
+                    else if (s.attempt === "not_granted")
+                      toast("Permissão de notificações não concedida.");
+                    else if (s.error) toast.error(s.error);
+                  });
+                }}
+              />
               <button
                 type="button"
-                onClick={() => void registerPush()}
-                className="rounded-[10px] px-3 py-2"
+                disabled={push.busy}
+                onClick={() => setPushExplain(true)}
+                className="rounded-[10px] px-3 py-2 disabled:opacity-50"
                 style={{ border: "1px solid #30363D", color: "#E6EDF3" }}
               >
-                Registrar push
+                {push.busy ? "Ativando..." : "Ativar notificações"}
               </button>
               <button
                 type="button"

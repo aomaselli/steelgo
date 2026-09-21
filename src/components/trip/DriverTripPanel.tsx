@@ -17,8 +17,10 @@ import {
 import { toast } from "sonner";
 import { DriverMap } from "@/pages/driver/DriverMap";
 import { PrivacyNoticeModal } from "./PrivacyNoticeModal";
+import { PermissionExplainerModal, type PermissionExplainerKind } from "./PermissionExplainerModal";
+import { PushSection } from "./PushSection";
 import { TrackingStatusCard } from "./TrackingStatusCard";
-import { getCommandPosition } from "@/hooks/useTripTracker";
+import { getCommandPosition, useAppForeground } from "@/hooks/useTripTracker";
 import { tripTracker } from "@/lib/geoTracker";
 import {
   dismissCommand,
@@ -72,6 +74,8 @@ export function DriverTripPanel({
   const { trip, assignment, privacy_notice, tracking_required, policy } = data;
   const [noticeOpen, setNoticeOpen] = useState(false);
   const [busy, setBusy] = useState(false);
+  // explicacao contextual antes do PRIMEIRO pedido de permissao (localizacao / notificacoes)
+  const [explainer, setExplainer] = useState<PermissionExplainerKind | null>(null);
   const [overrideFor, setOverrideFor] = useState<{ to: TripStatus; reason: string } | null>(null);
   const [declineReason, setDeclineReason] = useState("");
   const [declining, setDeclining] = useState(false);
@@ -91,12 +95,37 @@ export function DriverTripPanel({
     };
   }, []);
 
-  // Rastreamento: liga SOMENTE com vinculo aceito e viagem em andamento; desliga fora disso.
+  // Rastreamento (UNICO caminho que pode pedir localizacao fora do inicio atomico):
+  // o gate completo e avaliado dentro de tripTracker.start - designacao aceita +
+  // aviso reconhecido + tracking_required + estado rastreavel + app em primeiro
+  // plano. Fora disso, stop(). A visibilidade (HOME/retorno) e tratada pelo proprio
+  // rastreador (persiste o buffer, envia a outbox e recarrega a elegibilidade no
+  // servidor ao voltar); por isso NAO entra nas dependencias deste efeito.
   useEffect(() => {
-    if (assignment.state === "accepted" && tracking_required && privacy_notice.acknowledged)
-      void tripTracker.start(trip.id, policy as { location_batch_max_points?: number });
-    else void tripTracker.stop("not_required");
-  }, [trip.id, assignment.state, tracking_required, privacy_notice.acknowledged, policy]);
+    void tripTracker.start(
+      trip.id,
+      {
+        assignmentState: assignment.state,
+        noticeAcknowledged: privacy_notice.acknowledged,
+        trackingRequired: tracking_required,
+        tripStatus: trip.status,
+      },
+      policy,
+    );
+  }, [
+    trip.id,
+    trip.status,
+    assignment.state,
+    tracking_required,
+    privacy_notice.acknowledged,
+    policy,
+  ]);
+  // ao voltar ao primeiro plano, a tela recarrega a viagem (o rastreador ja recarregou a sua parte)
+  const foreground = useAppForeground();
+  useEffect(() => {
+    if (foreground) refetch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [foreground]);
 
   const meta = tripStatusMeta(trip.status);
   const next = DRIVER_NEXT_STEP[trip.status];
@@ -156,6 +185,53 @@ export function DriverTripPanel({
     }
   }
 
+  /**
+   * "Iniciar deslocamento" NAO passa pelo outbox nem por RPCs separadas: e UMA
+   * chamada a start_trip_tracking (sessao + tracking_state + transicao + primeiro
+   * ponto na mesma transacao), feita por tripTracker.startTrip depois do preflight
+   * no servidor e da captura explicita do primeiro fix. Qualquer falha: viagem
+   * segue driver_accepted, sem sessao, sem ponto, nada na outbox; o motorista pode
+   * tentar de novo (falha de rede reenvia a MESMA tentativa; rejeicao conhecida
+   * gera nova tentativa com novo command_id).
+   */
+  async function startTrip() {
+    setExplainer(null);
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await tripTracker.startTrip({ tripId: trip.id });
+      if (r.ok) {
+        toast.success(
+          r.duplicate
+            ? "Início já registrado anteriormente; rastreamento retomado."
+            : `Etapa registrada: ${tripStatusMeta("en_route_to_pickup").label}`,
+        );
+      } else if (r.reason === "aviso_nao_reconhecido") {
+        setNoticeOpen(true);
+        toast.error(r.message);
+      } else if (r.reason === "sem_rede") {
+        toast.error(r.message); // mesma tentativa sera reenviada no proximo toque
+      } else if (r.reason === "session_context_mismatch") {
+        toast.error(r.message, { duration: 10_000 }); // nunca abre outra sessao automaticamente
+      } else toast.error(r.message);
+      refetch();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function onNextStep(to: TripStatus) {
+    if (to === "en_route_to_pickup") {
+      if (!privacy_notice.acknowledged) {
+        setNoticeOpen(true);
+        return;
+      }
+      setExplainer("trip_start"); // nada e lido ate "Continuar"
+      return;
+    }
+    void transition(to, null);
+  }
+
   async function transition(to: TripStatus, overrideReason: string | null) {
     setBusy(true);
     try {
@@ -202,6 +278,12 @@ export function DriverTripPanel({
         open={noticeOpen}
         onClose={() => setNoticeOpen(false)}
         onAcknowledged={refetch}
+      />
+      <PermissionExplainerModal
+        kind={explainer}
+        busy={busy}
+        onCancel={() => setExplainer(null)}
+        onConfirm={() => void startTrip()}
       />
       <DriverMap driver={driverPos} origin={origin} dest={dest} eta={etaLabel} />
 
@@ -346,7 +428,10 @@ export function DriverTripPanel({
       )}
 
       {assignment.state === "accepted" && (
-        <TrackingStatusCard trackingRequired={tracking_required} />
+        <>
+          <TrackingStatusCard trackingRequired={tracking_required} />
+          <PushSection />
+        </>
       )}
 
       {trip.paused_by_contract && (
@@ -386,7 +471,7 @@ export function DriverTripPanel({
             <button
               type="button"
               disabled={busy || trip.paused_by_contract}
-              onClick={() => void transition(next.to, null)}
+              onClick={() => onNextStep(next.to)}
               className="w-full flex items-center justify-center gap-2 rounded-[14px] font-medium disabled:opacity-50"
               style={{
                 height: 56,

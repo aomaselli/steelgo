@@ -5,12 +5,17 @@ import toast, { Toaster } from "react-hot-toast";
 import { DriverShell } from "@/components/driver/DriverShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useGeolocation } from "@/hooks/useGeolocation";
+import { tripTracker } from "@/lib/geoTracker";
+import { activateAvailability } from "@/lib/capacityAvailability";
+import { fetchCurrentPrivacyNotice } from "@/lib/trips";
+import { PrivacyNoticeModal } from "@/components/trip/PrivacyNoticeModal";
+import { PermissionExplainerModal } from "@/components/trip/PermissionExplainerModal";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { DriverTripPanel } from "@/components/trip/DriverTripPanel";
 import { fetchMyDriverTrip } from "@/lib/trips";
-import { registerPush } from "@/lib/pushClient";
+import { preparePushListeners } from "@/lib/pushClient";
 import { isNativePlatform } from "@/lib/device";
+import { CARRIER_REQUEST_SELECT, carrierRequestLabel } from "@/lib/carrierRequestLabel";
 
 type DriverRecord = {
   id: string;
@@ -42,7 +47,11 @@ type PendingRequest = {
   status: string | null;
   message: string | null;
   created_at: string | null;
-  carriers?: { company_name?: string | null; trade_name?: string | null } | null;
+  // carriers nao tem nome: o nome vem de companies (carriers.company_id -> companies.id)
+  carriers?: {
+    company_id: string;
+    companies?: { name?: string | null; trade_name?: string | null } | null;
+  } | null;
 };
 
 type AvailabilityRecord = {
@@ -89,6 +98,9 @@ export default function DriverHomePage() {
   const [preferredStates, setPreferredStates] = useState<string[]>([]);
   const [acceptsBackhaul, setAcceptsBackhaul] = useState(true);
   const [availabilityBusy, setAvailabilityBusy] = useState(false);
+  // Pedidos pendentes de UI (aviso / explicacao) resolvidos pelo motorista.
+  const [noticeReq, setNoticeReq] = useState<{ resolve: (ok: boolean) => void } | null>(null);
+  const [explainReq, setExplainReq] = useState<{ resolve: (ok: boolean) => void } | null>(null);
 
   const { data: driverRecord } = useQuery<DriverRecord | null>({
     queryKey: ["driver-record", user?.id],
@@ -121,7 +133,7 @@ export default function DriverHomePage() {
     queryFn: async () => {
       const { data } = await supabase
         .from("driver_carrier_requests")
-        .select("id, carrier_id, status, message, created_at, carriers(company_name, trade_name)")
+        .select(CARRIER_REQUEST_SELECT)
         .eq("profile_id", user!.id)
         .in("status", ["pending", "review", "submitted"])
         .order("created_at", { ascending: false });
@@ -183,9 +195,11 @@ export default function DriverHomePage() {
   });
   const active = driverTrip?.has_trip ? driverTrip : null;
 
-  // Push nativo: registra o aparelho (o ACK de homologacao chega pelo listener).
+  // Push nativo: so PREPARA os listeners (sem pedir permissao, sem registrar o
+  // aparelho). POST_NOTIFICATIONS e pedida apenas por acao explicita do motorista
+  // ("Ativar notificacoes da viagem", no painel da viagem / perfil).
   useEffect(() => {
-    if (user && isNativePlatform()) void registerPush();
+    if (user && isNativePlatform()) void preparePushListeners();
   }, [user]);
 
   // Last completed delivery (only when no active)
@@ -211,12 +225,12 @@ export default function DriverHomePage() {
     },
   });
 
-  // GPS de disponibilidade (pre-contrato). O rastreamento de VIAGEM e do
-  // DriverTripPanel (sessao + provedor identificado), nunca deste hook.
-  const geo = useGeolocation({
-    watch: !active,
-    availabilityId: availability?.id ?? null,
-  });
+  // A home NUNCA pede localizacao ao montar: nao e dona da permissao nem do
+  // rastreamento. A unica autoridade e o tripTracker. "Estou disponivel" faz UMA
+  // captura pontual (motivo capacity_availability), somente apos aviso reconhecido
+  // e explicacao contextual confirmada - sem watch, sem sessao, sem trip_location.
+  const requestAcknowledgement = () => new Promise<boolean>((resolve) => setNoticeReq({ resolve }));
+  const explainAvailability = () => new Promise<boolean>((resolve) => setExplainReq({ resolve }));
 
   const normalizeCpf = (value: string) => value.replace(/\D/g, "").slice(0, 11);
 
@@ -238,24 +252,6 @@ export default function DriverHomePage() {
 
   const licenseApproved = driverRecord?.license_verification_status === "approved";
   const hasCarrierLink = !!driverRecord?.carrier_id;
-
-  const getLiveLocation = async () => {
-    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
-      throw new Error("Geolocalização não disponível neste dispositivo.");
-    }
-    return new Promise<{ lat: number; lng: number; accuracy: number }>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) =>
-          resolve({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            accuracy: pos.coords.accuracy ?? 0,
-          }),
-        (err) => reject(new Error(err.message || "Não foi possível obter o GPS.")),
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
-      );
-    });
-  };
 
   const acceptInvitation = async () => {
     const token = inviteToken.trim();
@@ -377,10 +373,6 @@ export default function DriverHomePage() {
       toast.error("Vínculo e licença aprovados são obrigatórios para estar disponível.");
       return;
     }
-    if (geo.lat == null || geo.lng == null) {
-      toast.error("GPS real não encontrado. Aguarde a localização do celular antes de ativar.");
-      return;
-    }
     if (radius < 10 || radius > 500) {
       toast.error("O raio deve estar entre 10 e 500 km.");
       return;
@@ -389,45 +381,56 @@ export default function DriverHomePage() {
       toast.error("Sem conexão para sincronizar a disponibilidade.");
       return;
     }
+    const nextFrom = availableFrom ? new Date(availableFrom) : new Date();
+    const nextUntil = availableUntil ? new Date(availableUntil) : null;
+    if (nextUntil && nextUntil <= new Date()) {
+      toast.error("A janela de disponibilidade precisa ser no futuro.");
+      return;
+    }
+    const driverId = driverRecord.id;
+    const truckId = selectedTruckId;
     setAvailabilityBusy(true);
     try {
-      const loc = await getLiveLocation();
-      const nextFrom = availableFrom ? new Date(availableFrom) : new Date();
-      const nextUntil = availableUntil ? new Date(availableUntil) : null;
-      if (nextUntil && nextUntil <= new Date()) {
-        toast.error("A janela de disponibilidade precisa ser no futuro.");
-        return;
-      }
-      if (loc.accuracy > 200) {
-        toast.error("GPS pouco preciso. Afaste-se de prédios e tente novamente.");
-        return;
-      }
-      const { error } = await supabase.rpc("set_capacity_available", {
-        p_driver_id: driverRecord.id,
-        p_truck_id: selectedTruckId,
-        p_lat: loc.lat,
-        p_lng: loc.lng,
-        p_accuracy_m: loc.accuracy,
-        p_available_from: nextFrom.toISOString(),
-        p_available_until: nextUntil ? nextUntil.toISOString() : undefined,
-        p_max_pickup_radius_km: radius,
-        p_preferred_destination_countries: preferredCountries.length ? preferredCountries : [],
-        p_preferred_destination_subdivisions: preferredStates.length ? preferredStates : [],
-        p_accepts_backhaul: acceptsBackhaul,
-        p_min_rate_per_loaded_km: undefined,
-        p_min_total_amount: undefined,
-        p_currency_code: "BRL",
+      const r = await activateAvailability({
+        isOnline: () => navigator.onLine,
+        fetchNotice: fetchCurrentPrivacyNotice,
+        requestAcknowledgement,
+        explain: explainAvailability,
+        capture: (noticeAcknowledged) =>
+          tripTracker.captureOnce({ reason: "capacity_availability", noticeAcknowledged }, 20_000),
+        setAvailable: async (loc) => {
+          const { error } = await supabase.rpc("set_capacity_available", {
+            p_driver_id: driverId,
+            p_truck_id: truckId,
+            p_lat: loc.lat,
+            p_lng: loc.lng,
+            p_accuracy_m: loc.accuracy,
+            p_available_from: nextFrom.toISOString(),
+            p_available_until: nextUntil ? nextUntil.toISOString() : undefined,
+            p_max_pickup_radius_km: radius,
+            p_preferred_destination_countries: preferredCountries.length ? preferredCountries : [],
+            p_preferred_destination_subdivisions: preferredStates.length ? preferredStates : [],
+            p_accepts_backhaul: acceptsBackhaul,
+            p_min_rate_per_loaded_km: undefined,
+            p_min_total_amount: undefined,
+            p_currency_code: "BRL",
+          });
+          if (error) throw new Error(error.message);
+        },
       });
-      if (error) {
-        toast.error(error.message);
+      if (!r.ok) {
+        if (r.reason === "cancelled") toast(r.message);
+        else toast.error(r.message);
         return;
       }
       toast.success("Estou disponível");
       setSelectedTruckId(null);
-      qc.invalidateQueries({ queryKey: ["driver-availability", driverRecord.id] });
+      qc.invalidateQueries({ queryKey: ["driver-availability", driverId] });
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
+      setNoticeReq(null);
+      setExplainReq(null);
       setAvailabilityBusy(false);
     }
   };
@@ -435,6 +438,28 @@ export default function DriverHomePage() {
   return (
     <DriverShell activeTab="home">
       <Toaster position="top-center" />
+      <PrivacyNoticeModal
+        open={!!noticeReq}
+        onClose={() => {
+          noticeReq?.resolve(false);
+          setNoticeReq(null);
+        }}
+        onAcknowledged={() => {
+          noticeReq?.resolve(true);
+          qc.invalidateQueries({ queryKey: ["privacy-notice", "current"] });
+        }}
+      />
+      <PermissionExplainerModal
+        kind={explainReq ? "capacity_availability" : null}
+        onCancel={() => {
+          explainReq?.resolve(false);
+          setExplainReq(null);
+        }}
+        onConfirm={() => {
+          explainReq?.resolve(true);
+          setExplainReq(null);
+        }}
+      />
 
       {!online && (
         <div
@@ -563,9 +588,7 @@ export default function DriverHomePage() {
                   className="rounded-[10px] border border-[#30363D] bg-[#0D1117] p-3"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <div className="text-sm text-[#E6EDF3]">
-                      {req.carriers?.company_name ?? req.carriers?.trade_name ?? "Transportadora"}
-                    </div>
+                    <div className="text-sm text-[#E6EDF3]">{carrierRequestLabel(req)}</div>
                     <span className="text-[10px] uppercase text-[#8B949E]">{req.status}</span>
                   </div>
                   {req.message && <div className="mt-1 text-xs text-[#8B949E]">{req.message}</div>}
@@ -733,7 +756,16 @@ export default function DriverHomePage() {
   );
 }
 
-function NoActiveState({ lastDelivery }: { lastDelivery: any }) {
+type LastDelivery = {
+  total_amount_brl?: number | string | null;
+  freight?: {
+    origin_state?: string | null;
+    dest_state?: string | null;
+    weight_tons?: number | string | null;
+    steel_type?: string | null;
+  } | null;
+} | null;
+function NoActiveState({ lastDelivery }: { lastDelivery: LastDelivery | undefined }) {
   return (
     <div>
       <div

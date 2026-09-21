@@ -13,27 +13,32 @@ export function useTripTracker(): TrackerStatus {
   return s;
 }
 
-/** Posicao fresca para um COMANDO (nao para a trilha): ultimo ponto do rastreador ou leitura pontual. */
+/**
+ * Posicao fresca para um COMANDO (nao para a trilha): ultimo ponto do rastreador
+ * ou leitura pontual PELO rastreador. Nunca chama navigator.geolocation aqui: o
+ * rastreador (lib/geoTracker) e a unica autoridade; sem rastreamento ativo, o
+ * comando segue sem posicao.
+ */
 export async function getCommandPosition(
   timeoutMs = 12_000,
 ): Promise<{ lat: number | null; lng: number | null; accuracy: number | null }> {
-  const last = tripTracker.getStatus().last;
-  if (last && Date.now() - new Date(last.captured_at).getTime() < 60_000)
-    return { lat: last.lat, lng: last.lng, accuracy: last.accuracy_m };
-  if (typeof navigator === "undefined" || !("geolocation" in navigator))
-    return { lat: null, lng: null, accuracy: null };
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(
-      (pos) =>
-        resolve({
-          lat: pos.coords.latitude,
-          lng: pos.coords.longitude,
-          accuracy: pos.coords.accuracy ?? null,
-        }),
-      () => resolve({ lat: null, lng: null, accuracy: null }),
-      { enableHighAccuracy: true, timeout: timeoutMs, maximumAge: 10_000 },
-    );
-  });
+  const p = await tripTracker.captureOnce(timeoutMs);
+  return p
+    ? { lat: p.lat, lng: p.lng, accuracy: p.accuracy_m }
+    : { lat: null, lng: null, accuracy: null };
+}
+
+/** true enquanto o documento esta visivel (app em primeiro plano). */
+export function useAppForeground(): boolean {
+  const [fg, setFg] = useState(
+    () => typeof document === "undefined" || document.visibilityState === "visible",
+  );
+  useEffect(() => {
+    const on = () => setFg(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", on);
+    return () => document.removeEventListener("visibilitychange", on);
+  }, []);
+  return fg;
 }
 
 export type OutboxState = {

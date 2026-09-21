@@ -4,7 +4,7 @@ import { DriverShell } from "@/components/driver/DriverShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { DriverPrivacyCard } from "@/components/trip/DriverPrivacyCard";
 import { unregisterPush } from "@/lib/pushClient";
-import { clearOutbox } from "@/lib/outbox";
+import { clearOutbox, flushOutbox } from "@/lib/outbox";
 import { tripTracker } from "@/lib/geoTracker";
 
 export const Route = createFileRoute("/driver/profile")({ component: ProfilePage });
@@ -70,7 +70,10 @@ function ProfilePage() {
           label="Sair"
           danger
           onClick={() =>
-            Promise.all([tripTracker.stop("logout"), unregisterPush("logout"), clearOutbox()])
+            tripTracker
+              .dispose("logout")
+              .then(() => flushOutbox().catch(() => undefined))
+              .then(() => Promise.all([unregisterPush("logout"), clearOutbox()]))
               .then(() => signOut())
               .then(() => navigate({ to: "/login" }))
           }

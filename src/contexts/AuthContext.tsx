@@ -1,7 +1,33 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { createAuthBootstrap, createSignInOnce } from "@/lib/authBootstrap";
 import type { Company, Profile, UserRole } from "@/types/database";
+
+// UNICA autoridade do estado da sessao. O listener de auth SO grava sessao/usuario
+// (sincrono); o bootstrap (perfil + papel + empresas) roda num efeito React keyed
+// pelo access token, via lib/authBootstrap: nenhuma consulta protegida sem token,
+// single-flight por uid, resultado memorizado (uma navegacao), erro real exposto
+// em `authError`. Nunca executar consultas dentro do callback de onAuthStateChange.
+const bootstrap = createAuthBootstrap<Profile, UserRole>({
+  getAccessToken: async () => {
+    const { data } = await supabase.auth.getSession();
+    return data.session?.access_token ?? null;
+  },
+  loadProfile: async (uid) => {
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
+    if (error) throw new Error(`perfil: ${error.message}`);
+    return (data as Profile | null) ?? null;
+  },
+  loadRole: async (uid) => {
+    const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", uid);
+    if (error) throw new Error(`papel: ${error.message}`);
+    return ((data?.[0]?.role ?? null) as UserRole | null) ?? null;
+  },
+});
+const signInOnce = createSignInOnce((email: string, password: string) =>
+  supabase.auth.signInWithPassword({ email, password }),
+);
 
 // Modulo 3 (delegacao operacional, alternativa B): alem da empresa de que o
 // usuario e proprietario, a sessao descobre as empresas em que ele e membro
@@ -32,6 +58,9 @@ interface AuthContextValue {
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  /** erro real do bootstrap (perfil/papel); a UI mostra e permite tentar de novo */
+  authError: string | null;
+  retryBootstrap: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (
     email: string,
@@ -134,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [memberships, setMemberships] = useState<MembershipInfo[]>([]);
   const [role, setRole] = useState<UserRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   // Tracks the uid that state should currently reflect; lets in-flight
   // fetches from a stale/previous uid detect they're obsolete and no-op.
   const activeUidRef = useRef<string | null>(null);
@@ -156,31 +186,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loadUserData = async (uid: string) => {
     activeUidRef.current = uid;
     setIsLoading(true);
+    const r = await bootstrap.ensure(uid);
+    // uid mudou enquanto a leitura estava em voo - descarta o resultado
+    if (activeUidRef.current !== uid) return;
+    if (r.status === "waiting_token") return; // sem token utilizavel: o proximo evento de auth reexecuta o efeito
+    if (r.status === "error") {
+      console.error("[Auth] bootstrap falhou", r.message);
+      setProfile(null);
+      setRole(null);
+      clearCompanyState();
+      setAuthError(r.message);
+      setIsLoading(false);
+      return;
+    }
+    setAuthError(null);
+    setRole(r.role);
+    setProfile(r.profile ? ({ ...r.profile, role: r.role } as Profile) : null);
     try {
-      const [{ data: profileRow }, { data: roleRows }] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", uid).maybeSingle(),
-        supabase.from("user_roles").select("role").eq("user_id", uid),
-      ]);
-
-      // uid changed while this request was in flight — discard stale result
-      if (activeUidRef.current !== uid) return;
-
-      const firstRole = (roleRows?.[0]?.role ?? null) as UserRole | null;
-      setRole(firstRole);
-      setProfile(profileRow ? ({ ...profileRow, role: firstRole } as Profile) : null);
-
-      if (firstRole === "shipper" || firstRole === "carrier") {
+      if (r.role === "shipper" || r.role === "carrier") {
         const { accesses, memberships: members } = await discoverCompanies(uid);
         if (activeUidRef.current !== uid) return;
         applyCompanies(uid, accesses, members);
       } else {
-        clearCompanyState();
-      }
-    } catch (err) {
-      console.error("[Auth] loadUserData failed", err);
-      if (activeUidRef.current === uid) {
-        setProfile(null);
-        setRole(null);
         clearCompanyState();
       }
     } finally {
@@ -193,23 +220,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // SOMENTE estado (sincrono). Nenhuma consulta aqui: o efeito abaixo,
+      // keyed pelo access token, faz o bootstrap fora do callback.
       setSession(newSession);
       setUser(newSession?.user ?? null);
       if (newSession?.user) {
-        const uid = newSession.user.id;
-        // Mark loading synchronously (same tick as isAuthenticated flips true)
-        // so ProtectedRoute never renders with a stale/absent profile.
-        activeUidRef.current = uid;
-        setIsLoading(true);
-        // Defer fetch to avoid blocking the auth callback
-        setTimeout(() => {
-          void loadUserData(uid);
-        }, 0);
+        activeUidRef.current = newSession.user.id;
+        if (!bootstrap.isReady(newSession.user.id)) setIsLoading(true);
       } else {
         activeUidRef.current = null;
+        bootstrap.invalidate();
         setProfile(null);
         clearCompanyState();
         setRole(null);
+        setAuthError(null);
         setIsLoading(false);
       }
     });
@@ -217,9 +241,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) {
-        void loadUserData(data.session.user.id);
-      } else {
+      if (data.session?.user) activeUidRef.current = data.session.user.id;
+      else {
         activeUidRef.current = null;
         setIsLoading(false);
       }
@@ -230,9 +253,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Bootstrap fora do callback de auth: reexecuta quando surge/muda o token
+  // (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED). Memorizado por uid => sem
+  // duplicacao de consultas nem de navegacao.
+  const accessToken = session?.access_token ?? null;
+  const uidForBootstrap = user?.id ?? null;
+  useEffect(() => {
+    if (!uidForBootstrap || !accessToken) return;
+    if (bootstrap.isReady(uidForBootstrap) && profile && role) return;
+    void loadUserData(uidForBootstrap);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [uidForBootstrap, accessToken]);
+
   const signIn: AuthContextValue["signIn"] = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    setAuthError(null);
+    const { error } = await signInOnce(email, password); // duplo clique => uma autenticacao
     return { error: error ?? null };
+  };
+
+  const retryBootstrap = async () => {
+    if (!user) return;
+    bootstrap.invalidate(user.id);
+    await loadUserData(user.id);
   };
 
   const signUp: AuthContextValue["signUp"] = async (email, password, data) => {
@@ -257,6 +299,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     // Clear explicitly/immediately instead of waiting on the async listener
     activeUidRef.current = null;
+    bootstrap.invalidate();
+    setAuthError(null);
     setUser(null);
     setSession(null);
     setProfile(null);
@@ -276,12 +320,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .update(patch as any)
       .eq("id", user.id);
-    if (!error) await loadUserData(user.id);
+    if (!error) {
+      bootstrap.invalidate(user.id);
+      await loadUserData(user.id);
+    }
     return { error: (error as unknown as Error) ?? null };
   };
 
   const refresh = async () => {
-    if (user) await loadUserData(user.id);
+    if (!user) return;
+    bootstrap.invalidate(user.id);
+    await loadUserData(user.id);
   };
 
   /** Recarrega SOMENTE as empresas/vinculos (apos aceitar convite, revogacao, troca de papel). */
@@ -340,6 +389,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         role,
         isLoading,
         isAuthenticated: !!user,
+        authError,
+        retryBootstrap,
         signIn,
         signUp,
         signOut,

@@ -15,6 +15,7 @@ import {
   usePhoto,
 } from "@/components/trip/DriverCapture";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { getCommandPosition } from "@/hooks/useTripTracker";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { enqueueCommand, flushOutbox, listCommands, newCaptureCtx } from "@/lib/outbox";
 import { sha256HexOfBuffer } from "@/lib/sha256";
@@ -60,7 +61,8 @@ function CheckpointPage() {
     }
     setSubmitting(true);
     try {
-      const ctx = await newCaptureCtx({ lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy });
+      // posicao fresca da acao explicita (rastreador ativo); nunca abre dialogo por si
+      const ctx = await newCaptureCtx(await getCommandPosition());
       const sha256 = await sha256HexOfBuffer(await photo.blob.arrayBuffer());
       const path = buildTripMediaPath(trip.id, ctx.commandId, "photo", sha256, "jpg");
       await enqueueCommand({

@@ -44,7 +44,9 @@ export function PrivacyNoticeModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
+    // z-[60]: acima da barra inferior do motorista (DriverBottomNav, z-50), que cobria os
+    // botoes "Agora nao"/"Reconhecer" no aparelho (achado da homologacao no APK).
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/70 p-0 sm:p-4">
       <div className="w-full max-w-[520px] max-h-[92dvh] flex flex-col rounded-t-[18px] sm:rounded-[18px] bg-bg-surface border border-graphite-700">
         <div className="px-5 pt-5 pb-3 flex items-center gap-2 border-b border-graphite-700">
           <ShieldCheck className="text-esg-green-400" size={22} />

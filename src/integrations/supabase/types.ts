@@ -3104,9 +3104,13 @@ export type Database = {
           impossible_speed_kmh: number
           legal_hold_tail_days: number
           location_batch_max_points: number
+          location_flush_interval_s: number | null
           location_max_age_hours: number
+          location_min_distance_m: number | null
+          location_min_interval_s: number | null
           location_silence_min_stationary: number
           location_silence_min_transit: number
+          location_stationary_interval_s: number | null
           long_stop_min: number
           moving_away_min_km: number
           no_progress_min: number
@@ -3133,9 +3137,13 @@ export type Database = {
           impossible_speed_kmh: number
           legal_hold_tail_days: number
           location_batch_max_points: number
+          location_flush_interval_s?: number | null
           location_max_age_hours: number
+          location_min_distance_m?: number | null
+          location_min_interval_s?: number | null
           location_silence_min_stationary: number
           location_silence_min_transit: number
+          location_stationary_interval_s?: number | null
           long_stop_min: number
           moving_away_min_km: number
           no_progress_min: number
@@ -3162,9 +3170,13 @@ export type Database = {
           impossible_speed_kmh?: number
           legal_hold_tail_days?: number
           location_batch_max_points?: number
+          location_flush_interval_s?: number | null
           location_max_age_hours?: number
+          location_min_distance_m?: number | null
+          location_min_interval_s?: number | null
           location_silence_min_stationary?: number
           location_silence_min_transit?: number
+          location_stationary_interval_s?: number | null
           long_stop_min?: number
           moving_away_min_km?: number
           no_progress_min?: number
@@ -7629,9 +7641,13 @@ export type Database = {
           impossible_speed_kmh: number
           legal_hold_tail_days: number
           location_batch_max_points: number
+          location_flush_interval_s: number | null
           location_max_age_hours: number
+          location_min_distance_m: number | null
+          location_min_interval_s: number | null
           location_silence_min_stationary: number
           location_silence_min_transit: number
+          location_stationary_interval_s: number | null
           long_stop_min: number
           moving_away_min_km: number
           no_progress_min: number
@@ -7945,6 +7961,7 @@ export type Database = {
         }
         Returns: {
           accepted: number
+          downsampled: number
           duplicates: number
           rejected: Json
           stored_flagged: number
@@ -8348,9 +8365,13 @@ export type Database = {
           impossible_speed_kmh: number
           legal_hold_tail_days: number
           location_batch_max_points: number
+          location_flush_interval_s: number | null
           location_max_age_hours: number
+          location_min_distance_m: number | null
+          location_min_interval_s: number | null
           location_silence_min_stationary: number
           location_silence_min_transit: number
+          location_stationary_interval_s: number | null
           long_stop_min: number
           moving_away_min_km: number
           no_progress_min: number
@@ -8551,6 +8572,8 @@ export type Database = {
         }
         Returns: number
       }
+      push_minimized_body: { Args: { p_kind: string }; Returns: string }
+      push_text_is_minimized: { Args: { p_text: string }; Returns: boolean }
       reassign_trip: {
         Args: {
           p_driver_id: string
@@ -9079,6 +9102,35 @@ export type Database = {
           was_existing: boolean
         }[]
       }
+      start_trip_tracking: {
+        Args: {
+          p_accuracy_m: number
+          p_altitude_m?: number
+          p_app_version: string
+          p_captured_at: string
+          p_command_id: string
+          p_device_id: string
+          p_heading?: number
+          p_lat: number
+          p_lng: number
+          p_platform: string
+          p_provider: Database["public"]["Enums"]["tracking_provider"]
+          p_seq: number
+          p_speed_mps?: number
+          p_trip_id: string
+        }
+        Returns: {
+          applied: boolean
+          duplicate: boolean
+          point_accepted: boolean
+          point_flags: string[]
+          policy: Json
+          rejection_code: string
+          session_id: string
+          session_was_existing: boolean
+          trip_status: Database["public"]["Enums"]["trip_status"]
+        }[]
+      }
       steelgo_now: { Args: never; Returns: string }
       submit_proof_of_delivery: {
         Args: {
@@ -9504,9 +9556,13 @@ export type Database = {
           impossible_speed_kmh: number
           legal_hold_tail_days: number
           location_batch_max_points: number
+          location_flush_interval_s: number | null
           location_max_age_hours: number
+          location_min_distance_m: number | null
+          location_min_interval_s: number | null
           location_silence_min_stationary: number
           location_silence_min_transit: number
+          location_stationary_interval_s: number | null
           long_stop_min: number
           moving_away_min_km: number
           no_progress_min: number

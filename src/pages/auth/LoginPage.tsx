@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -39,9 +39,24 @@ const DEV_LOGIN_PASSWORD: string = import.meta.env.DEV
 const DEV_ACCOUNTS: DevAccount[] = import.meta.env.DEV
   ? (
       [
-        { role: "shipper", emoji: "\u{1F3ED}", label: "Embarcador", email: import.meta.env.VITE_DEV_LOGIN_SHIPPER },
-        { role: "carrier", emoji: "\u{1F69B}", label: "Transportadora", email: import.meta.env.VITE_DEV_LOGIN_CARRIER },
-        { role: "driver", emoji: "\u{1F464}", label: "Motorista", email: import.meta.env.VITE_DEV_LOGIN_DRIVER },
+        {
+          role: "shipper",
+          emoji: "\u{1F3ED}",
+          label: "Embarcador",
+          email: import.meta.env.VITE_DEV_LOGIN_SHIPPER,
+        },
+        {
+          role: "carrier",
+          emoji: "\u{1F69B}",
+          label: "Transportadora",
+          email: import.meta.env.VITE_DEV_LOGIN_CARRIER,
+        },
+        {
+          role: "driver",
+          emoji: "\u{1F464}",
+          label: "Motorista",
+          email: import.meta.env.VITE_DEV_LOGIN_DRIVER,
+        },
       ] as { role: DevRole; emoji: string; label: string; email?: string }[]
     ).filter((a): a is DevAccount => Boolean(a.email) && DEV_LOGIN_PASSWORD !== "")
   : [];
@@ -54,14 +69,42 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 const VALUE_PROPS = [
-  { Icon: Shield, bg: "#1B6CB8", title: "Gestão de pagamentos", desc: "Centralize condições de pagamento e evidências de entrega." },
-  { Icon: MapPin, bg: "#1B6CB8", title: "Visibilidade operacional", desc: "Acompanhe rotas, checkpoints e registros da operação." },
-  { Icon: Leaf, bg: "#1A9B5E", title: "Logística de menor impacto", desc: "Compare cenários e acompanhe estimativas de emissões." },
-  { Icon: Lock, bg: "#1A9B5E", title: "Documentos digitais", desc: "Centralize contratos, documentos e evidências digitais." },
+  {
+    Icon: Shield,
+    bg: "#1B6CB8",
+    title: "Gestão de pagamentos",
+    desc: "Centralize condições de pagamento e evidências de entrega.",
+  },
+  {
+    Icon: MapPin,
+    bg: "#1B6CB8",
+    title: "Visibilidade operacional",
+    desc: "Acompanhe rotas, checkpoints e registros da operação.",
+  },
+  {
+    Icon: Leaf,
+    bg: "#1A9B5E",
+    title: "Logística de menor impacto",
+    desc: "Compare cenários e acompanhe estimativas de emissões.",
+  },
+  {
+    Icon: Lock,
+    bg: "#1A9B5E",
+    title: "Documentos digitais",
+    desc: "Centralize contratos, documentos e evidências digitais.",
+  },
 ];
 
 export function LoginPage() {
-  const { signIn, isAuthenticated, role, profile, isLoading } = useAuth();
+  const {
+    signIn,
+    isAuthenticated,
+    role,
+    profile,
+    isLoading,
+    authError: bootstrapError,
+    retryBootstrap,
+  } = useAuth();
   const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -95,7 +138,6 @@ export function LoginPage() {
     }
   };
 
-
   const {
     control,
     handleSubmit,
@@ -119,8 +161,10 @@ export function LoginPage() {
     else void navigate({ to: "/onboarding" });
   }, [isAuthenticated, role, profile, isLoading, devLoading, navigate]);
 
-
+  const submittingRef = useRef(false);
   const onSubmit = async (data: FormData) => {
+    if (submittingRef.current) return; // duplo clique: uma unica autenticacao
+    submittingRef.current = true;
     setAuthError(null);
     setLoading(true);
 
@@ -140,9 +184,16 @@ export function LoginPage() {
       console.error("[Login] signInWithPassword threw", authException);
       setAuthError(authException.message);
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
+  // Autenticado mas o bootstrap (perfil/papel) falhou: mostra o erro real e
+  // permite tentar de novo - nunca um segundo clique silencioso.
+  useEffect(() => {
+    if (isAuthenticated && bootstrapError)
+      setAuthError(`Não foi possível carregar seu perfil: ${bootstrapError}`);
+  }, [isAuthenticated, bootstrapError]);
 
   const onGoogle = async () => {
     setAuthError(null);
@@ -233,9 +284,7 @@ export function LoginPage() {
                   )}
                 />
               </div>
-              {errors.email && (
-                <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
@@ -296,10 +345,7 @@ export function LoginPage() {
                 />
                 Lembrar de mim
               </label>
-              <Link
-                to="/forgot-password"
-                className="text-sm text-[#3B89D4] hover:underline"
-              >
+              <Link to="/forgot-password" className="text-sm text-[#3B89D4] hover:underline">
                 Esqueci minha senha
               </Link>
             </div>
@@ -315,6 +361,18 @@ export function LoginPage() {
             {authError && (
               <div className="text-sm text-red-400 bg-red-900/20 border border-red-700/30 rounded-[8px] px-3 py-2">
                 {authError}
+                {isAuthenticated && bootstrapError && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthError(null);
+                      void retryBootstrap();
+                    }}
+                    className="ml-2 underline"
+                  >
+                    Tentar de novo
+                  </button>
+                )}
               </div>
             )}
           </form>
@@ -336,41 +394,38 @@ export function LoginPage() {
 
           {import.meta.env.DEV && DEV_ACCOUNTS.length > 0 && (
             <>
-            <div className="text-xs text-[#484F58] text-center my-4">
-              — Acesso rápido (dev only) —
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {DEV_ACCOUNTS.map((acc) => {
-                const busy = devLoading === acc.role;
-                return (
-                  <button
-                    key={acc.role}
-                    type="button"
-                    disabled={devLoading !== null}
-                    onClick={() => void onDevLogin(acc.role, acc.email)}
-                    className="w-full h-9 flex items-center justify-center gap-1 text-xs text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#1C2128] rounded-[8px] transition-colors disabled:opacity-50"
-                  >
-                    {busy ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <>
-                        <span>{acc.emoji}</span>
-                        <span>{acc.label}</span>
-                      </>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+              <div className="text-xs text-[#484F58] text-center my-4">
+                — Acesso rápido (dev only) —
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {DEV_ACCOUNTS.map((acc) => {
+                  const busy = devLoading === acc.role;
+                  return (
+                    <button
+                      key={acc.role}
+                      type="button"
+                      disabled={devLoading !== null}
+                      onClick={() => void onDevLogin(acc.role, acc.email)}
+                      className="w-full h-9 flex items-center justify-center gap-1 text-xs text-[#8B949E] hover:text-[#E6EDF3] hover:bg-[#1C2128] rounded-[8px] transition-colors disabled:opacity-50"
+                    >
+                      {busy ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : (
+                        <>
+                          <span>{acc.emoji}</span>
+                          <span>{acc.label}</span>
+                        </>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </>
           )}
 
           <p className="text-sm text-[#8B949E] text-center mt-8">
             Não tem uma conta?{" "}
-            <Link
-              to="/register"
-              className="text-sm text-[#3B89D4] font-medium hover:underline"
-            >
+            <Link to="/register" className="text-sm text-[#3B89D4] font-medium hover:underline">
               Cadastre-se
             </Link>
           </p>
@@ -383,10 +438,22 @@ export function LoginPage() {
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.75h3.57c2.08-1.92 3.28-4.74 3.28-8.07z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.75c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.12c-.22-.66-.35-1.36-.35-2.12s.13-1.46.35-2.12V7.04H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.96l3.66-2.84z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z" />
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.75h3.57c2.08-1.92 3.28-4.74 3.28-8.07z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.75c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.12c-.22-.66-.35-1.36-.35-2.12s.13-1.46.35-2.12V7.04H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.96l3.66-2.84z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.04l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38z"
+      />
     </svg>
   );
 }

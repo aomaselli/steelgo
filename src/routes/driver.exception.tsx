@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { DriverShell } from "@/components/driver/DriverShell";
 import { DriverHeader, StepPhoto, usePhoto } from "@/components/trip/DriverCapture";
 import { useGeolocation } from "@/hooks/useGeolocation";
+import { getCommandPosition } from "@/hooks/useTripTracker";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import {
   enqueueCommand,
@@ -58,7 +59,8 @@ function ExceptionPage() {
     }
     setBusy(true);
     try {
-      const ctx = await newCaptureCtx({ lat: geo.lat, lng: geo.lng, accuracy: geo.accuracy });
+      // posicao fresca da acao explicita (rastreador ativo); nunca abre dialogo por si
+      const ctx = await newCaptureCtx(await getCommandPosition());
       const media: OutboxMedia[] = [];
       if (photo.blob) {
         const sha = await sha256HexOfBuffer(await photo.blob.arrayBuffer());
