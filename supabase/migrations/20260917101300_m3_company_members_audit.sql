@@ -233,7 +233,11 @@ declare
     'trip_checkpoints', 'trip_documents', 'proof_of_delivery', 'proof_of_delivery_attempts', 'trip_exceptions', 'trip_exception_evidence', 'operational_alerts',
     'trip_admin_actions', 'cargo_dispositions', 'trip_operational_facts', 'trip_tracking_sessions', 'trip_locations', 'trip_location_summaries', 'trip_access_log',
     'scheduler_runs', 'operational_flags', 'push_devices', 'push_outbox', 'push_dispatch_nonces', 'push_required_platforms', 'push_homologation',
-    'company_member_events', 'checkpoints', 'driver_positions', 'security_alerts', 'security_alerts_tracking'];
+    -- TEMPORARIO (rollout M2 -> M3): 'checkpoints', 'driver_positions', 'security_alerts' e
+    -- 'security_alerts_tracking' saem desta lista enquanto o acesso legado de authenticated
+    -- e preservado (ver 20260917101200). Sao auditadas logo abaixo, em bloco proprio, e
+    -- voltam para ca na migration de revogacao definitiva pos-deploy do M3.
+    'company_member_events'];
   v_helpers text[] := array['current_operational_policy', 'operational_policy_version', 'current_privacy_notice', 'trip_event_append', 'trip_access_append',
     'company_operational_role', 'is_company_operator', 'trip_role_of', 'trip_visible', 'trip_live_assignment_of_caller', 'assert_trip_media',
     'trip_lock', 'trip_policy', 'trip_actor_kind_of', 'company_operational_users', 'notify_trip', 'trip_release_capacity', 'trip_reserve_capacity',
@@ -363,7 +367,10 @@ begin
   -- aviso de privacidade: nenhum texto placeholder gravado por migration
   if exists (select 1 from public.privacy_notices) then raise exception 'PRIVACIDADE: privacy_notices deve nascer vazia (publicacao e ato administrativo)'; end if;
   -- legado congelado
-  foreach v_t in array array['checkpoints', 'driver_positions', 'security_alerts', 'security_alerts_tracking', 'bids', 'esg_logs', 'company_members'] loop
+  -- TEMPORARIO (rollout M2 -> M3): 'checkpoints', 'driver_positions', 'security_alerts',
+  -- 'security_alerts_tracking' e 'bids' voltam a esta lista na migration de revogacao
+  -- definitiva; ate la o DML direto do frontend M2 continua valendo (ver 20260917101200).
+  foreach v_t in array array['esg_logs', 'company_members'] loop
     if exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public' and g.table_name = v_t and g.grantee in ('anon', 'authenticated')
                 and g.privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')) then
       raise exception 'LEGADO: % ainda aceita DML direto', v_t;
@@ -388,6 +395,94 @@ begin
   end if;
   if exists (select 1 from public.trip_assignments a join public.drivers d on d.id = a.driver_id where d.profile_id is distinct from a.driver_profile_id and a.state in ('offered', 'accepted')) then
     raise exception 'DADOS: assignment vivo com identidade divergente';
+  end if;
+  -- ---------------------------------------------------------------------------
+  -- PONTE DE ROLLOUT (TEMPORARIA): estado legado preservado para o frontend M2
+  -- (commit aaa9751c60e74bbe8a887ee016032aa655a89193) ate que o M3
+  -- (commit b5075949986be9be86d818b24dc604ab6d3085a6) esteja em Production e o
+  -- smoke seja aprovado. A migration de revogacao definitiva remove estes grants
+  -- e estas policies e restaura as listas acima ao formato original.
+  -- ---------------------------------------------------------------------------
+  foreach v_t in array array['checkpoints', 'driver_positions', 'security_alerts', 'security_alerts_tracking', 'bids'] loop
+    if not (select relrowsecurity from pg_class where oid = ('public.' || v_t)::regclass) then
+      raise exception 'PONTE: % sem RLS', v_t;
+    end if;
+    -- anon e PUBLIC nunca: a ponte e exclusiva de authenticated
+    if exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public' and g.table_name = v_t
+                and g.grantee = 'anon' and g.privilege_type in ('SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')) then
+      raise exception 'PONTE: anon com acesso a %', v_t;
+    end if;
+    if exists (select 1 from pg_class c cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) a
+                where c.oid = ('public.' || v_t)::regclass and a.grantee = 0) then
+      raise exception 'PONTE: PUBLIC com privilegio em %', v_t;
+    end if;
+  end loop;
+  -- service_role: somente leitura nas quatro congeladas; em bids, sem DML
+  foreach v_t in array array['checkpoints', 'driver_positions', 'security_alerts', 'security_alerts_tracking'] loop
+    if not exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public' and g.table_name = v_t
+                    and g.grantee = 'service_role' and g.privilege_type = 'SELECT') then
+      raise exception 'PONTE: service_role sem SELECT em %', v_t;
+    end if;
+  end loop;
+  foreach v_t in array array['checkpoints', 'driver_positions', 'security_alerts', 'security_alerts_tracking', 'bids'] loop
+    if exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public' and g.table_name = v_t
+                and g.grantee = 'service_role' and g.privilege_type in ('INSERT', 'UPDATE', 'DELETE', 'TRUNCATE')) then
+      raise exception 'PONTE: service_role com DML em %', v_t;
+    end if;
+  end loop;
+  -- privilegios de authenticated preservados: exatamente os que o M2 usa hoje
+  foreach v_t in array array['checkpoints:SELECT', 'checkpoints:INSERT', 'driver_positions:SELECT', 'driver_positions:INSERT',
+                             'driver_positions:UPDATE', 'security_alerts:SELECT', 'security_alerts:UPDATE',
+                             'security_alerts_tracking:INSERT', 'bids:SELECT', 'bids:INSERT'] loop
+    if not exists (select 1 from information_schema.role_table_grants g where g.table_schema = 'public'
+                    and g.table_name = split_part(v_t, ':', 1) and g.grantee = 'authenticated'
+                    and g.privilege_type = split_part(v_t, ':', 2)) then
+      raise exception 'PONTE: authenticated perdeu % antes da hora', v_t;
+    end if;
+  end loop;
+  -- as 11 policies legadas continuam presentes, com comando e roles esperados
+  for v_t, v_p, v_r in
+    select * from (values
+      ('checkpoints', 'checkpoints_select_party', 'SELECT'),
+      ('checkpoints', 'checkpoints_insert_driver', 'INSERT'),
+      ('driver_positions', 'driver_positions_select_party', 'SELECT'),
+      ('driver_positions', 'driver_positions_insert_own', 'INSERT'),
+      ('driver_positions', 'driver_positions_update_own', 'UPDATE'),
+      ('security_alerts', 'security_alerts_select_party', 'SELECT'),
+      ('security_alerts', 'security_alerts_admin_manage', 'ALL'),
+      ('security_alerts_tracking', 'alerts_tracking_select_party', 'SELECT'),
+      ('security_alerts_tracking', 'alerts_tracking_insert_driver', 'INSERT'),
+      ('bids', 'bids_insert_carrier', 'INSERT'),
+      ('bids', 'bids_update_party', 'UPDATE')
+    ) t(tab, pol, cmd)
+  loop
+    if not exists (select 1 from pg_policies p where p.schemaname = 'public' and p.tablename = v_t and p.policyname = v_p
+                    and p.cmd = v_r and p.permissive = 'PERMISSIVE' and p.roles = array['authenticated']::name[]) then
+      raise exception 'PONTE: policy legada %.% ausente ou alterada (esperado % para authenticated)', v_t, v_p, v_r;
+    end if;
+  end loop;
+  -- definicoes: os predicados continuam os originais (nenhuma policy recriada)
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'checkpoints'
+                  and policyname = 'checkpoints_insert_driver' and with_check like '%driver_id%') then
+    raise exception 'PONTE: WITH CHECK de checkpoints_insert_driver alterado';
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'driver_positions'
+                  and policyname = 'driver_positions_update_own' and qual like '%driver_id%' and with_check like '%driver_id%') then
+    raise exception 'PONTE: predicados de driver_positions_update_own alterados';
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'security_alerts'
+                  and policyname = 'security_alerts_admin_manage' and qual like '%has_role%' and with_check like '%has_role%') then
+    raise exception 'PONTE: predicados de security_alerts_admin_manage alterados';
+  end if;
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'bids'
+                  and policyname = 'bids_insert_carrier' and with_check like '%carriers%') then
+    raise exception 'PONTE: WITH CHECK de bids_insert_carrier alterado';
+  end if;
+  -- motorista comum continua SEM poder inserir em security_alerts (status quo pre-M3):
+  -- a unica policy de INSERT ali e a de admin (security_alerts_admin_manage).
+  if exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'security_alerts'
+              and cmd in ('INSERT', 'ALL') and policyname <> 'security_alerts_admin_manage') then
+    raise exception 'PONTE: security_alerts ganhou caminho de INSERT alem do admin';
   end if;
 end $$;
 
