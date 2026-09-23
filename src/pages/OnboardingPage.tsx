@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
+  LogOut,
   Check,
   CheckCircle,
   Mail,
@@ -55,6 +56,7 @@ export function OnboardingPage() {
   const { isLoading, isAuthenticated, role, profile, company, refresh, user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [saindo, setSaindo] = useState(false);
   const [bypassTimeout, setBypassTimeout] = useState(false);
   const [companyBootstrapState, setCompanyBootstrapState] = useState<"idle" | "loading" | "error">("idle");
   const [companyBootstrapError, setCompanyBootstrapError] = useState<string | null>(null);
@@ -192,6 +194,21 @@ export function OnboardingPage() {
   const lastStep = steps.length - 1;
   const goNext = () => setStep((s) => Math.min(s + 1, lastStep));
 
+  // Sem esta saida, quem chega aqui pelo portao de onboarding fica preso: nao ha
+  // como trocar de conta sem limpar o navegador. Encerra a sessao pelo SDK.
+  const sairDaConta = async () => {
+    if (saindo) return;
+    setSaindo(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      await navigate({ to: "/login" });
+    } catch (e) {
+      setSaindo(false);
+      toast.error(e instanceof Error ? e.message : "Não foi possível sair agora.");
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-[#F4F7FB] text-[#10274A]">
       {/* Sidebar */}
@@ -235,7 +252,16 @@ export function OnboardingPage() {
             );
           })}
         </ol>
-        <div className="mt-auto pt-8 text-xs text-[#B8C6D6]">
+        <button
+          type="button"
+          onClick={() => void sairDaConta()}
+          disabled={saindo}
+          className="mt-auto flex items-center gap-2 rounded-md px-2 py-2 text-sm text-[#B8C6D6] transition-colors hover:bg-[#1F314D] hover:text-white disabled:opacity-60"
+        >
+          <LogOut className="h-4 w-4" />
+          {saindo ? "Saindo…" : "Sair"}
+        </button>
+        <div className="pt-4 text-xs text-[#B8C6D6]">
           Precisa de ajuda?{" "}
           <a
             href="https://wa.me/5511000000000"

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { Loader2, MapPin, Radio, TriangleAlert } from "lucide-react";
 import { fetchAdminPositions } from "@/lib/trips";
@@ -12,6 +13,7 @@ const BR_CENTER = { lat: -15.7801, lng: -47.9292 };
 type MapStatus = "loading" | "ready" | "missing-key" | "error";
 
 export function AdminOperationsMap() {
+  const { t } = useLanguage();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
@@ -106,7 +108,7 @@ export function AdminOperationsMap() {
         <div>
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-[#1B6CB8]" />
-            <h2 className="font-semibold text-[#16263F]">Control Tower</h2>
+            <h2 className="font-semibold text-[#16263F]">{t("controlTower.title")}</h2>
           </div>
           <p className="mt-1 text-sm text-[#5B6B80]">
             Viagens ativas com última posição conhecida (estimativas, não rota exata)
@@ -126,9 +128,7 @@ export function AdminOperationsMap() {
             Carregando mapa operacional…
           </div>
         )}
-        {status === "missing-key" && (
-          <MapMessage text="Configure VITE_GOOGLE_MAPS_KEY para carregar a Control Tower." />
-        )}
+        {status === "missing-key" && <MapMessage text={t("controlTower.mapUnavailable")} />}
         {(status === "error" || isError) && (
           <MapMessage text="Não foi possível carregar o mapa ou consultar as posições." />
         )}

@@ -113,6 +113,7 @@ const translations = {
     controlTower: {
       title: "Torre de Controle",
       subtitle: "Viagens, alertas e SOS em tempo real.",
+      mapUnavailable: "Mapa indisponível: configure a chave do Google Maps para ver as viagens.",
     },
     nav: {
       howItWorks: "Soluções",
@@ -765,6 +766,7 @@ const translations = {
     controlTower: {
       title: "Control Tower",
       subtitle: "Trips, alerts and SOS in real time.",
+      mapUnavailable: "Map unavailable: configure the Google Maps key to see the trips.",
     },
     nav: {
       howItWorks: "Solutions",
@@ -1417,6 +1419,7 @@ const translations = {
     controlTower: {
       title: "Torre de Control",
       subtitle: "Viajes, alertas y SOS en tiempo real.",
+      mapUnavailable: "Mapa no disponible: configura la clave de Google Maps para ver los viajes.",
     },
     carrier: {
       dashboard: "Dashboard",

@@ -144,3 +144,21 @@ describe("defasagem de relogio no login", () => {
     expect(cleanup.slice(0, 120)).toContain("cancelSkewRetry()");
   });
 });
+
+describe("saida da tela de onboarding", () => {
+  const src = ler("pages/OnboardingPage.tsx");
+  it("oferece Sair usando o SDK (nunca limpando storage na mao) e volta ao login", () => {
+    expect(src).toContain("supabase.auth.signOut()");
+    expect(src).toContain('navigate({ to: "/login" })');
+    expect(src).toContain("sairDaConta");
+    // nenhuma manipulacao direta de armazenamento
+    expect(src).not.toContain("localStorage.removeItem");
+    expect(src).not.toContain("localStorage.clear");
+  });
+  it("Torre de Controle tambem no cartao do mapa (sem ingles residual)", () => {
+    const mapa = ler("components/maps/AdminOperationsMap.tsx");
+    expect(mapa).toContain('t("controlTower.title")');
+    expect(mapa).not.toMatch(/>Control Tower</);
+    expect(mapa).not.toContain("VITE_GOOGLE_MAPS_KEY para carregar");
+  });
+});
