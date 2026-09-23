@@ -127,19 +127,20 @@ describe("defasagem de relogio no login", () => {
   const src = ler("contexts/AuthContext.tsx");
   it("retentativa limitada, so para esse erro, sem esconder os demais", () => {
     expect(src).toContain('from "@/lib/authSkew"');
-    expect(src).toMatch(/shouldRetryAuthError\(r\.message, tentativa\)/);
-    expect(src).toMatch(/bootstrap\.invalidate\(uid\)/);
+    expect(src).toContain("shouldRetry: shouldRetryAuthError");
+    expect(src).toContain("bootstrap.invalidate(uid)");
     // o caminho de erro continua existindo para os demais casos
-    expect(src).toMatch(/\[Auth\] bootstrap falhou/);
+    expect(src).toContain("[Auth] bootstrap falhou");
   });
-  it("o timer da retentativa e cancelavel e e cancelado no logout e no unmount", () => {
-    expect(src).toMatch(/const skewTimerRef = useRef/);
-    expect(src).toMatch(/const cancelSkewRetry = \(\) => \{/);
-    expect(src).toMatch(/clearTimeout\(skewTimerRef\.current\)/);
-    // logout
+  it("a espera e cancelavel (resolve cancelled) e e cancelada no logout e no unmount", () => {
+    expect(src).toContain('from "@/lib/authSkewRetry"');
+    expect(src).toContain("const skewDelayRef = useRef(createCancellableDelay())");
+    expect(src).toContain("const cancelSkewRetry = () => skewDelayRef.current.cancel()");
+    // resultado cancelado nao aplica estado algum
+    expect(src).toContain('if (resultado.status === "cancelled") return;');
     const signOut = src.slice(src.indexOf("const signOut = async"));
     expect(signOut.slice(0, 400)).toContain("cancelSkewRetry()");
-    // unmount do listener de auth
-    expect(src).toMatch(/subscription\.unsubscribe\(\);\s*\n\s*cancelSkewRetry\(\);/);
+    const cleanup = src.slice(src.indexOf("subscription.unsubscribe()"));
+    expect(cleanup.slice(0, 120)).toContain("cancelSkewRetry()");
   });
 });

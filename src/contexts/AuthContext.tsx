@@ -3,6 +3,7 @@ import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { createAuthBootstrap, createSignInOnce } from "@/lib/authBootstrap";
 import { isClockSkewAuthError, shouldRetryAuthError, skewRetryDelayMs } from "@/lib/authSkew";
+import { createCancellableDelay, retryOnClockSkew } from "@/lib/authSkewRetry";
 import type { Company, Profile, UserRole } from "@/types/database";
 
 // UNICA autoridade do estado da sessao. O listener de auth SO grava sessao/usuario
@@ -168,14 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Tracks the uid that state should currently reflect; lets in-flight
   // fetches from a stale/previous uid detect they're obsolete and no-op.
   const activeUidRef = useRef<string | null>(null);
-  // timer da retentativa de defasagem de relogio: sempre cancelavel
-  const skewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelSkewRetry = () => {
-    if (skewTimerRef.current !== null) {
-      clearTimeout(skewTimerRef.current);
-      skewTimerRef.current = null;
-    }
-  };
+  // espera da retentativa de defasagem de relogio: cancelar RESOLVE a promessa
+  // (nada fica pendente apos logout/unmount)
+  const skewDelayRef = useRef(createCancellableDelay());
+  const cancelSkewRetry = () => skewDelayRef.current.cancel();
 
   const clearCompanyState = () => {
     setCompany(null);
@@ -192,45 +189,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCompanyRole(sel?.role ?? null);
   };
 
-  const loadUserData = async (uid: string, tentativa = 0) => {
+  const loadUserData = async (uid: string) => {
     activeUidRef.current = uid;
     setIsLoading(true);
-    const r = await bootstrap.ensure(uid);
-    // uid mudou enquanto a leitura estava em voo - descarta o resultado
-    if (activeUidRef.current !== uid) return;
-    if (r.status === "waiting_token") return; // sem token utilizavel: o proximo evento de auth reexecuta o efeito
-    if (r.status === "error") {
-      // Defasagem de relogio ("JWT issued at future"): o token e valido, mas o
-      // PostgREST ainda nao alcancou o `iat`. Retentativa curta e limitada; todo
-      // outro erro continua subindo para a UI na primeira ocorrencia.
-      if (shouldRetryAuthError(r.message, tentativa)) {
-        const espera = skewRetryDelayMs(tentativa);
-        console.warn(
-          `[Auth] relogio dessincronizado com o servidor; nova tentativa em ${espera} ms`,
-        );
-        bootstrap.invalidate(uid);
-        cancelSkewRetry();
-        const seguir = await new Promise<boolean>((resolve) => {
-          skewTimerRef.current = setTimeout(() => {
-            skewTimerRef.current = null;
-            resolve(true);
-          }, espera);
-        });
-        // logout/unmount cancelam o timer: a promessa nunca resolve e nada segue
-        if (!seguir || activeUidRef.current !== uid) return;
-        return loadUserData(uid, tentativa + 1);
-      }
-      if (isClockSkewAuthError(r.message)) {
+    // Defasagem de relogio ("JWT issued at future"): o token e valido, mas o
+    // PostgREST ainda nao alcancou o `iat`. Retentativa curta e limitada; todo
+    // outro erro sobe para a UI na primeira ocorrencia. Logout/unmount cancelam
+    // a espera e devolvem "cancelled" — nenhum estado e tocado depois disso.
+    const resultado = await retryOnClockSkew({
+      run: async () => {
+        const r = await bootstrap.ensure(uid);
+        return r.status === "error"
+          ? ({ ok: false, error: r.message } as const)
+          : ({ ok: true, value: r } as const);
+      },
+      delay: skewDelayRef.current,
+      shouldRetry: shouldRetryAuthError,
+      delayMs: skewRetryDelayMs,
+      beforeRetry: () => bootstrap.invalidate(uid),
+      onRetry: (ms) =>
+        console.warn(`[Auth] relogio dessincronizado com o servidor; nova tentativa em ${ms} ms`),
+      stillActive: () => activeUidRef.current === uid,
+    });
+    if (resultado.status === "cancelled") return; // logout/unmount/troca de uid
+    if (resultado.status === "error") {
+      if (isClockSkewAuthError(resultado.error)) {
         console.error("[Auth] relogio do dispositivo fora de sincronia com o servidor");
       }
-      console.error("[Auth] bootstrap falhou", r.message);
+      console.error("[Auth] bootstrap falhou", resultado.error);
       setProfile(null);
       setRole(null);
       clearCompanyState();
-      setAuthError(r.message);
+      setAuthError(resultado.error as string);
       setIsLoading(false);
       return;
     }
+    const r = resultado.value;
+    if (r.status === "waiting_token") return; // sem token utilizavel: o proximo evento de auth reexecuta o efeito
     setAuthError(null);
     setRole(r.role);
     setProfile(r.profile ? ({ ...r.profile, role: r.role } as Profile) : null);
