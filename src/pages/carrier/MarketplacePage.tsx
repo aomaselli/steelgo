@@ -321,511 +321,517 @@ export function MarketplacePage() {
   const myFleetTypes = new Set(carrier?.truck_types ?? []);
 
   return (
-    <div className="flex -m-6 h-[calc(100vh-64px)] bg-[#F4F7FB] text-[#10274A]">
-      {/* Filters Panel */}
-      <aside className="w-72 flex-shrink-0 bg-[#F4F7FB] border-r border-[#DDE7F2] p-5 overflow-y-auto hidden md:block">
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-sm font-semibold text-[#10274A]">
-            {t("carrierMarketplace.filtersTitle")}
-          </h3>
-          <button onClick={clearFilters} className="text-xs text-[#1B6CB8] hover:underline">
-            {t("carrierMarketplace.clear")}
-          </button>
-        </div>
-
-        <FilterGroup title={t("carrierMarketplace.originState")}>
-          <div className="grid grid-cols-5 gap-1">
-            {BR_STATES.map((s) => {
-              const sel = originStates.includes(s);
-              return (
-                <button
-                  key={s}
-                  onClick={() => toggle(setOriginStates, s)}
-                  className={`text-[10px] px-1.5 py-1 rounded-[4px] border transition ${
-                    sel
-                      ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
-                      : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
-                  }`}
-                >
-                  {s}
-                </button>
-              );
-            })}
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.destState")}>
-          <div className="grid grid-cols-5 gap-1">
-            {BR_STATES.map((s) => {
-              const sel = destStates.includes(s);
-              return (
-                <button
-                  key={s}
-                  onClick={() => toggle(setDestStates, s)}
-                  className={`text-[10px] px-1.5 py-1 rounded-[4px] border transition ${
-                    sel
-                      ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
-                      : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
-                  }`}
-                >
-                  {s}
-                </button>
-              );
-            })}
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.steelType")}>
-          <div className="flex flex-col gap-1">
-            {STEEL_TYPES.map((s) => (
-              <label
-                key={s.id}
-                className="flex items-center gap-2 py-1 text-sm text-[#8B949E] cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-[#1B6CB8]"
-                  checked={steelTypes.includes(s.id)}
-                  onChange={() => toggle(setSteelTypes, s.id)}
-                />
-                {s.label}
-              </label>
-            ))}
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.truckType")}>
-          <div className="flex flex-col gap-1">
-            {TRUCK_TYPES.map((truckType) => (
-              <label
-                key={truckType.id}
-                className="flex items-center gap-2 py-1 text-sm text-[#8B949E] cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  className="accent-[#1B6CB8]"
-                  checked={truckTypes.includes(truckType.id)}
-                  onChange={() => toggle(setTruckTypes, truckType.id)}
-                />
-                {truckType.label}
-                {myFleetTypes.has(truckType.id as never) && (
-                  <Star className="w-3 h-3 text-[#F0A500] fill-[#F0A500]" />
-                )}
-              </label>
-            ))}
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.category")}>
-          <div className="flex gap-1 flex-wrap">
-            {CATEGORIES.map((c) => {
-              const sel = categories.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => toggle(setCategories, c.id)}
-                  className={`text-xs px-2 py-1 rounded-full border transition ${
-                    sel
-                      ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
-                      : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
-                  }`}
-                >
-                  {t(`carrierMarketplace.${c.labelKey}`)}
-                </button>
-              );
-            })}
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.weight")}>
-          <div className="flex gap-2">
-            <Input
-              type="number"
-              placeholder={t("carrierMarketplace.from")}
-              value={weightMin}
-              onChange={(e) => setWeightMin(e.target.value)}
-            />
-            <Input
-              type="number"
-              placeholder={t("carrierMarketplace.to")}
-              value={weightMax}
-              onChange={(e) => setWeightMax(e.target.value)}
-            />
-          </div>
-        </FilterGroup>
-
-        <FilterGroup title={t("carrierMarketplace.pickupDate")}>
-          <Input type="date" value={pickupFrom} onChange={(e) => setPickupFrom(e.target.value)} />
-        </FilterGroup>
-      </aside>
-
-      {/* Freight List */}
-      <main className="flex-1 p-6 overflow-y-auto">
-        <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-          <div className="text-sm text-[#5B6B80]">
-            {filtered.length}{" "}
-            {filtered.length === 1
-              ? t("carrierMarketplace.freightAvailableOne")
-              : t("carrierMarketplace.freightAvailableMany")}
-          </div>
-          <Select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
-            <option value="relevance">{t("carrierMarketplace.sortRelevance")}</option>
-            <option value="price_desc">{t("carrierMarketplace.sortPriceDesc")}</option>
-            <option value="price_asc">{t("carrierMarketplace.sortPriceAsc")}</option>
-            <option value="pickup">{t("carrierMarketplace.sortPickup")}</option>
-            <option value="weight">{t("carrierMarketplace.sortWeight")}</option>
-          </Select>
-        </div>
-
-        {newCount > 0 && (
-          <button
-            onClick={() => {
-              setNewCount(0);
-              qc.invalidateQueries({ queryKey: ["marketplace-freights"] });
-            }}
-            className="mb-3 inline-flex items-center gap-2 bg-[#1A9B5E]/20 border border-[#1A9B5E] text-[#2ECC8A] text-xs px-3 py-1 rounded-full animate-pulse"
-          >
-            ● {newCount}{" "}
-            {newCount === 1
-              ? t("carrierMarketplace.newFreightOne")
-              : t("carrierMarketplace.newFreightMany")}{" "}
-            — {t("carrierMarketplace.newFreightCta")}
-          </button>
-        )}
-
-        {isLoading ? (
-          <div className="flex justify-center p-12">
-            <Spinner />
-          </div>
-        ) : !filtered.length ? (
-          <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
-              <Package className="h-6 w-6" />
-            </div>
-            <h3 className="text-xl font-semibold text-[#10274A]">
-              {t("carrierMarketplace.noFreightTitle")}
+    <div className="flex flex-col -m-6 h-[calc(100vh-64px)] bg-[#F4F7FB] text-[#10274A]">
+      <header className="border-b border-[#DDE7F2] bg-white px-6 py-4">
+        <h1 className="text-xl font-semibold text-[#10274A]">{t("marketplacePage.title")}</h1>
+        <p className="mt-0.5 text-sm text-[#54657C]">{t("marketplacePage.subtitle")}</p>
+      </header>
+      <div className="flex min-h-0 flex-1">
+        {/* Filters Panel */}
+        <aside className="w-72 flex-shrink-0 bg-[#F4F7FB] border-r border-[#DDE7F2] p-5 overflow-y-auto hidden md:block">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-sm font-semibold text-[#10274A]">
+              {t("carrierMarketplace.filtersTitle")}
             </h3>
-            <p className="max-w-md text-sm text-[#5B6B80]">
-              {t("carrierMarketplace.noFreightDesc")}
-            </p>
+            <button onClick={clearFilters} className="text-xs text-[#1B6CB8] hover:underline">
+              {t("carrierMarketplace.clear")}
+            </button>
           </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {filtered.map((f) => {
-              const alreadyBid = myBids?.has(f.id);
-              return (
-                <div
-                  key={f.id}
-                  onClick={() => {
-                    setOpenFreightId(f.id);
-                    setTab("details");
-                  }}
-                  className={`rounded-[16px] p-5 border transition cursor-pointer ${
-                    alreadyBid
-                      ? "bg-[#EAFBF3] border-[#7ED0A6]"
-                      : "bg-white border-[#DDE7F2] hover:border-[#C6D5E7] shadow-[0_10px_20px_rgba(16,39,74,0.04)]"
-                  }`}
+
+          <FilterGroup title={t("carrierMarketplace.originState")}>
+            <div className="grid grid-cols-5 gap-1">
+              {BR_STATES.map((s) => {
+                const sel = originStates.includes(s);
+                return (
+                  <button
+                    key={s}
+                    onClick={() => toggle(setOriginStates, s)}
+                    className={`text-[10px] px-1.5 py-1 rounded-[4px] border transition ${
+                      sel
+                        ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
+                        : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.destState")}>
+            <div className="grid grid-cols-5 gap-1">
+              {BR_STATES.map((s) => {
+                const sel = destStates.includes(s);
+                return (
+                  <button
+                    key={s}
+                    onClick={() => toggle(setDestStates, s)}
+                    className={`text-[10px] px-1.5 py-1 rounded-[4px] border transition ${
+                      sel
+                        ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
+                        : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.steelType")}>
+            <div className="flex flex-col gap-1">
+              {STEEL_TYPES.map((s) => (
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2 py-1 text-sm text-[#8B949E] cursor-pointer"
                 >
-                  <div className="flex justify-between items-start gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono text-xs text-[#79B8F8]">
-                        #{String(f.id).slice(0, 8).toUpperCase()}
+                  <input
+                    type="checkbox"
+                    className="accent-[#1B6CB8]"
+                    checked={steelTypes.includes(s.id)}
+                    onChange={() => toggle(setSteelTypes, s.id)}
+                  />
+                  {s.label}
+                </label>
+              ))}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.truckType")}>
+            <div className="flex flex-col gap-1">
+              {TRUCK_TYPES.map((truckType) => (
+                <label
+                  key={truckType.id}
+                  className="flex items-center gap-2 py-1 text-sm text-[#8B949E] cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    className="accent-[#1B6CB8]"
+                    checked={truckTypes.includes(truckType.id)}
+                    onChange={() => toggle(setTruckTypes, truckType.id)}
+                  />
+                  {truckType.label}
+                  {myFleetTypes.has(truckType.id as never) && (
+                    <Star className="w-3 h-3 text-[#F0A500] fill-[#F0A500]" />
+                  )}
+                </label>
+              ))}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.category")}>
+            <div className="flex gap-1 flex-wrap">
+              {CATEGORIES.map((c) => {
+                const sel = categories.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => toggle(setCategories, c.id)}
+                    className={`text-xs px-2 py-1 rounded-full border transition ${
+                      sel
+                        ? "border-[#1B6CB8] bg-[#1B6CB8]/10 text-[#154A8C]"
+                        : "border-[#DDE7F2] bg-white text-[#5B6B80] hover:border-[#C6D5E7]"
+                    }`}
+                  >
+                    {t(`carrierMarketplace.${c.labelKey}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.weight")}>
+            <div className="flex gap-2">
+              <Input
+                type="number"
+                placeholder={t("carrierMarketplace.from")}
+                value={weightMin}
+                onChange={(e) => setWeightMin(e.target.value)}
+              />
+              <Input
+                type="number"
+                placeholder={t("carrierMarketplace.to")}
+                value={weightMax}
+                onChange={(e) => setWeightMax(e.target.value)}
+              />
+            </div>
+          </FilterGroup>
+
+          <FilterGroup title={t("carrierMarketplace.pickupDate")}>
+            <Input type="date" value={pickupFrom} onChange={(e) => setPickupFrom(e.target.value)} />
+          </FilterGroup>
+        </aside>
+
+        {/* Freight List */}
+        <main className="flex-1 p-6 overflow-y-auto">
+          <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+            <div className="text-sm text-[#5B6B80]">
+              {filtered.length}{" "}
+              {filtered.length === 1
+                ? t("carrierMarketplace.freightAvailableOne")
+                : t("carrierMarketplace.freightAvailableMany")}
+            </div>
+            <Select value={sort} onChange={(e) => setSort(e.target.value as SortKey)}>
+              <option value="relevance">{t("carrierMarketplace.sortRelevance")}</option>
+              <option value="price_desc">{t("carrierMarketplace.sortPriceDesc")}</option>
+              <option value="price_asc">{t("carrierMarketplace.sortPriceAsc")}</option>
+              <option value="pickup">{t("carrierMarketplace.sortPickup")}</option>
+              <option value="weight">{t("carrierMarketplace.sortWeight")}</option>
+            </Select>
+          </div>
+
+          {newCount > 0 && (
+            <button
+              onClick={() => {
+                setNewCount(0);
+                qc.invalidateQueries({ queryKey: ["marketplace-freights"] });
+              }}
+              className="mb-3 inline-flex items-center gap-2 bg-[#1A9B5E]/20 border border-[#1A9B5E] text-[#2ECC8A] text-xs px-3 py-1 rounded-full animate-pulse"
+            >
+              ● {newCount}{" "}
+              {newCount === 1
+                ? t("carrierMarketplace.newFreightOne")
+                : t("carrierMarketplace.newFreightMany")}{" "}
+              — {t("carrierMarketplace.newFreightCta")}
+            </button>
+          )}
+
+          {isLoading ? (
+            <div className="flex justify-center p-12">
+              <Spinner />
+            </div>
+          ) : !filtered.length ? (
+            <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
+                <Package className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-semibold text-[#10274A]">
+                {t("carrierMarketplace.noFreightTitle")}
+              </h3>
+              <p className="max-w-md text-sm text-[#5B6B80]">
+                {t("carrierMarketplace.noFreightDesc")}
+              </p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filtered.map((f) => {
+                const alreadyBid = myBids?.has(f.id);
+                return (
+                  <div
+                    key={f.id}
+                    onClick={() => {
+                      setOpenFreightId(f.id);
+                      setTab("details");
+                    }}
+                    className={`rounded-[16px] p-5 border transition cursor-pointer ${
+                      alreadyBid
+                        ? "bg-[#EAFBF3] border-[#7ED0A6]"
+                        : "bg-white border-[#DDE7F2] hover:border-[#C6D5E7] shadow-[0_10px_20px_rgba(16,39,74,0.04)]"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono text-xs text-[#79B8F8]">
+                          #{String(f.id).slice(0, 8).toUpperCase()}
+                        </span>
+                        <GreenFreightTag category={f.category} />
+                        {alreadyBid && (
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-[#1A9B5E]/20 text-[#2ECC8A]">
+                            {t("carrierMarketplace.bidSent")}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-[#5B6B80]">
+                        {f.pickup_date ? new Date(f.pickup_date).toLocaleDateString("pt-BR") : "—"}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
+                      <MapPin className="w-3.5 h-3.5 text-[#3B89D4]" />
+                      <span className="text-base font-semibold text-[#10274A]">
+                        {f.origin_city ?? "—"}, {f.origin_state ?? ""}
                       </span>
-                      <GreenFreightTag category={f.category} />
-                      {alreadyBid && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#1A9B5E]/20 text-[#2ECC8A]">
-                          {t("carrierMarketplace.bidSent")}
+                      <ArrowRight className="w-3.5 h-3.5 text-[#9AA9B7]" />
+                      <span className="text-base font-semibold text-[#10274A]">
+                        {f.dest_city ?? "—"}, {f.dest_state ?? ""}
+                      </span>
+                      {f.distance_km && (
+                        <span className="text-sm text-[#5B6B80]">
+                          · {formatNum(f.distance_km)} km
                         </span>
                       )}
                     </div>
-                    <div className="text-xs text-[#5B6B80]">
-                      {f.pickup_date ? new Date(f.pickup_date).toLocaleDateString("pt-BR") : "—"}
+
+                    <div className="flex gap-4 mt-2 flex-wrap text-xs text-[#5B6B80]">
+                      <span className="inline-flex items-center gap-1">
+                        <Package className="w-3.5 h-3.5" />
+                        {steelLabel(f.steel_type)}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <Scale className="w-3.5 h-3.5" />
+                        {formatNum(f.weight_tons)} t
+                      </span>
+                      {f.required_truck?.length ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Truck className="w-3.5 h-3.5" />
+                          {f.required_truck.join(", ")}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#E6EAF0]">
+                      <div>
+                        {f.budget_brl ? (
+                          <span className="text-sm font-medium text-[#10274A]">
+                            {t("carrierMarketplace.budgetLabel")}{" "}
+                            <span className="tabular-nums">{formatBRL(f.budget_brl)}</span>
+                          </span>
+                        ) : (
+                          <span className="text-sm italic text-[#6B7B8A]">
+                            {t("carrierMarketplace.openToBids")}
+                          </span>
+                        )}
+                      </div>
+                      <Button size="sm">{t("carrierMarketplace.viewAndBid")}</Button>
                     </div>
                   </div>
+                );
+              })}
+            </div>
+          )}
+        </main>
 
-                  <div className="flex items-center gap-2 mt-2 flex-wrap">
-                    <MapPin className="w-3.5 h-3.5 text-[#3B89D4]" />
-                    <span className="text-base font-semibold text-[#10274A]">
-                      {f.origin_city ?? "—"}, {f.origin_state ?? ""}
+        {/* Detail Drawer */}
+        {openFreight && (
+          <>
+            <div className="fixed inset-0 bg-black/50 z-40" onClick={closeDrawer} />
+            <div className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-[#F8FAFC] border-l border-[#DDE7F2] z-50 p-6 overflow-y-auto">
+              <button
+                onClick={closeDrawer}
+                className="absolute right-4 top-4 text-[#8B949E] hover:text-[#E6EDF3]"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-4 mt-1">
+                <span className="font-mono text-xs text-[#79B8F8]">
+                  #{String(openFreight.id).slice(0, 8).toUpperCase()}
+                </span>
+                <StatusPill status={openFreight.status ?? "published"} />
+              </div>
+
+              <div className="flex gap-2 border-b border-[#DDE7F2] mb-4">
+                {[
+                  { id: "details", label: t("carrierMarketplace.detailsTab") },
+                  { id: "bid", label: t("carrierMarketplace.bidTab") },
+                ].map((tabItem) => (
+                  <button
+                    key={tabItem.id}
+                    onClick={() => setTab(tabItem.id as "details" | "bid")}
+                    className={`px-3 py-2 text-sm border-b-2 -mb-px transition ${
+                      tab === tabItem.id
+                        ? "border-steel-blue-400 text-[#10274A]"
+                        : "border-transparent text-[#5B6B80] hover:text-[#10274A]"
+                    }`}
+                  >
+                    {tabItem.label}
+                  </button>
+                ))}
+              </div>
+
+              {tab === "details" ? (
+                <div className="space-y-3 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-[#5B6B80]">{t("carrierMarketplace.origin")}</span>
+                    <span className="text-[#10274A]">
+                      {openFreight.origin_city ?? "—"}, {openFreight.origin_state ?? ""}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#9AA9B7]" />
-                    <span className="text-base font-semibold text-[#10274A]">
-                      {f.dest_city ?? "—"}, {f.dest_state ?? ""}
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#5B6B80]">{t("carrierMarketplace.destination")}</span>
+                    <span className="text-[#10274A]">
+                      {openFreight.dest_city ?? "—"}, {openFreight.dest_state ?? ""}
                     </span>
-                    {f.distance_km && (
-                      <span className="text-sm text-[#5B6B80]">
-                        · {formatNum(f.distance_km)} km
-                      </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.distance")}</span>
+                    <span className="text-[#E6EDF3]">{formatNum(openFreight.distance_km)} km</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.steelType")}</span>
+                    <span className="text-[#E6EDF3]">{steelLabel(openFreight.steel_type)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.weight")}</span>
+                    <span className="text-[#E6EDF3]">{formatNum(openFreight.weight_tons)} t</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.category")}</span>
+                    <GreenFreightTag category={openFreight.category} />
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.pickup")}</span>
+                    <span className="text-[#E6EDF3]">
+                      {openFreight.pickup_date
+                        ? new Date(openFreight.pickup_date).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.delivery")}</span>
+                    <span className="text-[#E6EDF3]">
+                      {openFreight.delivery_date
+                        ? new Date(openFreight.delivery_date).toLocaleDateString("pt-BR")
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[#8B949E]">{t("carrierMarketplace.budget")}</span>
+                    <span className="text-[#E6EDF3]">
+                      {openFreight.budget_brl
+                        ? formatBRL(openFreight.budget_brl)
+                        : t("carrierMarketplace.openLabel")}
+                    </span>
+                  </div>
+                  {openFreight.notes && (
+                    <div className="pt-3 border-t border-[#30363D]">
+                      <div className="text-[#8B949E] text-xs mb-1">
+                        {t("carrierMarketplace.notes")}
+                      </div>
+                      <div className="text-[#E6EDF3]">{openFreight.notes}</div>
+                    </div>
+                  )}
+                  <div className="pt-3 border-t border-[#30363D] text-xs text-[#8B949E]">
+                    {t("carrierMarketplace.verifiedShipper")}
+                  </div>
+                  <Button className="w-full mt-2" onClick={() => setTab("bid")} disabled={!carrier}>
+                    {t("carrierMarketplace.makeBidCta")}
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.myAmount")}
+                    </label>
+                    <div className="relative">
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#484F58]" />
+                      <Input
+                        type="number"
+                        value={bidAmount}
+                        onChange={(e) => setBidAmount(e.target.value)}
+                        placeholder="0"
+                        className="pl-9"
+                      />
+                    </div>
+                    {openFreight.budget_brl && (
+                      <p className="text-xs text-[#484F58] mt-1">
+                        {t("carrierMarketplace.shipperBudget")} {formatBRL(openFreight.budget_brl)}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex gap-4 mt-2 flex-wrap text-xs text-[#5B6B80]">
-                    <span className="inline-flex items-center gap-1">
-                      <Package className="w-3.5 h-3.5" />
-                      {steelLabel(f.steel_type)}
-                    </span>
-                    <span className="inline-flex items-center gap-1">
-                      <Scale className="w-3.5 h-3.5" />
-                      {formatNum(f.weight_tons)} t
-                    </span>
-                    {f.required_truck?.length ? (
-                      <span className="inline-flex items-center gap-1">
-                        <Truck className="w-3.5 h-3.5" />
-                        {f.required_truck.join(", ")}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#E6EAF0]">
-                    <div>
-                      {f.budget_brl ? (
-                        <span className="text-sm font-medium text-[#10274A]">
-                          {t("carrierMarketplace.budgetLabel")}{" "}
-                          <span className="tabular-nums">{formatBRL(f.budget_brl)}</span>
-                        </span>
-                      ) : (
-                        <span className="text-sm italic text-[#6B7B8A]">
-                          {t("carrierMarketplace.openToBids")}
-                        </span>
-                      )}
-                    </div>
-                    <Button size="sm">{t("carrierMarketplace.viewAndBid")}</Button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </main>
-
-      {/* Detail Drawer */}
-      {openFreight && (
-        <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={closeDrawer} />
-          <div className="fixed right-0 top-0 h-full w-full sm:w-[480px] bg-[#F8FAFC] border-l border-[#DDE7F2] z-50 p-6 overflow-y-auto">
-            <button
-              onClick={closeDrawer}
-              className="absolute right-4 top-4 text-[#8B949E] hover:text-[#E6EDF3]"
-            >
-              <X className="w-5 h-5" />
-            </button>
-
-            <div className="flex items-center gap-2 mb-4 mt-1">
-              <span className="font-mono text-xs text-[#79B8F8]">
-                #{String(openFreight.id).slice(0, 8).toUpperCase()}
-              </span>
-              <StatusPill status={openFreight.status ?? "published"} />
-            </div>
-
-            <div className="flex gap-2 border-b border-[#DDE7F2] mb-4">
-              {[
-                { id: "details", label: t("carrierMarketplace.detailsTab") },
-                { id: "bid", label: t("carrierMarketplace.bidTab") },
-              ].map((tabItem) => (
-                <button
-                  key={tabItem.id}
-                  onClick={() => setTab(tabItem.id as "details" | "bid")}
-                  className={`px-3 py-2 text-sm border-b-2 -mb-px transition ${
-                    tab === tabItem.id
-                      ? "border-steel-blue-400 text-[#10274A]"
-                      : "border-transparent text-[#5B6B80] hover:text-[#10274A]"
-                  }`}
-                >
-                  {tabItem.label}
-                </button>
-              ))}
-            </div>
-
-            {tab === "details" ? (
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-[#5B6B80]">{t("carrierMarketplace.origin")}</span>
-                  <span className="text-[#10274A]">
-                    {openFreight.origin_city ?? "—"}, {openFreight.origin_state ?? ""}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#5B6B80]">{t("carrierMarketplace.destination")}</span>
-                  <span className="text-[#10274A]">
-                    {openFreight.dest_city ?? "—"}, {openFreight.dest_state ?? ""}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.distance")}</span>
-                  <span className="text-[#E6EDF3]">{formatNum(openFreight.distance_km)} km</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.steelType")}</span>
-                  <span className="text-[#E6EDF3]">{steelLabel(openFreight.steel_type)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.weight")}</span>
-                  <span className="text-[#E6EDF3]">{formatNum(openFreight.weight_tons)} t</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.category")}</span>
-                  <GreenFreightTag category={openFreight.category} />
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.pickup")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {openFreight.pickup_date
-                      ? new Date(openFreight.pickup_date).toLocaleDateString("pt-BR")
-                      : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.delivery")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {openFreight.delivery_date
-                      ? new Date(openFreight.delivery_date).toLocaleDateString("pt-BR")
-                      : "—"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8B949E]">{t("carrierMarketplace.budget")}</span>
-                  <span className="text-[#E6EDF3]">
-                    {openFreight.budget_brl
-                      ? formatBRL(openFreight.budget_brl)
-                      : t("carrierMarketplace.openLabel")}
-                  </span>
-                </div>
-                {openFreight.notes && (
-                  <div className="pt-3 border-t border-[#30363D]">
-                    <div className="text-[#8B949E] text-xs mb-1">
-                      {t("carrierMarketplace.notes")}
-                    </div>
-                    <div className="text-[#E6EDF3]">{openFreight.notes}</div>
-                  </div>
-                )}
-                <div className="pt-3 border-t border-[#30363D] text-xs text-[#8B949E]">
-                  {t("carrierMarketplace.verifiedShipper")}
-                </div>
-                <Button className="w-full mt-2" onClick={() => setTab("bid")} disabled={!carrier}>
-                  {t("carrierMarketplace.makeBidCta")}
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.myAmount")}
-                  </label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#484F58]" />
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.estimatedToll")}
+                    </label>
                     <Input
                       type="number"
-                      value={bidAmount}
-                      onChange={(e) => setBidAmount(e.target.value)}
+                      value={bidToll}
+                      onChange={(e) => setBidToll(e.target.value)}
                       placeholder="0"
-                      className="pl-9"
                     />
                   </div>
-                  {openFreight.budget_brl && (
-                    <p className="text-xs text-[#484F58] mt-1">
-                      {t("carrierMarketplace.shipperBudget")} {formatBRL(openFreight.budget_brl)}
-                    </p>
+
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.estimatedDeadline")}
+                    </label>
+                    <Select value={bidHours} onChange={(e) => setBidHours(e.target.value)}>
+                      <option value="24">{t("carrierMarketplace.deadline1")}</option>
+                      <option value="48">{t("carrierMarketplace.deadline2")}</option>
+                      <option value="72">{t("carrierMarketplace.deadline3")}</option>
+                      <option value="96">{t("carrierMarketplace.deadline4")}</option>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.truckLabel")}
+                    </label>
+                    <Select value={bidTruckId} onChange={(e) => setBidTruckId(e.target.value)}>
+                      <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
+                      {(trucks ?? []).map((truck) => (
+                        <option key={truck.id} value={truck.id}>
+                          {truck.plate ?? "—"} · {truck.type ?? ""} ·{" "}
+                          {formatNum(truck.capacity_tons)}t
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.driverLabel")}
+                    </label>
+                    <Select value={bidDriverId} onChange={(e) => setBidDriverId(e.target.value)}>
+                      <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
+                      {(drivers ?? []).map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.full_name} {d.license_category ? `· ${d.license_category}` : ""}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  {openFreight.category && openFreight.category !== "traditional" && (
+                    <label className="flex items-center gap-2 text-sm text-[#C9D1D9]">
+                      <input
+                        type="checkbox"
+                        className="accent-[#1A9B5E]"
+                        checked={bidEvCertified}
+                        onChange={(e) => setBidEvCertified(e.target.checked)}
+                      />
+                      {t("carrierMarketplace.confirmGreenCertified")}
+                    </label>
                   )}
-                </div>
 
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.estimatedToll")}
-                  </label>
-                  <Input
-                    type="number"
-                    value={bidToll}
-                    onChange={(e) => setBidToll(e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.estimatedDeadline")}
-                  </label>
-                  <Select value={bidHours} onChange={(e) => setBidHours(e.target.value)}>
-                    <option value="24">{t("carrierMarketplace.deadline1")}</option>
-                    <option value="48">{t("carrierMarketplace.deadline2")}</option>
-                    <option value="72">{t("carrierMarketplace.deadline3")}</option>
-                    <option value="96">{t("carrierMarketplace.deadline4")}</option>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.truckLabel")}
-                  </label>
-                  <Select value={bidTruckId} onChange={(e) => setBidTruckId(e.target.value)}>
-                    <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
-                    {(trucks ?? []).map((truck) => (
-                      <option key={truck.id} value={truck.id}>
-                        {truck.plate ?? "—"} · {truck.type ?? ""} · {formatNum(truck.capacity_tons)}
-                        t
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.driverLabel")}
-                  </label>
-                  <Select value={bidDriverId} onChange={(e) => setBidDriverId(e.target.value)}>
-                    <option value="">{t("carrierMarketplace.selectPlaceholder")}</option>
-                    {(drivers ?? []).map((d) => (
-                      <option key={d.id} value={d.id}>
-                        {d.full_name} {d.license_category ? `· ${d.license_category}` : ""}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                {openFreight.category && openFreight.category !== "traditional" && (
-                  <label className="flex items-center gap-2 text-sm text-[#C9D1D9]">
-                    <input
-                      type="checkbox"
-                      className="accent-[#1A9B5E]"
-                      checked={bidEvCertified}
-                      onChange={(e) => setBidEvCertified(e.target.checked)}
+                  <div>
+                    <label className="text-xs text-[#8B949E] block mb-1">
+                      {t("carrierMarketplace.notes")}
+                    </label>
+                    <Textarea
+                      value={bidNotes}
+                      onChange={(e) => setBidNotes(e.target.value)}
+                      placeholder={t("carrierMarketplace.notesOptional")}
+                      rows={3}
                     />
-                    {t("carrierMarketplace.confirmGreenCertified")}
-                  </label>
-                )}
-
-                <div>
-                  <label className="text-xs text-[#8B949E] block mb-1">
-                    {t("carrierMarketplace.notes")}
-                  </label>
-                  <Textarea
-                    value={bidNotes}
-                    onChange={(e) => setBidNotes(e.target.value)}
-                    placeholder={t("carrierMarketplace.notesOptional")}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="bg-[#0D2744] border border-[#1B6CB8]/30 rounded-[10px] p-3">
-                  <div className="text-sm text-[#79B8F8]">
-                    {t("carrierMarketplace.currentScore")}{" "}
-                    {score ? Number(score.overall_score ?? 0).toFixed(1) : "—"} —{" "}
-                    {score?.badge_tier ?? "standard"}
                   </div>
-                  {score && Number(score.overall_score ?? 0) < 7 && (
-                    <div className="text-xs text-[#484F58] mt-1">
-                      {t("carrierMarketplace.improveScoreTip")}
+
+                  <div className="bg-[#0D2744] border border-[#1B6CB8]/30 rounded-[10px] p-3">
+                    <div className="text-sm text-[#79B8F8]">
+                      {t("carrierMarketplace.currentScore")}{" "}
+                      {score ? Number(score.overall_score ?? 0).toFixed(1) : "—"} —{" "}
+                      {score?.badge_tier ?? "standard"}
                     </div>
-                  )}
-                </div>
+                    {score && Number(score.overall_score ?? 0) < 7 && (
+                      <div className="text-xs text-[#484F58] mt-1">
+                        {t("carrierMarketplace.improveScoreTip")}
+                      </div>
+                    )}
+                  </div>
 
-                <Button className="w-full" size="lg" onClick={submitBid} disabled={!carrier}>
-                  {t("carrierMarketplace.sendBid")}
-                </Button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
+                  <Button className="w-full" size="lg" onClick={submitBid} disabled={!carrier}>
+                    {t("carrierMarketplace.sendBid")}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

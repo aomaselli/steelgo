@@ -58,6 +58,62 @@ export const HOMEPAGE_NAV_COPY = {
 
 const translations = {
   pt: {
+    driverMap: {
+      loading: "Carregando mapa…",
+      awaitingPosition: "Sua posição aparece aqui quando o rastreamento começar.",
+      awaitingPositionHint: "Toque em “Iniciar deslocamento” para começar.",
+      noCoordinates: "Esta viagem ainda não tem coordenadas de origem e destino.",
+      noCoordinatesHint: "A transportadora precisa completar o endereço do frete.",
+      unavailableNoKey: "Mapa não disponível nesta versão do app.",
+      unavailableOffline: "Não foi possível carregar o mapa.",
+      unavailableOfflineHint: "Verifique a conexão. O rastreamento da viagem não depende do mapa.",
+      routeOnly: "Rota do frete",
+      retry: "Tentar de novo",
+    },
+    driverHome: {
+      noTripTitle: "Nenhuma viagem designada",
+      noTripDesc: "Quando a transportadora designar uma viagem para você, ela aparece aqui.",
+      noTripNext: "Próximo passo: avise sua transportadora que está disponível.",
+      availabilityHint: "Marcar “Estou disponível” ajuda a receber cargas próximas.",
+    },
+    emptyNext: {
+      carrierTripsTitle: "Nenhuma viagem em andamento",
+      carrierTripsDesc: "As viagens aparecem aqui depois que um contrato é ativado.",
+      carrierTripsAction: "Ver fretes disponíveis",
+      carrierBidsTitle: "Nenhuma proposta enviada",
+      carrierBidsDesc: "Suas propostas e o resultado de cada uma aparecem aqui.",
+      carrierBidsAction: "Buscar fretes no marketplace",
+      carrierContractsTitle: "Nenhum contrato ainda",
+      carrierContractsDesc: "Contratos surgem quando uma proposta sua é aceita.",
+      carrierContractsAction: "Enviar uma proposta",
+      carrierPaymentsTitle: "Nenhum recebimento ainda",
+      carrierPaymentsDesc: "Os valores aparecem aqui conforme as entregas são concluídas.",
+      carrierDisputesTitle: "Nenhuma disputa aberta",
+      carrierDisputesDesc: "Se algo der errado em uma entrega, a disputa aparece aqui.",
+      marketplaceTitle: "Nenhum frete corresponde aos filtros",
+      marketplaceDesc: "Amplie a região ou limpe os filtros para ver mais oportunidades.",
+      marketplaceAction: "Limpar filtros",
+    },
+    marketplacePage: {
+      title: "Marketplace de fretes",
+      subtitle: "Fretes publicados por embarcadores. Envie uma proposta para concorrer à carga.",
+      incompleteProfile: "Complete o cadastro da transportadora para enviar propostas.",
+    },
+    onboardingGate: {
+      title: "Complete o cadastro da transportadora",
+      description:
+        "As telas operacionais são liberadas assim que os dados da empresa forem salvos.",
+      action: "Continuar cadastro",
+    },
+    authNotice: {
+      clockSkew: "Sincronizando o acesso com o servidor…",
+      clockSkewFailed:
+        "O relógio deste dispositivo está fora de sincronia com o servidor. Ajuste a data/hora e entre novamente.",
+    },
+    controlTower: {
+      title: "Torre de Controle",
+      subtitle: "Viagens, alertas e SOS em tempo real.",
+    },
     nav: {
       howItWorks: "Soluções",
       forCompanies: "Indústrias",
@@ -293,6 +349,8 @@ const translations = {
       carrier: {
         dashboard: "Dashboard",
         availableFreights: "Fretes disponíveis",
+        bids: "Minhas propostas",
+        payments: "Pagamentos",
         activeLoads: "Cargas ativas",
         drivers: "Motoristas",
         trucks: "Caminhões",
@@ -653,6 +711,61 @@ const translations = {
     },
   },
   en: {
+    driverMap: {
+      loading: "Loading map…",
+      awaitingPosition: "Your position appears here once tracking starts.",
+      awaitingPositionHint: "Tap “Start trip” to begin.",
+      noCoordinates: "This trip has no origin and destination coordinates yet.",
+      noCoordinatesHint: "The carrier needs to complete the freight address.",
+      unavailableNoKey: "Map not available in this app version.",
+      unavailableOffline: "The map could not be loaded.",
+      unavailableOfflineHint: "Check your connection. Trip tracking does not depend on the map.",
+      routeOnly: "Freight route",
+      retry: "Try again",
+    },
+    driverHome: {
+      noTripTitle: "No trip assigned",
+      noTripDesc: "When your carrier assigns a trip to you, it shows up here.",
+      noTripNext: "Next step: let your carrier know you are available.",
+      availabilityHint: "Marking “I'm available” helps you receive nearby loads.",
+    },
+    emptyNext: {
+      carrierTripsTitle: "No trips in progress",
+      carrierTripsDesc: "Trips appear here once a contract is activated.",
+      carrierTripsAction: "See available freights",
+      carrierBidsTitle: "No bids sent",
+      carrierBidsDesc: "Your bids and their outcome appear here.",
+      carrierBidsAction: "Find freights in the marketplace",
+      carrierContractsTitle: "No contracts yet",
+      carrierContractsDesc: "Contracts appear when one of your bids is accepted.",
+      carrierContractsAction: "Send a bid",
+      carrierPaymentsTitle: "No receivables yet",
+      carrierPaymentsDesc: "Amounts appear here as deliveries are completed.",
+      carrierDisputesTitle: "No open disputes",
+      carrierDisputesDesc: "If something goes wrong in a delivery, the dispute appears here.",
+      marketplaceTitle: "No freight matches these filters",
+      marketplaceDesc: "Widen the region or clear the filters to see more opportunities.",
+      marketplaceAction: "Clear filters",
+    },
+    marketplacePage: {
+      title: "Freight marketplace",
+      subtitle: "Freights published by shippers. Send a bid to compete for the load.",
+      incompleteProfile: "Complete your carrier profile to send bids.",
+    },
+    onboardingGate: {
+      title: "Complete your carrier profile",
+      description: "Operational screens unlock as soon as the company data is saved.",
+      action: "Continue setup",
+    },
+    authNotice: {
+      clockSkew: "Syncing your access with the server…",
+      clockSkewFailed:
+        "This device's clock is out of sync with the server. Fix the date/time and sign in again.",
+    },
+    controlTower: {
+      title: "Control Tower",
+      subtitle: "Trips, alerts and SOS in real time.",
+    },
     nav: {
       howItWorks: "Solutions",
       forCompanies: "Industries",
@@ -888,6 +1001,8 @@ const translations = {
       carrier: {
         dashboard: "Dashboard",
         availableFreights: "Available freights",
+        bids: "My bids",
+        payments: "Payments",
         activeLoads: "Active loads",
         drivers: "Drivers",
         trucks: "Trucks",
@@ -1247,6 +1362,62 @@ const translations = {
     },
   },
   es: {
+    driverMap: {
+      loading: "Cargando mapa…",
+      awaitingPosition: "Tu posición aparece aquí cuando empiece el seguimiento.",
+      awaitingPositionHint: "Toca “Iniciar viaje” para comenzar.",
+      noCoordinates: "Este viaje aún no tiene coordenadas de origen y destino.",
+      noCoordinatesHint: "La transportadora debe completar la dirección del flete.",
+      unavailableNoKey: "Mapa no disponible en esta versión de la app.",
+      unavailableOffline: "No se pudo cargar el mapa.",
+      unavailableOfflineHint: "Revisa la conexión. El seguimiento del viaje no depende del mapa.",
+      routeOnly: "Ruta del flete",
+      retry: "Intentar de nuevo",
+    },
+    driverHome: {
+      noTripTitle: "Ningún viaje asignado",
+      noTripDesc: "Cuando la transportadora te asigne un viaje, aparecerá aquí.",
+      noTripNext: "Siguiente paso: avisa a tu transportadora que estás disponible.",
+      availabilityHint: "Marcar “Estoy disponible” ayuda a recibir cargas cercanas.",
+    },
+    emptyNext: {
+      carrierTripsTitle: "Ningún viaje en curso",
+      carrierTripsDesc: "Los viajes aparecen aquí después de activar un contrato.",
+      carrierTripsAction: "Ver fletes disponibles",
+      carrierBidsTitle: "Ninguna propuesta enviada",
+      carrierBidsDesc: "Tus propuestas y su resultado aparecen aquí.",
+      carrierBidsAction: "Buscar fletes en el marketplace",
+      carrierContractsTitle: "Todavía no hay contratos",
+      carrierContractsDesc: "Los contratos surgen cuando se acepta una propuesta tuya.",
+      carrierContractsAction: "Enviar una propuesta",
+      carrierPaymentsTitle: "Todavía no hay cobros",
+      carrierPaymentsDesc: "Los importes aparecen aquí a medida que se completan las entregas.",
+      carrierDisputesTitle: "Ninguna disputa abierta",
+      carrierDisputesDesc: "Si algo sale mal en una entrega, la disputa aparece aquí.",
+      marketplaceTitle: "Ningún flete coincide con los filtros",
+      marketplaceDesc: "Amplía la región o limpia los filtros para ver más oportunidades.",
+      marketplaceAction: "Limpiar filtros",
+    },
+    marketplacePage: {
+      title: "Marketplace de fletes",
+      subtitle:
+        "Fletes publicados por embarcadores. Envía una propuesta para competir por la carga.",
+      incompleteProfile: "Completa el registro de la transportadora para enviar propuestas.",
+    },
+    onboardingGate: {
+      title: "Completa el registro de la transportadora",
+      description: "Las pantallas operativas se habilitan al guardar los datos de la empresa.",
+      action: "Continuar registro",
+    },
+    authNotice: {
+      clockSkew: "Sincronizando el acceso con el servidor…",
+      clockSkewFailed:
+        "El reloj de este dispositivo está fuera de sincronía con el servidor. Ajusta la fecha/hora y vuelve a entrar.",
+    },
+    controlTower: {
+      title: "Torre de Control",
+      subtitle: "Viajes, alertas y SOS en tiempo real.",
+    },
     carrier: {
       dashboard: "Dashboard",
       marketplace: "Marketplace",
@@ -1338,6 +1509,8 @@ const translations = {
       carrier: {
         dashboard: "Panel",
         availableFreights: "Cargas disponibles",
+        bids: "Mis propuestas",
+        payments: "Pagos",
         activeLoads: "Cargas activas",
         drivers: "Conductores",
         trucks: "Camiones",

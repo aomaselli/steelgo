@@ -3,6 +3,7 @@
 // o RLS reserva ao proprietario. O membro recebe somente o que pode usar:
 // viagens visiveis (list_my_trips) e o papel que a empresa lhe deu.
 import { Link } from "@tanstack/react-router";
+import { displayFirstName } from "@/lib/displayName";
 import { useQuery } from "@tanstack/react-query";
 import { Radar } from "lucide-react";
 import { Badge, Button, Card, EmptyState, Spinner } from "@/components/steel";
@@ -17,7 +18,7 @@ import {
 
 export function MemberDashboard({ kind }: { kind: "carrier" | "shipper" }) {
   const { profile, company, companyRole } = useAuth();
-  const firstName = profile?.full_name?.split(" ")[0] ?? "";
+  const firstName = displayFirstName(profile?.full_name);
   const { data: trips = [], isLoading } = useQuery({
     queryKey: ["trips", "member-dashboard"],
     queryFn: () => fetchMyTrips("mine", undefined, 100),

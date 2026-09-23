@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useRef, useState, type ReactNode 
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { createAuthBootstrap, createSignInOnce } from "@/lib/authBootstrap";
+import { isClockSkewAuthError, shouldRetryAuthError, skewRetryDelayMs } from "@/lib/authSkew";
 import type { Company, Profile, UserRole } from "@/types/database";
 
 // UNICA autoridade do estado da sessao. O listener de auth SO grava sessao/usuario
@@ -167,6 +168,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Tracks the uid that state should currently reflect; lets in-flight
   // fetches from a stale/previous uid detect they're obsolete and no-op.
   const activeUidRef = useRef<string | null>(null);
+  // timer da retentativa de defasagem de relogio: sempre cancelavel
+  const skewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelSkewRetry = () => {
+    if (skewTimerRef.current !== null) {
+      clearTimeout(skewTimerRef.current);
+      skewTimerRef.current = null;
+    }
+  };
 
   const clearCompanyState = () => {
     setCompany(null);
@@ -183,7 +192,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setCompanyRole(sel?.role ?? null);
   };
 
-  const loadUserData = async (uid: string) => {
+  const loadUserData = async (uid: string, tentativa = 0) => {
     activeUidRef.current = uid;
     setIsLoading(true);
     const r = await bootstrap.ensure(uid);
@@ -191,6 +200,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (activeUidRef.current !== uid) return;
     if (r.status === "waiting_token") return; // sem token utilizavel: o proximo evento de auth reexecuta o efeito
     if (r.status === "error") {
+      // Defasagem de relogio ("JWT issued at future"): o token e valido, mas o
+      // PostgREST ainda nao alcancou o `iat`. Retentativa curta e limitada; todo
+      // outro erro continua subindo para a UI na primeira ocorrencia.
+      if (shouldRetryAuthError(r.message, tentativa)) {
+        const espera = skewRetryDelayMs(tentativa);
+        console.warn(
+          `[Auth] relogio dessincronizado com o servidor; nova tentativa em ${espera} ms`,
+        );
+        bootstrap.invalidate(uid);
+        cancelSkewRetry();
+        const seguir = await new Promise<boolean>((resolve) => {
+          skewTimerRef.current = setTimeout(() => {
+            skewTimerRef.current = null;
+            resolve(true);
+          }, espera);
+        });
+        // logout/unmount cancelam o timer: a promessa nunca resolve e nada segue
+        if (!seguir || activeUidRef.current !== uid) return;
+        return loadUserData(uid, tentativa + 1);
+      }
+      if (isClockSkewAuthError(r.message)) {
+        console.error("[Auth] relogio do dispositivo fora de sincronia com o servidor");
+      }
       console.error("[Auth] bootstrap falhou", r.message);
       setProfile(null);
       setRole(null);
@@ -250,6 +282,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
+      cancelSkewRetry();
     };
   }, []);
 
@@ -299,6 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     // Clear explicitly/immediately instead of waiting on the async listener
     activeUidRef.current = null;
+    cancelSkewRetry();
     bootstrap.invalidate();
     setAuthError(null);
     setUser(null);

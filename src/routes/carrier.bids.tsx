@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useLanguage } from "@/lib/i18n";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Clock } from "lucide-react";
@@ -22,6 +23,7 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 function BidsPage() {
+  const { t } = useLanguage();
   const { company } = useAuth();
   const [tab, setTab] = useState<TabId>("pending");
 
@@ -29,7 +31,11 @@ function BidsPage() {
     queryKey: ["carrier-self", company?.id],
     enabled: !!company?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("carriers").select("id").eq("company_id", company!.id).maybeSingle();
+      const { data } = await supabase
+        .from("carriers")
+        .select("id")
+        .eq("company_id", company!.id)
+        .maybeSingle();
       return data;
     },
   });
@@ -38,9 +44,14 @@ function BidsPage() {
     queryKey: ["carrier-bids", carrier?.id, tab],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("bids")
-        .select("*, freights(origin_city, origin_state, dest_city, dest_state, steel_type, weight_tons, budget_brl, distance_km)")
-        .eq("carrier_id", carrier!.id).eq("status", tab).order("submitted_at", { ascending: false });
+      const { data } = await supabase
+        .from("bids")
+        .select(
+          "*, freights(origin_city, origin_state, dest_city, dest_state, steel_type, weight_tons, budget_brl, distance_km)",
+        )
+        .eq("carrier_id", carrier!.id)
+        .eq("status", tab)
+        .order("submitted_at", { ascending: false });
       return data ?? [];
     },
   });
@@ -54,38 +65,83 @@ function BidsPage() {
 
       <div className="flex gap-1 border-b border-graphite-700">
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm transition-colors ${tab === t.id ? "text-steel-blue-200 border-b-2 border-steel-blue-200 -mb-px" : "text-graphite-400 hover:text-graphite-100"}`}>
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={`px-4 py-2 text-sm transition-colors ${tab === t.id ? "text-steel-blue-200 border-b-2 border-steel-blue-200 -mb-px" : "text-graphite-400 hover:text-graphite-100"}`}
+          >
             {t.label}
           </button>
         ))}
       </div>
 
       {isLoading ? (
-        <div className="flex justify-center p-12"><Spinner /></div>
+        <div className="flex justify-center p-12">
+          <Spinner />
+        </div>
       ) : !bids?.length ? (
-        <EmptyState icon={Clock} title="Nenhuma proposta" description="Suas propostas aparecerão aqui." />
+        <EmptyState
+          icon={Clock}
+          title={t("emptyNext.carrierBidsTitle")}
+          description={t("emptyNext.carrierBidsDesc")}
+          action={
+            <Link to="/carrier/marketplace" className="text-sm font-medium text-[#1B6CB8]">
+              {t("emptyNext.carrierBidsAction")}
+            </Link>
+          }
+        />
       ) : (
         <div className="space-y-3">
           {bids.map((b) => {
-            const f = (b as { freights?: { origin_city?: string; origin_state?: string; dest_city?: string; dest_state?: string; steel_type?: string; weight_tons?: number; budget_brl?: number; distance_km?: number } }).freights;
+            const f = (
+              b as {
+                freights?: {
+                  origin_city?: string;
+                  origin_state?: string;
+                  dest_city?: string;
+                  dest_state?: string;
+                  steel_type?: string;
+                  weight_tons?: number;
+                  budget_brl?: number;
+                  distance_km?: number;
+                };
+              }
+            ).freights;
             return (
               <Card key={b.id} className="p-4">
                 <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-steel-blue-200">#{String(b.id).slice(0, 8)}</span>
+                      <span className="font-mono text-xs text-steel-blue-200">
+                        #{String(b.id).slice(0, 8)}
+                      </span>
                       <StatusPill status={b.status ?? "pending"} />
-                      {b.ev_certified && <span className="text-xs px-2 py-0.5 rounded-full bg-esg-green-400/20 text-esg-green-400">Verde</span>}
+                      {b.ev_certified && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-esg-green-400/20 text-esg-green-400">
+                          Verde
+                        </span>
+                      )}
                     </div>
-                    <div className="text-sm text-graphite-100">{f?.origin_city ?? "—"}, {f?.origin_state ?? ""} → {f?.dest_city ?? "—"}, {f?.dest_state ?? ""}</div>
-                    <div className="text-xs text-graphite-400">{steelLabel(f?.steel_type)} • {formatNum(f?.weight_tons)} t • {formatNum(f?.distance_km)} km</div>
+                    <div className="text-sm text-graphite-100">
+                      {f?.origin_city ?? "—"}, {f?.origin_state ?? ""} → {f?.dest_city ?? "—"},{" "}
+                      {f?.dest_state ?? ""}
+                    </div>
+                    <div className="text-xs text-graphite-400">
+                      {steelLabel(f?.steel_type)} • {formatNum(f?.weight_tons)} t •{" "}
+                      {formatNum(f?.distance_km)} km
+                    </div>
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-graphite-400">Sua proposta</div>
-                    <div className="text-xl font-bold text-graphite-50 tabular-nums">{formatBRL(b.amount_brl)}</div>
-                    <div className="text-xs text-graphite-400 mt-1">Orçamento: {formatBRL(f?.budget_brl)}</div>
-                    {b.estimated_hours && <div className="text-xs text-graphite-400">~{b.estimated_hours}h</div>}
+                    <div className="text-xl font-bold text-graphite-50 tabular-nums">
+                      {formatBRL(b.amount_brl)}
+                    </div>
+                    <div className="text-xs text-graphite-400 mt-1">
+                      Orçamento: {formatBRL(f?.budget_brl)}
+                    </div>
+                    {b.estimated_hours && (
+                      <div className="text-xs text-graphite-400">~{b.estimated_hours}h</div>
+                    )}
                   </div>
                 </div>
               </Card>

@@ -1,5 +1,6 @@
 // Lista de viagens (list_my_trips) para transportadora, embarcador e SteelGo.
 import { useState } from "react";
+import { useLanguage } from "@/lib/i18n";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Radar } from "lucide-react";
@@ -36,8 +37,9 @@ export function TripListView({
   title: string;
   subtitle: string;
 }) {
+  const { t } = useLanguage();
   const [tab, setTab] = useState("active");
-  const statuses = TABS.find((t) => t.id === tab)!.statuses;
+  const statuses = TABS.find((aba) => aba.id === tab)!.statuses;
   const {
     data: rows,
     isLoading,
@@ -55,13 +57,13 @@ export function TripListView({
         <p className="text-[#54657C] mt-1">{subtitle}</p>
       </div>
       <div className="flex gap-1 border-b border-[#DDE7F2]">
-        {TABS.map((t) => (
+        {TABS.map((aba) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`px-4 py-2 text-sm transition-colors ${tab === t.id ? "text-[#1B6CB8] border-b-2 border-[#1B6CB8] -mb-px" : "text-[#54657C] hover:text-[#10274A]"}`}
+            key={aba.id}
+            onClick={() => setTab(aba.id)}
+            className={`px-4 py-2 text-sm transition-colors ${tab === aba.id ? "text-[#1B6CB8] border-b-2 border-[#1B6CB8] -mb-px" : "text-[#54657C] hover:text-[#10274A]"}`}
           >
-            {t.label}
+            {aba.label}
           </button>
         ))}
       </div>
@@ -75,8 +77,8 @@ export function TripListView({
         <EmptyState
           tone="light"
           icon={Radar}
-          title="Nenhuma viagem"
-          description="As viagens aparecem aqui assim que o contrato é ativado."
+          title={t("emptyNext.carrierTripsTitle")}
+          description={t("emptyNext.carrierTripsDesc")}
         />
       ) : (
         <Card variant="light" className="overflow-hidden p-0">

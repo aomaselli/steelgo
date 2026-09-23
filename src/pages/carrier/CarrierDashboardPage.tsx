@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { displayFirstName } from "@/lib/displayName";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, MapPin, Truck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,7 +16,7 @@ import { fetchMyTrips } from "@/lib/trips";
 export function CarrierDashboardPage() {
   const { profile, company, companyRole } = useAuth();
   const { t } = useLanguage();
-  const firstName = profile?.full_name?.split(" ")[0] ?? "transportadora";
+  const firstName = displayFirstName(profile?.full_name, "transportadora");
   // Modulo 3: operador/leitor NAO recebem o painel do proprietario (lances,
   // contratos, recebiveis sao leituras owner-only). Ver MemberDashboard.
   const isMember = companyRole === "operator" || companyRole === "viewer";

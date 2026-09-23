@@ -13,6 +13,8 @@ import {
   Car,
   Shield,
   ScrollText,
+  Send,
+  Wallet,
   Building2,
   Gavel as GavelIcon,
   Settings as SettingsIcon,
@@ -92,6 +94,12 @@ const NAV: Record<ShellRole, NavItem[]> = {
       ownerOnly: true,
     },
     {
+      to: "/carrier/bids",
+      labelKey: "personaNav.carrier.bids",
+      icon: Send,
+      ownerOnly: true,
+    },
+    {
       to: "/carrier/active",
       labelKey: "personaNav.carrier.activeLoads",
       icon: Truck,
@@ -112,9 +120,15 @@ const NAV: Record<ShellRole, NavItem[]> = {
       ownerOnly: true,
     },
     {
+      to: "/carrier/payments",
+      labelKey: "personaNav.carrier.payments",
+      icon: CreditCard,
+      ownerOnly: true,
+    },
+    {
       to: "/carrier/payouts",
       labelKey: "personaNav.carrier.receivables",
-      icon: CreditCard,
+      icon: Wallet,
       ownerOnly: true,
     },
     {
@@ -135,7 +149,6 @@ const NAV: Record<ShellRole, NavItem[]> = {
   admin: [
     { to: "/admin", labelKey: "personaNav.admin.dashboard", icon: LayoutDashboard },
     { to: "/admin/users", labelKey: "personaNav.admin.users", icon: Users },
-    { to: "/admin/carriers", labelKey: "personaNav.admin.companies", icon: Building2 },
     { to: "/admin/carriers", labelKey: "personaNav.admin.carriers", icon: Truck },
     { to: "/admin/drivers", labelKey: "personaNav.admin.drivers", icon: Car, disabled: true },
     { to: "/admin/freights", labelKey: "personaNav.admin.freights", icon: Package },

@@ -1,6 +1,7 @@
 // Control Tower da SteelGo (Modulo 3): mapa, fila de alertas criticos,
 // alertas automaticos e viagens. Tudo por RPC de admin.
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useLanguage } from "@/lib/i18n";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Activity, ShieldAlert } from "lucide-react";
 import { Badge, Button, Card } from "@/components/steel";
@@ -18,6 +19,7 @@ import { ALERT_KIND_LABEL, SEVERITY_CLS, fmtDateTime, tripStatusMeta } from "@/l
 export const Route = createFileRoute("/admin/operations/")({ component: OperationsPage });
 
 function OperationsPage() {
+  const { t } = useLanguage();
   const qc = useQueryClient();
   const { data: sos = [] } = useQuery({
     queryKey: ["sos-queue"],
@@ -44,9 +46,10 @@ function OperationsPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between flex-wrap gap-3 px-6 pt-6">
         <div>
-          <h1 className="text-2xl font-bold text-[#10274A]">Control Tower</h1>
+          <h1 className="text-2xl font-bold text-[#10274A]">{t("controlTower.title")}</h1>
           <p className="text-[#54657C] mt-1">
-            Operação em tempo real. Estimativas são estimativas; o alerta crítico não é central 24h.
+            {t("controlTower.subtitle")} Estimativas são estimativas; o alerta crítico não é central
+            24h.
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs">

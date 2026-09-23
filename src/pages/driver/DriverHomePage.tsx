@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/lib/i18n";
+import { displayFirstName } from "@/lib/displayName";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Truck as TruckIcon, CheckCircle2, Star, WifiOff } from "lucide-react";
 import toast, { Toaster } from "react-hot-toast";
@@ -80,7 +82,7 @@ export default function DriverHomePage() {
   const qc = useQueryClient();
   const { user, profile } = useAuth();
   const online = useOnlineStatus();
-  const firstName = (profile?.full_name ?? "Motorista").split(" ")[0];
+  const firstName = displayFirstName(profile?.full_name, "Motorista");
   const lastName = (profile?.full_name ?? "").split(" ").slice(-1)[0] ?? "";
   const initials = (firstName[0] ?? "M") + (lastName[0] ?? "");
   const [inviteToken, setInviteToken] = useState("");
@@ -766,6 +768,7 @@ type LastDelivery = {
   } | null;
 } | null;
 function NoActiveState({ lastDelivery }: { lastDelivery: LastDelivery | undefined }) {
+  const { t } = useLanguage();
   return (
     <div>
       <div
@@ -774,10 +777,19 @@ function NoActiveState({ lastDelivery }: { lastDelivery: LastDelivery | undefine
       >
         <TruckIcon size={56} strokeWidth={1.5} style={{ color: "#484F58" }} />
         <div className="text-[18px] font-medium mt-3" style={{ color: "#E6EDF3" }}>
-          Sem entrega ativa
+          {t("driverHome.noTripTitle")}
         </div>
         <div className="text-[14px] mt-1 leading-relaxed" style={{ color: "#8B949E" }}>
-          Aguardando a transportadora atribuir um frete
+          {t("driverHome.noTripDesc")}
+        </div>
+        <div
+          className="text-[13px] mt-3 rounded-[10px] px-3 py-2 leading-relaxed"
+          style={{ background: "#0D1117", color: "#B9C4D0" }}
+        >
+          {t("driverHome.noTripNext")}
+          <div className="text-[12px] mt-1" style={{ color: "#8B949E" }}>
+            {t("driverHome.availabilityHint")}
+          </div>
         </div>
       </div>
 

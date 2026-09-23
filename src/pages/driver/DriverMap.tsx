@@ -1,6 +1,8 @@
 /// <reference types="google.maps" />
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MapPin, Truck as TruckIcon, Loader2 } from "lucide-react";
+import { Loader2, MapPinOff, Navigation, WifiOff } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
+import { driverMapState, type MapLoadStatus } from "@/lib/driverMapState";
 
 type LatLng = { lat: number; lng: number };
 
@@ -23,20 +25,25 @@ const DARK_STYLES: google.maps.MapTypeStyle[] = [
   { featureType: "transit", stylers: [{ visibility: "off" }] },
 ];
 
-type Status = "loading" | "ready" | "error" | "no-key";
+type Status = MapLoadStatus;
+
+type JanelaComMapa = Window & {
+  google?: typeof google;
+  __steelgoInitMap?: () => void;
+};
 
 let loaderPromise: Promise<typeof google> | null = null;
 export function loadGoogleMaps(): Promise<typeof google> {
   if (typeof window === "undefined") return Promise.reject(new Error("SSR"));
-  if ((window as any).google?.maps) return Promise.resolve((window as any).google);
+  const janela = window as JanelaComMapa;
+  if (janela.google?.maps) return Promise.resolve(janela.google);
   if (loaderPromise) return loaderPromise;
   loaderPromise = new Promise((resolve, reject) => {
-    const cbName = "__steelgoInitMap";
-    (window as any)[cbName] = () => resolve((window as any).google);
+    janela.__steelgoInitMap = () => resolve(janela.google as typeof google);
     const params = new URLSearchParams({
       key: BROWSER_KEY,
       loading: "async",
-      callback: cbName,
+      callback: "__steelgoInitMap",
       libraries: "maps,marker",
     });
 
@@ -69,6 +76,7 @@ function truckSvg() {
 }
 
 export function DriverMap({ driver, origin, dest, eta }: Props) {
+  const { t } = useLanguage();
   const ref = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const driverMarkerRef = useRef<google.maps.Marker | null>(null);
@@ -220,68 +228,87 @@ export function DriverMap({ driver, origin, dest, eta }: Props) {
     if (dest) recomputeEta(driver, dest);
   }, [driver?.lat, driver?.lng, dest?.lat, dest?.lng, recomputeEta]);
 
-  if (status === "loading") {
-    return (
-      <div
-        className="relative w-full flex flex-col items-center justify-center gap-2"
-        style={{ height: 200, background: "#0F1923", color: "#8B949E" }}
-      >
-        <Loader2 size={20} className="animate-spin" />
-        <div className="text-[13px]">Carregando mapa...</div>
-        <EtaBadge eta={eta} />
-      </div>
-    );
-  }
+  const state = driverMapState({ status, driver, origin, dest });
 
-  if (status === "no-key" || status === "error") {
-    return (
-      <div
-        className="relative w-full"
-        style={{ height: 200, background: "linear-gradient(135deg, #0d1b2a, #16213e)" }}
-      >
-        <svg viewBox="0 0 400 200" className="absolute inset-0 w-full h-full opacity-40">
-          <defs>
-            <pattern id="dgrid" width="20" height="20" patternUnits="userSpaceOnUse">
-              <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#1B6CB8" strokeWidth="0.5" />
-            </pattern>
-          </defs>
-          <rect width="400" height="200" fill="url(#dgrid)" />
-          <path
-            d="M 40 160 Q 200 50, 360 100"
-            stroke="#1B6CB8"
-            strokeWidth="3"
-            strokeDasharray="8 6"
-            fill="none"
-          />
-        </svg>
-        <div className="absolute" style={{ left: 30, bottom: 32 }}>
-          <div
-            className="rounded-full flex items-center justify-center"
-            style={{
-              width: 36,
-              height: 36,
-              background: "#1B6CB8",
-              boxShadow: "0 0 0 4px rgba(27,108,184,0.3)",
-            }}
-          >
-            <TruckIcon size={18} className="text-white" />
-          </div>
-        </div>
-        <div className="absolute" style={{ right: 30, top: 80 }}>
-          <MapPin size={32} className="text-red-500 fill-red-500" />
-        </div>
-        <EtaBadge eta={eta} />
-        <div className="absolute bottom-2 left-2 text-[10px] text-graphite-400 px-2 py-0.5 rounded bg-black/60">
-          {status === "error" ? "Mapa indisponível" : "Mapa não configurado"}
-        </div>
-      </div>
-    );
-  }
+  // O container precisa existir ANTES de o script resolver: antes desta correcao
+  // ele so era montado em "ready", e "ready" so era atingido depois de criar o
+  // mapa dentro dele — o mapa nunca aparecia (ficava em "Carregando mapa...").
+  const mostrarContainer = status !== "no-key";
 
   return (
     <div className="relative w-full" style={{ height: 200, background: "#0d1117" }}>
-      <div ref={ref} className="absolute inset-0" />
+      {mostrarContainer && <div ref={ref} className="absolute inset-0" />}
+
+      {state.kind === "loading" && <MapNotice icon={Loader2} spin text={t("driverMap.loading")} />}
+
+      {state.kind === "unavailable" && (
+        <MapNotice
+          icon={state.reason === "no-key" ? MapPinOff : WifiOff}
+          text={
+            state.reason === "no-key"
+              ? t("driverMap.unavailableNoKey")
+              : t("driverMap.unavailableOffline")
+          }
+          hint={state.reason === "no-key" ? undefined : t("driverMap.unavailableOfflineHint")}
+        />
+      )}
+
+      {state.kind === "no_coordinates" && (
+        <MapNotice
+          icon={MapPinOff}
+          text={t("driverMap.noCoordinates")}
+          hint={t("driverMap.noCoordinatesHint")}
+        />
+      )}
+
+      {state.kind === "awaiting_position" && (
+        <div
+          className="absolute inset-x-2 bottom-2 rounded-[10px] border px-3 py-2 flex items-start gap-2"
+          style={{ background: "rgba(13,17,23,0.9)", borderColor: "#30363D" }}
+        >
+          <Navigation size={14} className="mt-0.5 shrink-0" style={{ color: "#8B949E" }} />
+          <div>
+            <div className="text-[12px]" style={{ color: "#E6EDF3" }}>
+              {t("driverMap.awaitingPosition")}
+            </div>
+            <div className="text-[11px]" style={{ color: "#8B949E" }}>
+              {t("driverMap.awaitingPositionHint")}
+            </div>
+          </div>
+        </div>
+      )}
+
       <EtaBadge eta={mapEta ?? eta} />
+    </div>
+  );
+}
+
+/** Aviso honesto no lugar do mapa: sem caminhao, sem rota e sem grade falsos. */
+function MapNotice({
+  icon: Icon,
+  text,
+  hint,
+  spin,
+}: {
+  icon: typeof Loader2;
+  text: string;
+  hint?: string;
+  spin?: boolean;
+}) {
+  return (
+    <div
+      className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center"
+      style={{ background: "#0F1923" }}
+    >
+      <Icon size={20} className={spin ? "animate-spin" : undefined} style={{ color: "#8B949E" }} />
+      <div className="text-[13px]" style={{ color: "#E6EDF3" }}>
+        {text}
+      </div>
+      {hint && (
+        <div className="text-[11px] leading-snug" style={{ color: "#8B949E" }}>
+          {hint}
+        </div>
+      )}
     </div>
   );
 }

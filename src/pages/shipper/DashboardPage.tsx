@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { displayFirstName } from "@/lib/displayName";
 import { useNavigate, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -47,7 +48,7 @@ export function DashboardPage() {
   // Modulo 3: operador/leitor do embarcador recebem o painel de membro
   // (fretes, contratos e pagamentos sao leituras/acoes do proprietario).
   const isMember = companyRole === "operator" || companyRole === "viewer";
-  const firstName = profile?.full_name?.split(" ")[0] ?? "";
+  const firstName = displayFirstName(profile?.full_name);
   const companyId = company?.id;
 
   // ─── Metrics ───
