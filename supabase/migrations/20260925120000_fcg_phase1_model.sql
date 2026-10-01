@@ -596,8 +596,18 @@ revoke all on table public.fcg_observational_log                    from public,
 -- ACESSO INDIRETO: tovc_enforce_axle_sum() e a UNICA funcao criada por esta
 -- migration e e SECURITY DEFINER. PostgreSQL concede EXECUTE a PUBLIC em
 -- funcao nova por padrao, e os privilegios padrao deste projeto concedem ALL
--- em FUNCTIONS a anon e authenticated. Ficaria, portanto, invocavel por papel
--- anonimo.
+-- em FUNCTIONS a anon e authenticated -- ou seja, o PRIVILEGIO existiria.
+--
+-- Precisao sobre o que isso significava, porque a sonda deste caso mediu o
+-- contrario do que se poderia supor: a chamada direta NAO estava comprovada
+-- como possivel. Sendo funcao de trigger, o proprio PostgreSQL recusa a
+-- invocacao direta com SQLSTATE 0A000 ("trigger functions can only be called
+-- as triggers"), mesmo para quem tenha EXECUTE. O revoke abaixo nao fecha uma
+-- porta aberta; ele retira um privilegio que nao deveria existir e cuja
+-- inocuidade depende do TIPO DE RETORNO -- uma alteracao futura que deixe de
+-- retornar trigger removeria a protecao do 0A000 sem tocar no privilegio.
+--
 -- O trigger continua disparando normalmente sem esse EXECUTE: o privilegio e
--- exigido na criacao do trigger, nao a cada disparo.
+-- exigido na criacao do trigger, nao a cada disparo. Comprovado por
+-- fcg_behavioral.sql A1/A2/A3.
 revoke all on function public.tovc_enforce_axle_sum() from public, anon, authenticated;
