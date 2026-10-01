@@ -33,6 +33,12 @@
 -- -----------------------------------------------------------------------------
 -- 1. RLS e grants
 -- -----------------------------------------------------------------------------
+-- O enable RLS e o revoke abaixo NAO sao a primeira protecao destas tabelas: a
+-- 1/3 ja as fecha no fim do proprio arquivo, para que nao exista janela aberta
+-- caso esta migration falhe (cada migration e uma transacao propria). Ambos os
+-- comandos sao idempotentes e foram mantidos aqui de proposito: esta migration
+-- continua valendo por si, sem depender da ordem de leitura de quem revisa.
+-- O que e EXCLUSIVO desta migration sao os GRANT -- as permissoes finais.
 alter table public.transport_operation_vehicle_compositions enable row level security;
 alter table public.transport_operation_vehicle_units        enable row level security;
 alter table public.regulatory_compliance_results            enable row level security;

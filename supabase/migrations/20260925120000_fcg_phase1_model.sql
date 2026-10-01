@@ -1,9 +1,22 @@
 -- =============================================================================
 -- SteelGo | Freight Compliance Gate - Fase 1 (1/3): modelo e constraints
 -- =============================================================================
--- ESCOPO: somente estrutura. NAO cria RLS, grants, triggers de imutabilidade
--- nem RPCs (isso e a 2/3). NAO faz wiring em accept_bid_and_create_contract
--- (isso e a 3/3). NAO semeia ato, coeficiente, rule set nem status validated.
+-- ESCOPO: estrutura e FECHAMENTO DE ACESSO das tabelas que ela cria. NAO cria
+-- policy, nao concede privilegio a papel algum, nao cria trigger de
+-- imutabilidade nem RPC (isso e a 2/3). NAO faz wiring em
+-- accept_bid_and_create_contract (isso e a 3/3). NAO semeia ato, coeficiente,
+-- rule set nem status validated.
+--
+-- POR QUE O FECHAMENTO DE ACESSO ESTA AQUI E NAO SO NA 2/3:
+--   Cada migration e sua propria transacao -- verificado em banco descartavel:
+--   uma migration que falha nao desfaz a anterior, que fica aplicada e
+--   registrada em schema_migrations. Os privilegios padrao deste projeto
+--   concedem ALL em TABLES e FUNCTIONS de public a anon e authenticated, e
+--   tabela nova nasce com RLS desabilitada. Sem o bloco do fim deste arquivo,
+--   o estado "1/3 aplicada, 2/3 falhou" deixaria as cinco tabelas novas com
+--   DML completo para papel ANONIMO e sem RLS, por tempo indeterminado.
+--   O bloco final apenas NEGA acesso; as permissoes finais continuam sendo
+--   concedidas pela 2/3.
 --
 -- PRINCIPIOS HERDADOS DA FUNDACAO L1 (20260902100000):
 --   * Aplicabilidade do piso (regulatory_assessments.result / floor_applicability)
@@ -543,3 +556,48 @@ comment on table public.fcg_observational_log is
 comment on column public.fcg_observational_log.event is
   'not_evaluated = sem regra elegivel, nada foi criado. evaluated = avaliacao produzida. '
   'infrastructure_error = falha contida que NUNCA bloqueou a contratacao.';
+
+
+-- -----------------------------------------------------------------------------
+-- FECHAMENTO DE ACESSO DAS CINCO TABELAS CRIADAS ACIMA
+-- -----------------------------------------------------------------------------
+-- Executa na MESMA transacao dos CREATE TABLE deste arquivo, de modo que as
+-- tabelas nunca existem em estado aberto -- nem por uma transacao, nem pela
+-- janela entre esta migration e a 2/3.
+--
+-- Este bloco e deliberadamente SO NEGACAO. Nao ha um unico GRANT aqui. As
+-- permissoes finais (SELECT para authenticated em tres tabelas, DML para
+-- service_role nas cinco) sao concedidas pela 2/3 e nao foram alteradas.
+--
+-- service_role nao e mencionado: seu acesso vem dos privilegios padrao do
+-- projeto e dos grants explicitos da 2/3, e ele contorna RLS por atributo de
+-- papel (bypassrls). Revogar dele aqui quebraria a 3/3 e as suites.
+
+alter table public.transport_operation_vehicle_compositions enable row level security;
+alter table public.transport_operation_vehicle_units        enable row level security;
+alter table public.regulatory_compliance_results            enable row level security;
+alter table public.regulatory_compliance_review_events      enable row level security;
+alter table public.fcg_observational_log                    enable row level security;
+
+-- REVOKE ALL cobre SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES e
+-- TRIGGER. TRUNCATE importa: nao e coberto por policy de RLS, so por
+-- privilegio -- RLS habilitada sem revogar TRUNCATE ainda permitiria esvaziar
+-- a tabela. REFERENCES e TRIGGER tambem saem: ambos permitem anexar objeto
+-- proprio a uma tabela de trilha regulatoria.
+-- PUBLIC entra na lista por principio, ainda que tabela nao receba grant a
+-- PUBLIC por padrao: se algum privilegio padrao futuro passar a conceder a
+-- PUBLIC, este revoke ja o cobre.
+revoke all on table public.transport_operation_vehicle_compositions from public, anon, authenticated;
+revoke all on table public.transport_operation_vehicle_units        from public, anon, authenticated;
+revoke all on table public.regulatory_compliance_results            from public, anon, authenticated;
+revoke all on table public.regulatory_compliance_review_events      from public, anon, authenticated;
+revoke all on table public.fcg_observational_log                    from public, anon, authenticated;
+
+-- ACESSO INDIRETO: tovc_enforce_axle_sum() e a UNICA funcao criada por esta
+-- migration e e SECURITY DEFINER. PostgreSQL concede EXECUTE a PUBLIC em
+-- funcao nova por padrao, e os privilegios padrao deste projeto concedem ALL
+-- em FUNCTIONS a anon e authenticated. Ficaria, portanto, invocavel por papel
+-- anonimo.
+-- O trigger continua disparando normalmente sem esse EXECUTE: o privilegio e
+-- exigido na criacao do trigger, nao a cada disparo.
+revoke all on function public.tovc_enforce_axle_sum() from public, anon, authenticated;
