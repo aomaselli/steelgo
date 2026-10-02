@@ -38,7 +38,11 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+// error e unknown, nao Error: a partir de @tanstack/react-start 1.168.60 o tipo
+// ErrorComponentProps.error deixou de ser Error. Nada aqui acessa propriedade de
+// Error -- o valor so vai para console.error -- entao a assinatura acompanha o
+// tipo do framework sem mudanca de comportamento.
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
 
