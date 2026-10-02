@@ -18,6 +18,7 @@ import { fetchMyDriverTrip } from "@/lib/trips";
 import { preparePushListeners } from "@/lib/pushClient";
 import { isNativePlatform } from "@/lib/device";
 import { CARRIER_REQUEST_SELECT, carrierRequestLabel } from "@/lib/carrierRequestLabel";
+import { canBecomeIndependent, driverLinkState } from "@/lib/driverLink";
 
 type DriverRecord = {
   id: string;
@@ -108,24 +109,21 @@ export default function DriverHomePage() {
     queryKey: ["driver-record", user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data } = await supabase
+      // Somente leitura. Criar o registro aqui tornava todo motorista
+      // independente no primeiro carregamento da tela, e a partir daí o
+      // servidor recusava accept_driver_invitation com "Independent driver
+      // record already exists for this account; use the carrier link request
+      // flow": o convite emitido pela transportadora ficava impossível de
+      // aceitar. Tornar-se independente passou a ser escolha explícita.
+      const { data, error } = await supabase
         .from("drivers")
         .select("*")
         .eq("profile_id", user!.id)
         .maybeSingle();
-      if (data) return data as DriverRecord;
-
-      // Motorista sem linha em public.drivers: cria de forma idempotente.
-      // A RPC valida a role e nasce sem carrier_id (motorista independente).
-      const { error: ensureError } = await supabase.rpc("ensure_driver_record");
-      if (ensureError) return null;
-
-      const { data: created } = await supabase
-        .from("drivers")
-        .select("*")
-        .eq("profile_id", user!.id)
-        .maybeSingle();
-      return (created as DriverRecord | null) ?? null;
+      // Erro não pode virar "motorista sem registro": essa confusão é o que
+      // levava a tela a oferecer o caminho errado.
+      if (error) throw error;
+      return (data as DriverRecord | null) ?? null;
     },
   });
 
@@ -254,6 +252,12 @@ export default function DriverHomePage() {
 
   const licenseApproved = driverRecord?.license_verification_status === "approved";
   const hasCarrierLink = !!driverRecord?.carrier_id;
+  // Registro já vinculado a uma transportadora. O bloco de vínculo era
+  // escondido assim que existisse QUALQUER registro, de modo que o motorista
+  // independente não tinha nenhuma ação disponível na tela.
+  const linkState = driverLinkState(driverRecord);
+  const linkedDriver = driverRecord?.carrier_id ? driverRecord : null;
+  const independentDriver = linkState === "independente";
 
   const acceptInvitation = async () => {
     const token = inviteToken.trim();
@@ -329,6 +333,18 @@ export default function DriverHomePage() {
     setLinkMessage("");
     setCarrierQuery("");
     qc.invalidateQueries({ queryKey: ["driver-pending-requests", user?.id] });
+  };
+
+  // Criar o registro independente deixou de ser efeito colateral do
+  // carregamento: é uma escolha, porque ela fecha o caminho do convite.
+  const becomeIndependentDriver = async () => {
+    const { error } = await supabase.rpc("ensure_driver_record");
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Registro de motorista independente criado");
+    qc.invalidateQueries({ queryKey: ["driver-record", user?.id] });
   };
 
   const cancelRequest = async (requestId: string) => {
@@ -497,7 +513,7 @@ export default function DriverHomePage() {
         </div>
       </header>
 
-      {!driverRecord ? (
+      {!linkedDriver ? (
         <div className="mx-4 mb-4 rounded-[16px] border border-[#30363D] bg-[#161B22] p-4 space-y-3">
           <div className="text-[18px] font-medium text-[#E6EDF3]">Vincular transportadora</div>
           <div className="text-sm text-[#8B949E]">
@@ -525,19 +541,31 @@ export default function DriverHomePage() {
               maxLength={3}
               className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]"
             />
-            <input
-              value={inviteToken}
-              onChange={(e) => setInviteToken(e.target.value)}
-              placeholder="Cole o token do convite"
-              className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]"
-            />
-            <button
-              type="button"
-              onClick={() => void acceptInvitation()}
-              className="w-full rounded-[10px] bg-[#1B6CB8] px-3 py-2 text-sm font-medium text-white"
-            >
-              Aceitar convite
-            </button>
+            {independentDriver ? (
+              // O servidor recusa accept_driver_invitation quando já existe
+              // registro independente. Manter o campo seria manter um botão
+              // que sempre erra; aqui a tela indica o caminho que funciona.
+              <div className="rounded-[10px] border border-[#30363D] bg-[#0D1117] px-3 py-2 text-xs text-[#8B949E]">
+                Esta conta já possui registro de motorista independente. O convite
+                por token não se aplica: use a solicitação de vínculo abaixo.
+              </div>
+            ) : (
+              <>
+                <input
+                  value={inviteToken}
+                  onChange={(e) => setInviteToken(e.target.value)}
+                  placeholder="Cole o token do convite"
+                  className="w-full rounded-[10px] bg-[#0D1117] border border-[#30363D] px-3 py-2 text-sm text-[#E6EDF3]"
+                />
+                <button
+                  type="button"
+                  onClick={() => void acceptInvitation()}
+                  className="w-full rounded-[10px] bg-[#1B6CB8] px-3 py-2 text-sm font-medium text-white"
+                >
+                  Aceitar convite
+                </button>
+              </>
+            )}
           </div>
           <div className="space-y-2">
             <input
@@ -579,6 +607,15 @@ export default function DriverHomePage() {
           >
             Solicitar vínculo
           </button>
+          {canBecomeIndependent(linkState) && (
+            <button
+              type="button"
+              onClick={() => void becomeIndependentDriver()}
+              className="w-full rounded-[10px] border border-[#30363D] px-3 py-2 text-sm font-medium text-[#8B949E]"
+            >
+              Atuar como motorista independente
+            </button>
+          )}
           {pendingRequests.length > 0 && (
             <div className="space-y-2 pt-2">
               <div className="text-[11px] uppercase tracking-[0.08em] text-[#8B949E]">
@@ -614,18 +651,18 @@ export default function DriverHomePage() {
                 Status da CNH
               </div>
               <div className="text-[16px] font-medium text-[#E6EDF3]">
-                {driverRecord.license_verification_status ?? "pending"}
+                {linkedDriver.license_verification_status ?? "pending"}
               </div>
             </div>
             <div
-              className={`px-2.5 py-1 rounded-full text-xs ${licenseApproved ? "bg-emerald-500/20 text-emerald-400" : driverRecord.license_verification_status === "rejected" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}
+              className={`px-2.5 py-1 rounded-full text-xs ${licenseApproved ? "bg-emerald-500/20 text-emerald-400" : linkedDriver.license_verification_status === "rejected" ? "bg-red-500/20 text-red-400" : "bg-amber-500/20 text-amber-400"}`}
             >
-              {driverRecord.license_verification_status ?? "pending"}
+              {linkedDriver.license_verification_status ?? "pending"}
             </div>
           </div>
           <div className="text-sm text-[#8B949E]">
-            CNH: {driverRecord.license_number ?? "—"} ·{" "}
-            {driverRecord.license_issuer_country ?? driverRecord.country_code ?? "BR"}
+            CNH: {linkedDriver.license_number ?? "—"} ·{" "}
+            {linkedDriver.license_issuer_country ?? linkedDriver.country_code ?? "BR"}
           </div>
           {hasCarrierLink && licenseApproved && (
             <div className="space-y-3 pt-2">
@@ -846,30 +883,34 @@ function NoActiveState({ lastDelivery }: { lastDelivery: LastDelivery | undefine
           className="mx-4 rounded-[14px] p-3.5 flex items-center gap-3.5"
           style={{ background: "#161B22" }}
         >
+          {/* Nota, faixa e percentil eram literais: 9.4, "Motorista Ouro" e
+              "Top 8% da plataforma" apareciam iguais para qualquer conta, sem
+              nenhum cálculo por trás. Enquanto não existir avaliação apurada,
+              a tela declara a ausência em vez de exibir número inventado. */}
           <div
             className="rounded-full flex items-center justify-center tabular-nums font-medium"
             style={{
               width: 52,
               height: 52,
-              border: "3px solid #1A9B5E",
-              color: "#2ECC8A",
+              border: "3px solid #30363D",
+              color: "#8B949E",
               fontSize: 18,
             }}
           >
-            9.4
+            —
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-[14px] font-medium" style={{ color: "#E6EDF3" }}>
-              Motorista Ouro
+              Sem avaliação
             </div>
             <div
               className="h-[5px] mt-2 rounded-full overflow-hidden"
               style={{ background: "#21262D" }}
             >
-              <div className="h-full" style={{ width: "94%", background: "#1A9B5E" }} />
+              <div className="h-full" style={{ width: "0%", background: "#30363D" }} />
             </div>
             <div className="text-[11px] mt-1" style={{ color: "#8B949E" }}>
-              Top 8% da plataforma
+              A nota aparece depois das primeiras viagens concluídas.
             </div>
           </div>
         </div>

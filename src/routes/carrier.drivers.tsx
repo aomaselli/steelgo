@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
 import { Button, Card, Input, Modal, Select, Spinner } from "@/components/steel";
 import { maskCPF } from "@/lib/masks";
+import { normalizeInviteContact } from "@/lib/driverLink";
 
 export const Route = createFileRoute("/carrier/drivers")({
   component: DriversPage,
@@ -40,10 +41,10 @@ type InvitationRow = {
 type RequestRow = {
   id: string;
   status: string;
+  submitted_cpf?: string | null;
   submitted_license_number?: string | null;
   submitted_license_country?: string | null;
   message?: string | null;
-  profiles?: { full_name?: string | null } | null;
 };
 
 function DriversPage() {
@@ -90,7 +91,27 @@ function DriversPage() {
     queryKey: ["carrier-requests", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("driver_carrier_requests").select("*, profiles(full_name)").eq("carrier_id", carrier!.id).order("created_at", { ascending: false });
+      // Sem embutir profiles. Dois motivos, nessa ordem:
+      //
+      // 1. driver_carrier_requests tem DUAS chaves estrangeiras para profiles
+      //    (profile_id e reviewed_by). O embutido ambiguo fazia o PostgREST
+      //    responder 300 Multiple Choices, a consulta inteira falhava e a aba
+      //    ficava em "Sem solicitacoes" mesmo havendo solicitacao pendente.
+      // 2. Mesmo desambiguado, a RLS de profiles nao deixa a transportadora
+      //    ler a linha do motorista: o embutido voltava null e a tela sempre
+      //    mostrava o rotulo generico. Verificado no banco descartavel —
+      //    0 linhas visiveis no contexto da transportadora.
+      //
+      // A identidade usada na decisao e a que a propria solicitacao carrega:
+      // CPF declarado e licenca. Afrouxar a RLS seria mudar autorizacao.
+      const { data, error } = await supabase
+        .from("driver_carrier_requests")
+        .select("*")
+        .eq("carrier_id", carrier!.id)
+        .order("created_at", { ascending: false });
+      // Erro nao pode virar lista vazia: lista vazia significa "nao ha
+      // solicitacao", e era exatamente isso que escondia o defeito.
+      if (error) throw error;
       return (data ?? []) as RequestRow[];
     },
   });
@@ -125,16 +146,15 @@ function DriversPage() {
 
   const createInvitation = async (driverId: string) => {
     if (!driverId) return;
-    const email = inviteForm.email.trim();
-    const phone = inviteForm.phone.replace(/\D/g, "");
-    if (!email && !phone) {
+    const contato = normalizeInviteContact(inviteForm);
+    if (!contato.ok) {
       toast.error(t("carrierDrivers.toastNoContact"));
       return;
     }
     const { data, error } = await supabase.rpc("create_driver_invitation", {
       p_driver_id: driverId,
-      p_email: email || undefined,
-      p_phone: phone || undefined,
+      p_email: contato.email,
+      p_phone: contato.phone,
       p_expires_in_hours: 168,
     });
     if (error) {
@@ -158,7 +178,13 @@ function DriversPage() {
       p_rejection_reason: decisionValue === "rejected" ? rejectReason || t("carrierDrivers.toastDefaultRejectReason") : undefined,
     });
     if (error) {
-      toast.error(error.message);
+      // 23505 aqui e sempre a mesma colisao: ja existe motorista com a mesma
+      // identidade de licenca nesta transportadora. A mensagem crua do
+      // Postgres ("duplicate key value violates unique constraint
+      // drivers_license_identity_uidx") nao diz nada a quem decide.
+      toast.error(
+        error.code === "23505" ? t("carrierDrivers.toastDuplicateLicense") : error.message,
+      );
       return;
     }
     toast.success(decisionValue === "approved" ? t("carrierDrivers.toastRequestApproved") : t("carrierDrivers.toastRequestRejected"));
@@ -319,7 +345,7 @@ function DriversPage() {
                 <div key={req.id} className="rounded-[12px] border border-[#30363D] bg-[#0D1117] p-3">
                   <div className="flex justify-between items-start gap-3">
                     <div>
-                      <div className="font-medium text-[#E6EDF3]">{req.profiles?.full_name ?? t("carrierDrivers.driverFallback")}</div>
+                      <div className="font-medium text-[#E6EDF3]">{req.submitted_cpf ? maskCPF(req.submitted_cpf) : t("carrierDrivers.driverFallback")}</div>
                       <div className="text-xs text-[#8B949E]">{req.submitted_license_number ?? "—"} · {req.submitted_license_country ?? "BR"}</div>
                     </div>
                     <span className="text-xs px-2 py-1 rounded-full bg-[#1B6CB8]/20 text-[#64B5FF]">{req.status}</span>

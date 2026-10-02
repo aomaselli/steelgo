@@ -99,7 +99,13 @@ function PodPage() {
         toast.error("Assinatura do recebedor é obrigatória para entrega aceita.");
         return;
       }
-      sigBlob = dataUrlToBlob(sigRef.current.getTrimmedCanvas().toDataURL("image/png"));
+      // getTrimmedCanvas() do react-signature-canvas quebra sob o bundle ESM:
+      // "(0, import_trim_canvas.default) is not a function". A excecao escapava
+      // ANTES do try abaixo, virava rejeicao nao tratada e o motorista tocava
+      // "Confirmar entrega" sem toast, sem erro e sem comprovante registrado.
+      // getCanvas() e o mesmo caminho ja usado na assinatura do contrato
+      // (src/components/contract/SignaturePad.tsx); o recorte era cosmetico.
+      sigBlob = dataUrlToBlob(sigRef.current.getCanvas().toDataURL("image/png"));
       if (sigBlob.size < 1024) {
         toast.error("Assinatura muito curta. Assine novamente.");
         return;
