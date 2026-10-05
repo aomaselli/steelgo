@@ -3,6 +3,7 @@ import {
   documentText,
   resolveContractParties,
   type ContractPartiesInput,
+  type IdentificationInput,
 } from "./contractParties";
 
 /**
@@ -115,44 +116,68 @@ describe("documentText", () => {
   });
 });
 
-describe('identificacao empresarial restrita as partes', () => {
-  const identificado = {
+describe('identificacao empresarial: tres desfechos distintos', () => {
+  const autorizado = {
+    status: 'autorizado',
     shipper_cnpj: '11122233000183',
     carrier_cnpj: '44455566000183',
     carrier_antt_rntrc: 'BR-1234567',
-  };
+  } as const;
 
-  it('parte do contrato enxerga CNPJ e ANTT da contraparte', () => {
-    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
+  it('AUTORIZADO: parte do contrato enxerga CNPJ e ANTT da contraparte', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: autorizado });
     expect(p.carrier.document).toEqual({ known: true, value: '44455566000183' });
     expect(p.carrier.antt).toEqual({ known: true, value: 'BR-1234567' });
   });
 
-  it('o nome continua vindo da RPC de contrapartes, nao da identificacao', () => {
-    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
-    expect(p.carrier.name).toBe('Transportes Simulacao Ltda');
-    expect(p.carrier.fromCounterpartyRpc).toBe(true);
+  it('AUTORIZADO com campo vazio diz "nao informado", nao "nao visivel"', () => {
+    const p = resolveContractParties({
+      ...comoEmbarcador,
+      identification: { status: 'autorizado', shipper_cnpj: null, carrier_cnpj: null, carrier_antt_rntrc: null },
+    });
+    expect(p.carrier.document).toEqual({ known: false, reason: 'sem_registro' });
+    expect(p.carrier.antt).toEqual({ known: false, reason: 'sem_registro' });
   });
 
-  it('quem NAO e parte (motorista, admin) continua sem ver o documento', () => {
-    // A RPC devolve lista vazia para eles; aqui isso chega como identification nula.
-    const p = resolveContractParties({ ...comoEmbarcador, identification: null });
+  it('SEM AUTORIZACAO: quem nao e parte ve restricao de acesso', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: { status: 'sem_autorizacao' } });
     expect(p.carrier.document).toEqual({ known: false, reason: 'nao_visivel' });
     expect(p.carrier.antt).toEqual({ known: false, reason: 'nao_visivel' });
   });
 
-  it('identificacao NAO alcanca dado de motorista', () => {
-    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
-    expect(p.driver.cpf).toEqual({ known: false, reason: 'nao_visivel' });
-    expect(p.driver.license).toEqual({ known: false, reason: 'nao_visivel' });
-  });
-
-  it('parte do contrato com empresa sem CNPJ cadastrado le "nao informado", nao "nao visivel"', () => {
+  it('FALHA: erro tecnico NAO se disfarca de restricao de acesso', () => {
+    // Caso real: migration 20261005120000 ainda nao aplicada no destino.
     const p = resolveContractParties({
       ...comoEmbarcador,
-      identification: { shipper_cnpj: null, carrier_cnpj: null, carrier_antt_rntrc: null },
+      identification: { status: 'falha', detalhe: 'PGRST202 function does not exist' },
     });
-    expect(p.carrier.document).toEqual({ known: false, reason: 'sem_registro' });
-    expect(p.carrier.antt).toEqual({ known: false, reason: 'sem_registro' });
+    expect(p.carrier.document).toEqual({ known: false, reason: 'indisponivel' });
+    expect(p.carrier.antt).toEqual({ known: false, reason: 'indisponivel' });
+    expect(p.shipper.document).toEqual({ known: true, value: '11122233000183' });
+  });
+
+  it('os tres desfechos produzem textos diferentes', () => {
+    const t = (ident: IdentificationInput) => documentText(resolveContractParties({ ...comoEmbarcador, identification: ident }).carrier.document);
+    expect(t(autorizado)).toBe('44455566000183');
+    expect(t({ status: 'sem_autorizacao' })).toBe('não visível para você');
+    expect(t({ status: 'falha', detalhe: 'x' })).toBe('indisponível no momento');
+    expect(t({ status: 'autorizado', shipper_cnpj: null, carrier_cnpj: null, carrier_antt_rntrc: null })).toBe('não informado');
+  });
+
+  it('consulta nao feita (undefined) mantem o comportamento anterior', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: null });
+    expect(p.carrier.document).toEqual({ known: false, reason: 'nao_visivel' });
+  });
+
+  it('o nome continua vindo da RPC de contrapartes, nao da identificacao', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: autorizado });
+    expect(p.carrier.name).toBe('Transportes Simulacao Ltda');
+    expect(p.carrier.fromCounterpartyRpc).toBe(true);
+  });
+
+  it('identificacao NAO alcanca dado de motorista', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: autorizado });
+    expect(p.driver.cpf).toEqual({ known: false, reason: 'nao_visivel' });
+    expect(p.driver.license).toEqual({ known: false, reason: 'nao_visivel' });
   });
 });

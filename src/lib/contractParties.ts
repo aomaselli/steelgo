@@ -23,7 +23,13 @@ export type DocumentVisibility =
   /** O registro existe, mas a autorização do espectador não alcança o dado. */
   | { known: false; reason: "nao_visivel" }
   /** Não há registro a mostrar. */
-  | { known: false; reason: "sem_registro" };
+  | { known: false; reason: "sem_registro" }
+  /**
+   * A consulta não completou — rede, função ausente porque a migration não foi
+   * aplicada, permissão de execução, erro do servidor. NÃO é restrição de
+   * acesso, e a tela não pode dizer que é.
+   */
+  | { known: false; reason: "indisponivel" };
 
 export type PartyIdentity = {
   /** Nome comercial; null só quando realmente não há nome em lugar nenhum. */
@@ -63,18 +69,25 @@ export type ContractPartiesInput = {
   /** ANTT lido de `carriers` — também sujeito a RLS. */
   carrierAntt?: string | null;
   /**
-   * Identificação empresarial vinda de `list_contract_party_identification`,
-   * restrita a quem é PARTE do contrato. Ausente para motorista, administrador
-   * e terceiro — e aí o documento continua sendo declarado como invisível.
+   * Desfecho da consulta restrita às partes
+   * (`list_contract_party_identification`). Os três casos levam a textos
+   * diferentes; `undefined` significa que a consulta nem foi feita.
    */
-  identification?: {
-    shipper_cnpj: string | null;
-    carrier_cnpj: string | null;
-    carrier_antt_rntrc: string | null;
-  } | null;
+  identification?: IdentificationInput;
   /** O contrato referencia essas partes? Separa "não existe" de "não vejo". */
   refs: { shipperCompany: boolean; carrierCompany: boolean; driver: boolean };
 };
+
+export type IdentificationInput =
+  | {
+      status: "autorizado";
+      shipper_cnpj: string | null;
+      carrier_cnpj: string | null;
+      carrier_antt_rntrc: string | null;
+    }
+  | { status: "sem_autorizacao" }
+  | { status: "falha"; detalhe?: string }
+  | null;
 
 export type ContractParties = {
   shipper: PartyIdentity;
@@ -84,17 +97,19 @@ export type ContractParties = {
 
 /**
  * @param referenced o contrato aponta para esse registro
- * @param authoritative a consulta restrita às partes respondeu sobre este
- *   contrato — e aí vazio significa "não informado", não "não visível"
+ * @param ident desfecho da consulta restrita às partes
  */
 function visibility(
   value: string | null | undefined,
   referenced: boolean,
-  authoritative = false,
+  ident?: IdentificationInput,
 ): DocumentVisibility {
   const v = (value ?? "").trim();
   if (v) return { known: true, value: v };
-  if (authoritative) return { known: false, reason: "sem_registro" };
+  // Falha técnica NUNCA vira restrição de acesso.
+  if (ident?.status === "falha") return { known: false, reason: "indisponivel" };
+  // A consulta respondeu sobre este contrato: vazio aqui é ausência de dado.
+  if (ident?.status === "autorizado") return { known: false, reason: "sem_registro" };
   return { known: false, reason: referenced ? "nao_visivel" : "sem_registro" };
 }
 
@@ -103,16 +118,16 @@ function party(
   rpcName: string | null | undefined,
   referenced: boolean,
   rpcCnpj: string | null | undefined,
-  authoritative: boolean,
+  ident: IdentificationInput | undefined,
 ): PartyIdentity {
   const directName = (direct?.name ?? "").trim();
   const fallback = (rpcName ?? "").trim();
   // Leitura direta primeiro (é a própria empresa); depois a consulta restrita
-  // às partes; só então "não visível".
+  // às partes; só então o motivo de não haver valor.
   const cnpj = (direct?.cnpj ?? "").trim() || (rpcCnpj ?? "").trim();
   return {
     name: directName || fallback || null,
-    document: visibility(cnpj, referenced, authoritative),
+    document: visibility(cnpj, referenced, ident),
     fromCounterpartyRpc: !directName && !!fallback,
   };
 }
@@ -120,6 +135,7 @@ function party(
 export function resolveContractParties(input: ContractPartiesInput): ContractParties {
   const { direct, counterparty, refs } = input;
   const ident = input.identification ?? null;
+  const autorizado = ident?.status === "autorizado" ? ident : null;
 
   const driverDirectName = (direct.driver?.full_name ?? "").trim();
   const driverLabel = (input.tripDriverLabel ?? "").trim();
@@ -129,21 +145,21 @@ export function resolveContractParties(input: ContractPartiesInput): ContractPar
       direct.shipper,
       counterparty?.shipper_company_name,
       refs.shipperCompany,
-      ident?.shipper_cnpj,
-      !!ident,
+      autorizado?.shipper_cnpj,
+      ident,
     ),
     carrier: {
       ...party(
         direct.carrier,
         counterparty?.carrier_company_name,
         refs.carrierCompany,
-        ident?.carrier_cnpj,
-        !!ident,
+        autorizado?.carrier_cnpj,
+        ident,
       ),
       antt: visibility(
-        (input.carrierAntt ?? "").trim() || (ident?.carrier_antt_rntrc ?? "").trim(),
+        (input.carrierAntt ?? "").trim() || (autorizado?.carrier_antt_rntrc ?? "").trim(),
         refs.carrierCompany,
-        !!ident,
+        ident,
       ),
     },
     driver: {
@@ -158,11 +174,12 @@ export function resolveContractParties(input: ContractPartiesInput): ContractPar
 /** Texto curto para um documento, sem inventar "—" para dado que existe. */
 export function documentText(
   d: DocumentVisibility,
-  labels: { naoVisivel: string; semRegistro: string } = {
+  labels: { naoVisivel: string; semRegistro: string; indisponivel?: string } = {
     naoVisivel: "não visível para você",
     semRegistro: "não informado",
   },
 ): string {
   if (d.known) return d.value;
+  if (d.reason === "indisponivel") return labels.indisponivel ?? "indisponível no momento";
   return d.reason === "nao_visivel" ? labels.naoVisivel : labels.semRegistro;
 }

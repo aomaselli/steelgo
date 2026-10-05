@@ -24,7 +24,11 @@ import { fetchDisputeCases } from "@/lib/disputes";
 import { fetchMyTrips } from "@/lib/trips";
 import { tripStatusMeta } from "@/lib/tripStatus";
 import { fetchContractCounterparties } from "@/lib/paymentLedger";
-import { documentText, resolveContractParties } from "@/lib/contractParties";
+import {
+  documentText,
+  resolveContractParties,
+  type IdentificationInput,
+} from "@/lib/contractParties";
 import { fetchContractPartyIdentification } from "@/lib/contractIdentity";
 
 type Role = "shipper" | "carrier";
@@ -191,12 +195,19 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
   const { data: identification = null } = useQuery({
     queryKey: ["contract-party-identification", contractId],
     retry: false,
-    queryFn: async () => {
+    queryFn: async (): Promise<IdentificationInput> => {
       try {
-        return (await fetchContractPartyIdentification([contractId])).get(contractId) ?? null;
+        return (
+          (await fetchContractPartyIdentification([contractId])).get(contractId) ?? {
+            status: "sem_autorizacao",
+          }
+        );
       } catch (e) {
-        console.error("[contrato] identificacao empresarial indisponivel", e);
-        return null;
+        // Excecao fora do contrato de erro da RPC (rede caiu, por exemplo).
+        // Continua sendo FALHA, nao restricao de acesso.
+        const detalhe = e instanceof Error ? e.message : String(e);
+        console.error("[contrato] identificacao empresarial falhou", e);
+        return { status: "falha", detalhe };
       }
     },
   });
