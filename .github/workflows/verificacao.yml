@@ -1,0 +1,100 @@
+name: verificacao
+
+# POR QUE ESTE ARQUIVO EXISTE
+# Até agora os checks do GitHub neste repositório eram só da Vercel: o
+# deployment de Preview (que roda `npm ci` + `vite build`) e um bot de
+# comentários. Nenhum deles executa `tsc`, `vitest` ou `eslint` — ou seja, o
+# "✅ All checks have passed" garantia apenas que o aplicativo empacota. Teste
+# quebrado e erro de tipo passavam direto.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Uma execução por referência: push novo cancela a anterior, que já não importa.
+concurrency:
+  group: verificacao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar com o lockfile
+        run: npm ci 2>&1 | tee npm-ci.log
+        shell: bash
+
+      # ------------------------------------------------------------------
+      # TypeScript: NADA de sucesso forçado.
+      # ------------------------------------------------------------------
+      # O `set +e` existe só para CAPTURAR a saída do tsc; o veredito vem da
+      # comparação explícita logo abaixo, e ela REPROVA o job. Não há `|| true`
+      # governando o resultado do passo.
+      #
+      # A comparação é contra uma linha de base versionada
+      # (.github/tsc-baseline.txt) porque o repositório já tem erros de tipo
+      # anteriores a este trabalho. Exigir zero reprovaria todo PR desde o
+      # primeiro dia e esconderia a regressão real no meio do ruído. O que este
+      # passo cobra é: NENHUM ERRO NOVO.
+      #
+      # Quando a contagem cair, o passo avisa para baixar a linha de base — ela
+      # só desce por commit deliberado, nunca sozinha.
+      - name: Verificar tipos (sem mascarar)
+        shell: bash
+        run: |
+          base=$(tr -d '[:space:]' < .github/tsc-baseline.txt)
+          set +e
+          npx tsc --noEmit > tsc.log 2>&1
+          saida_tsc=$?
+          set -e
+          erros=$(grep -c "error TS" tsc.log || true)
+          echo "tsc terminou com código $saida_tsc e $erros erro(s); linha de base: $base"
+          echo "--- primeiras 50 linhas de tsc.log ---"
+          head -50 tsc.log
+          if [ "$erros" -gt "$base" ]; then
+            echo "::error::tsc regrediu: $erros erros contra linha de base de $base. Veja o artefato logs-verificacao/tsc.log."
+            exit 1
+          fi
+          if [ "$erros" -lt "$base" ]; then
+            echo "::notice::tsc melhorou: $erros erros. Baixe .github/tsc-baseline.txt para $erros neste PR."
+          fi
+
+      # ------------------------------------------------------------------
+      # Suíte de testes
+      # ------------------------------------------------------------------
+      # `pipefail` garante que o `tee` não engula a falha do vitest.
+      - name: Rodar a suíte
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee vitest.log
+
+      - name: Empacotar
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+
+      # `if: always()` é o que preserva o log QUANDO FALHA — que é justamente
+      # quando ele serve para alguma coisa.
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-verificacao-${{ github.run_id }}
+          path: |
+            npm-ci.log
+            tsc.log
+            vitest.log
+            build.log
+          if-no-files-found: warn
+          retention-days: 30
