@@ -34,39 +34,40 @@ jobs:
         shell: bash
 
       # ------------------------------------------------------------------
-      # TypeScript: NADA de sucesso forçado.
+      # TypeScript: compara DIAGNÓSTICOS, não contagens. Nada de sucesso forçado.
       # ------------------------------------------------------------------
-      # O `set +e` existe só para CAPTURAR a saída do tsc; o veredito vem da
-      # comparação explícita logo abaixo, e ela REPROVA o job. Não há `|| true`
-      # governando o resultado do passo.
+      # Contagem igual não prova ausência de regressão: um erro novo que apaga
+      # um antigo mantém o número e passa despercebido. A comparação aqui é do
+      # CONJUNTO — arquivo, código e mensagem de cada diagnóstico, com a
+      # quantidade de ocorrências. Linha e coluna ficam de fora de propósito:
+      # elas andam a cada edição e acusariam regressão onde não houve.
       #
-      # A comparação é contra uma linha de base versionada
-      # (.github/tsc-baseline.txt) porque o repositório já tem erros de tipo
-      # anteriores a este trabalho. Exigir zero reprovaria todo PR desde o
-      # primeiro dia e esconderia a regressão real no meio do ruído. O que este
-      # passo cobra é: NENHUM ERRO NOVO.
-      #
-      # Quando a contagem cair, o passo avisa para baixar a linha de base — ela
-      # só desce por commit deliberado, nunca sozinha.
-      - name: Verificar tipos (sem mascarar)
+      # O `set +e` existe só para CAPTURAR a saída do tsc; quem decide o
+      # resultado é o `diff` contra a linha de base versionada, que chama
+      # `exit 1` quando aparece diagnóstico novo. Não há `|| true` governando
+      # o resultado deste passo.
+      - name: Verificar tipos (diagnósticos, não contagens)
         shell: bash
         run: |
-          base=$(tr -d '[:space:]' < .github/tsc-baseline.txt)
           set +e
           npx tsc --noEmit > tsc.log 2>&1
           saida_tsc=$?
           set -e
-          erros=$(grep -c "error TS" tsc.log || true)
-          echo "tsc terminou com código $saida_tsc e $erros erro(s); linha de base: $base"
-          echo "--- primeiras 50 linhas de tsc.log ---"
-          head -50 tsc.log
-          if [ "$erros" -gt "$base" ]; then
-            echo "::error::tsc regrediu: $erros erros contra linha de base de $base. Veja o artefato logs-verificacao/tsc.log."
+          node .github/scripts/diagnosticos-tsc.mjs tsc.log > tsc-diagnosticos.txt
+          echo "tsc terminou com codigo $saida_tsc"
+          if diff -u .github/tsc-baseline.txt tsc-diagnosticos.txt > tsc-diff.txt; then
+            echo "conjunto de diagnosticos identico a linha de base"
+            exit 0
+          fi
+          echo "--- diferenca contra a linha de base ---"
+          cat tsc-diff.txt
+          novos=$(grep -c '^+[^+]' tsc-diff.txt || true)
+          resolvidos=$(grep -c '^-[^-]' tsc-diff.txt || true)
+          if [ "$novos" -gt 0 ]; then
+            echo "::error::$novos diagnostico(s) de tipo novo(s) ou mais frequente(s). Veja tsc-diff.txt no artefato."
             exit 1
           fi
-          if [ "$erros" -lt "$base" ]; then
-            echo "::notice::tsc melhorou: $erros erros. Baixe .github/tsc-baseline.txt para $erros neste PR."
-          fi
+          echo "::notice::$resolvidos diagnostico(s) resolvido(s) e nenhum novo. Atualize .github/tsc-baseline.txt neste PR."
 
       # ------------------------------------------------------------------
       # Suíte de testes
@@ -94,6 +95,8 @@ jobs:
           path: |
             npm-ci.log
             tsc.log
+            tsc-diagnosticos.txt
+            tsc-diff.txt
             vitest.log
             build.log
           if-no-files-found: warn

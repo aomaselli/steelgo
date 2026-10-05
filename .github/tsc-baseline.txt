@@ -1,1 +1,54 @@
-59
+2	src/components/home/AudienceSections.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { label: string; headline: string; desc: string; cta: string; items: { icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; title: string; desc: string; }[]; }; en: { ...; }; }'.
+1	src/components/home/GreenLogistics.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { label: string; headline: string; desc: string; calcTitle: string; distance: string; weight: string; traditional: string; green: string; saved: string; cta: string; }; en: { label: string; headline: string; ... 7 more ...; cta: string; }; }'.
+3	src/components/home/Hero.tsx|TS18046|'s' is of type 'unknown'.
+1	src/components/home/Hero.tsx|TS2339|Property 'hero' does not exist on type 'TranslationDict'.
+1	src/components/home/HowItWorks.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/home/HowItWorks.tsx|TS7006|Parameter 's' implicitly has an 'any' type.
+1	src/components/home/HowItWorks.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; title: string; desc: string; }[]; en: { ...; }[]; } | { ...; }'.
+1	src/components/home/Pricing.tsx|TS7006|Parameter 'it' implicitly has an 'any' type.
+1	src/components/home/Pricing.tsx|TS7006|Parameter 'p' implicitly has an 'any' type.
+1	src/components/home/Pricing.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { label: string; headline: string; desc: string; plans: ({ name: string; price: string; sub: string; items: string[]; cta: string; role: "shipper"; highlight?: undefined; } | { name: string; price: string; ... 4 more ...; highlight: boolean; })[]; }; en: { ...; }; }'.
+1	src/components/home/Security.tsx|TS7006|Parameter 'it' implicitly has an 'any' type.
+1	src/components/home/Security.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { label: string; headline: string; desc: string; items: { icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; title: string; desc: string; }[]; }; en: { ...; }; }'.
+1	src/components/home/SocialFaq.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/home/SocialFaq.tsx|TS7006|Parameter 'it' implicitly has an 'any' type.
+1	src/components/home/SocialFaq.tsx|TS7006|Parameter 't' implicitly has an 'any' type.
+1	src/components/home/SocialFaq.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { name: string; role: string; quote: string; }[]; en: { name: string; role: string; quote: string; }[]; }'.
+1	src/components/home/SocialFaq.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ pt: { q: string; a: string; }[]; en: { q: string; a: string; }[]; }'.
+1	src/components/homepage/CarrierSection.tsx|TS7006|Parameter 'doc' implicitly has an 'any' type.
+2	src/components/homepage/CarrierSection.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7006|Parameter 'label' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7031|Binding element 'Icon' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7031|Binding element 'bg' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7031|Binding element 'color' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7031|Binding element 'desc' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7031|Binding element 'title' implicitly has an 'any' type.
+1	src/components/homepage/CarrierSection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "Para transportadoras"; readonly h2a: "Mais oportunidades. "; readonly h2b: "Mais controle operacional."; readonly sub: "Conecte sua transportadora a operações compatíveis com suas rotas, veículos e capacidade disponível."; ... 6 more ...; readonly ctaSecondary: "Conhecer o sistema...'.
+1	src/components/homepage/CompanySection.tsx|TS7006|Parameter 'b' implicitly has an 'any' type.
+1	src/components/homepage/CompanySection.tsx|TS7006|Parameter 'f' implicitly has an 'any' type.
+1	src/components/homepage/CompanySection.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/homepage/CompanySection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "PARA EMPRESAS"; readonly h2: "A infraestrutura digital logística da América Latina"; readonly sub: "Conectamos siderúrgicas, distribuidores, indústrias e varejo a transportadoras e motoristas, integrando fretes, documentos, pagamentos e rastreamento em uma única operação."; readon...'.
+1	src/components/homepage/Footer.tsx|TS2352|Conversion of type 'readonly ["Como funciona", "Segurança", "Logística verde", "API"] | readonly ["Sobre nós", "Blog", "Carreiras", "Imprensa"] | readonly ["Central de ajuda", "Status", "Contato", "WhatsApp"] | ... 8 more ... | readonly [...]' to type 'FooterLink[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+2	src/components/homepage/GreenLogisticsSection.tsx|TS7006|Parameter 'f' implicitly has an 'any' type.
+1	src/components/homepage/GreenLogisticsSection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "🌿 LOGÍSTICA VERDE"; readonly h2a: "Logística de menor impacto, "; readonly h2b: "orientada por dados"; readonly sub: "Compare cenários de transporte e acompanhe estimativas de emissões para apoiar decisões mais eficientes."; ... 18 more ...; readonly ctaSecondary: "Usar estimativ...'.
+1	src/components/homepage/HowItWorksSection.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/homepage/HowItWorksSection.tsx|TS7006|Parameter 's' implicitly has an 'any' type.
+1	src/components/homepage/HowItWorksSection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "COMO FUNCIONA"; readonly h2a: "Do planejamento à entrega, em "; readonly h2b: "um único fluxo digital"; readonly sub: "Menos burocracia e mais controle em cada etapa da operação logística."; readonly tabShipper: "Para embarcadores"; readonly tabCarrier: "Para transportadoras"; rea...'.
+1	src/components/homepage/SecuritySection.tsx|TS7006|Parameter 'card' implicitly has an 'any' type.
+1	src/components/homepage/SecuritySection.tsx|TS7031|Binding element 'Icon' implicitly has an 'any' type.
+1	src/components/homepage/SecuritySection.tsx|TS7031|Binding element 'desc' implicitly has an 'any' type.
+1	src/components/homepage/SecuritySection.tsx|TS7031|Binding element 'title' implicitly has an 'any' type.
+1	src/components/homepage/SecuritySection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly alert: "O Brasil perde R$ 1,2 bilhão em roubos de carga por ano. A SteelGo foi construída para eliminar esse risco de ponta a ponta."; readonly eyebrow: "Segurança de carga"; ... 4 more ...; readonly legalItems: readonly [...]; }; readonly en: { ...; }; }'.
+1	src/components/homepage/TestimonialsSection.tsx|TS7006|Parameter 't' implicitly has an 'any' type.
+1	src/components/homepage/TestimonialsSection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "Quem usa"; readonly h2: "O que dizem nossos clientes"; readonly testimonials: readonly [{ readonly tag: "Segurança"; readonly tagClass: "bg-[#C0392B]/20 text-[#C0392B] border-[#C0392B]/40"; readonly quote: "Antes do SteelGo, tínhamos 2 roubos de carga por trimestre. Nos últimos 8 ...'.
+1	src/components/homepage/TraditionalFreightSection.tsx|TS7006|Parameter 'f' implicitly has an 'any' type.
+1	src/components/homepage/TraditionalFreightSection.tsx|TS7006|Parameter 'i' implicitly has an 'any' type.
+1	src/components/homepage/TraditionalFreightSection.tsx|TS7006|Parameter 't' implicitly has an 'any' type.
+1	src/components/homepage/TraditionalFreightSection.tsx|TS7006|Parameter 'truck' implicitly has an 'any' type.
+1	src/components/homepage/TraditionalFreightSection.tsx|TS7053|Element implicitly has an 'any' type because expression of type 'Language' can't be used to index type '{ readonly pt: { readonly eyebrow: "OPERAÇÕES LOGÍSTICAS"; readonly h2: "Estrutura para diferentes cargas, rotas e veículos"; readonly sub: "Configure cada operação de acordo com o perfil da carga, a rota e os requisitos de transporte."; ... 4 more ...; readonly features: readonly [...]; }; readonly en: { ...; }; }'.
+1	src/lib/consent.ts|TS2345|Argument of type '() => () => boolean' is not assignable to parameter of type 'EffectCallback'.
+1	src/pages/auth/LoginPage.tsx|TS2741|Property 'search' is missing in type '{ children: string; to: "/register"; className: string; }' but required in type 'MakeRequiredSearchParams<RouterCore<Route<Register, any, "/", "/", string, "__root__", undefined, {}, { queryClient: QueryClient; }, AnyContext, AnyContext, ... 6 more ..., undefined>, "never", false, RouterHistory, Record<...>>, string, "/register">'.
+1	src/routes/dashboard.tsx|TS2339|Property 'userRole' does not exist on type 'AuthContextValue'.
+1	src/server.ts|TS2554|Expected 0 arguments, but got 1.
+1	src/start.ts|TS2339|Property 'fetch' does not exist on type 'StartInstance<[], SSROption, readonly [RequestMiddlewareAfterServer<{}, undefined, undefined>], readonly [FunctionMiddlewareAfterClient<{}, unknown, undefined, undefined, undefined>]>'.
+1	vite.config.ts|TS2353|Object literal may only specify known properties, and 'preset' does not exist in type '{ entry?: string | undefined; build?: { staticNodeEnv?: boolean | undefined; inlineCss?: boolean | { enabled?: boolean | undefined; transformAssets?: boolean | undefined; } | undefined; } | undefined; } & { ...; }'.
