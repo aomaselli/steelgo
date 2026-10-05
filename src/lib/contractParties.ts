@@ -62,6 +62,16 @@ export type ContractPartiesInput = {
   tripDriverLabel?: string | null;
   /** ANTT lido de `carriers` — também sujeito a RLS. */
   carrierAntt?: string | null;
+  /**
+   * Identificação empresarial vinda de `list_contract_party_identification`,
+   * restrita a quem é PARTE do contrato. Ausente para motorista, administrador
+   * e terceiro — e aí o documento continua sendo declarado como invisível.
+   */
+  identification?: {
+    shipper_cnpj: string | null;
+    carrier_cnpj: string | null;
+    carrier_antt_rntrc: string | null;
+  } | null;
   /** O contrato referencia essas partes? Separa "não existe" de "não vejo". */
   refs: { shipperCompany: boolean; carrierCompany: boolean; driver: boolean };
 };
@@ -72,9 +82,19 @@ export type ContractParties = {
   driver: DriverIdentity;
 };
 
-function visibility(value: string | null | undefined, referenced: boolean): DocumentVisibility {
+/**
+ * @param referenced o contrato aponta para esse registro
+ * @param authoritative a consulta restrita às partes respondeu sobre este
+ *   contrato — e aí vazio significa "não informado", não "não visível"
+ */
+function visibility(
+  value: string | null | undefined,
+  referenced: boolean,
+  authoritative = false,
+): DocumentVisibility {
   const v = (value ?? "").trim();
   if (v) return { known: true, value: v };
+  if (authoritative) return { known: false, reason: "sem_registro" };
   return { known: false, reason: referenced ? "nao_visivel" : "sem_registro" };
 }
 
@@ -82,27 +102,49 @@ function party(
   direct: { name: string | null; cnpj: string | null } | null,
   rpcName: string | null | undefined,
   referenced: boolean,
+  rpcCnpj: string | null | undefined,
+  authoritative: boolean,
 ): PartyIdentity {
   const directName = (direct?.name ?? "").trim();
   const fallback = (rpcName ?? "").trim();
+  // Leitura direta primeiro (é a própria empresa); depois a consulta restrita
+  // às partes; só então "não visível".
+  const cnpj = (direct?.cnpj ?? "").trim() || (rpcCnpj ?? "").trim();
   return {
     name: directName || fallback || null,
-    document: visibility(direct?.cnpj, referenced),
+    document: visibility(cnpj, referenced, authoritative),
     fromCounterpartyRpc: !directName && !!fallback,
   };
 }
 
 export function resolveContractParties(input: ContractPartiesInput): ContractParties {
   const { direct, counterparty, refs } = input;
+  const ident = input.identification ?? null;
 
   const driverDirectName = (direct.driver?.full_name ?? "").trim();
   const driverLabel = (input.tripDriverLabel ?? "").trim();
 
   return {
-    shipper: party(direct.shipper, counterparty?.shipper_company_name, refs.shipperCompany),
+    shipper: party(
+      direct.shipper,
+      counterparty?.shipper_company_name,
+      refs.shipperCompany,
+      ident?.shipper_cnpj,
+      !!ident,
+    ),
     carrier: {
-      ...party(direct.carrier, counterparty?.carrier_company_name, refs.carrierCompany),
-      antt: visibility(input.carrierAntt, refs.carrierCompany),
+      ...party(
+        direct.carrier,
+        counterparty?.carrier_company_name,
+        refs.carrierCompany,
+        ident?.carrier_cnpj,
+        !!ident,
+      ),
+      antt: visibility(
+        (input.carrierAntt ?? "").trim() || (ident?.carrier_antt_rntrc ?? "").trim(),
+        refs.carrierCompany,
+        !!ident,
+      ),
     },
     driver: {
       name: driverDirectName || driverLabel || null,

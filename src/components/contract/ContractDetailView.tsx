@@ -25,6 +25,7 @@ import { fetchMyTrips } from "@/lib/trips";
 import { tripStatusMeta } from "@/lib/tripStatus";
 import { fetchContractCounterparties } from "@/lib/paymentLedger";
 import { documentText, resolveContractParties } from "@/lib/contractParties";
+import { fetchContractPartyIdentification } from "@/lib/contractIdentity";
 
 type Role = "shipper" | "carrier";
 
@@ -184,6 +185,22 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
       (await fetchContractCounterparties([contractId])).get(contractId) ?? null,
   });
 
+  // Identificacao empresarial da contraparte. A RPC so responde a quem e PARTE
+  // do contrato; motorista e administrador recebem lista vazia, e nesse caso a
+  // tela continua dizendo "nao visivel para voce". Falha nao derruba a pagina.
+  const { data: identification = null } = useQuery({
+    queryKey: ["contract-party-identification", contractId],
+    retry: false,
+    queryFn: async () => {
+      try {
+        return (await fetchContractPartyIdentification([contractId])).get(contractId) ?? null;
+      } catch (e) {
+        console.error("[contrato] identificacao empresarial indisponivel", e);
+        return null;
+      }
+    },
+  });
+
   const { data: carrierMeta } = useQuery({
     queryKey: ["contract-carrier-meta", data?.carrier_company?.id],
     enabled: !!data?.carrier_company?.id,
@@ -304,6 +321,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
     counterparty,
     tripDriverLabel: trip?.driver_label ?? null,
     carrierAntt: carrierMeta?.antt_rntrc ?? null,
+    identification,
     refs: {
       shipperCompany: !!data.shipper_company_id,
       carrierCompany: !!data.carrier_company_id,

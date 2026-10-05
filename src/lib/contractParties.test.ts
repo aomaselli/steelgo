@@ -114,3 +114,45 @@ describe("documentText", () => {
     expect(p.shipper.document).toEqual({ known: false, reason: "nao_visivel" });
   });
 });
+
+describe('identificacao empresarial restrita as partes', () => {
+  const identificado = {
+    shipper_cnpj: '11122233000183',
+    carrier_cnpj: '44455566000183',
+    carrier_antt_rntrc: 'BR-1234567',
+  };
+
+  it('parte do contrato enxerga CNPJ e ANTT da contraparte', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
+    expect(p.carrier.document).toEqual({ known: true, value: '44455566000183' });
+    expect(p.carrier.antt).toEqual({ known: true, value: 'BR-1234567' });
+  });
+
+  it('o nome continua vindo da RPC de contrapartes, nao da identificacao', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
+    expect(p.carrier.name).toBe('Transportes Simulacao Ltda');
+    expect(p.carrier.fromCounterpartyRpc).toBe(true);
+  });
+
+  it('quem NAO e parte (motorista, admin) continua sem ver o documento', () => {
+    // A RPC devolve lista vazia para eles; aqui isso chega como identification nula.
+    const p = resolveContractParties({ ...comoEmbarcador, identification: null });
+    expect(p.carrier.document).toEqual({ known: false, reason: 'nao_visivel' });
+    expect(p.carrier.antt).toEqual({ known: false, reason: 'nao_visivel' });
+  });
+
+  it('identificacao NAO alcanca dado de motorista', () => {
+    const p = resolveContractParties({ ...comoEmbarcador, identification: identificado });
+    expect(p.driver.cpf).toEqual({ known: false, reason: 'nao_visivel' });
+    expect(p.driver.license).toEqual({ known: false, reason: 'nao_visivel' });
+  });
+
+  it('parte do contrato com empresa sem CNPJ cadastrado le "nao informado", nao "nao visivel"', () => {
+    const p = resolveContractParties({
+      ...comoEmbarcador,
+      identification: { shipper_cnpj: null, carrier_cnpj: null, carrier_antt_rntrc: null },
+    });
+    expect(p.carrier.document).toEqual({ known: false, reason: 'sem_registro' });
+    expect(p.carrier.antt).toEqual({ known: false, reason: 'sem_registro' });
+  });
+});
