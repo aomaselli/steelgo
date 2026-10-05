@@ -22,6 +22,9 @@ import {
 import { AppShell } from "@/components/layout/AppShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import type { Enums } from "@/integrations/supabase/types";
+import { STEEL_TYPES } from "@/lib/steel";
+import { buildFreightPayload, isStepComplete, sanitizeDraft } from "@/lib/freightDraft";
 
 // ─── Constants per spec ───
 
@@ -58,32 +61,26 @@ const STEPS = [
   },
 ] as const;
 
-// (id, label, desc, color) — id matches the steel_type enum in DB.
-const STEEL_TYPES = [
-  { id: "cold_rolled", label: "Bobina frio", desc: "Chapas processadas a frio", color: "#3B89D4" },
-  {
-    id: "hot_rolled",
-    label: "Bobina quente",
-    desc: "Produção de tubos e perfis",
-    color: "#3B89D4",
-  },
-  { id: "plate", label: "Chapa grossa", desc: "Estruturas pesadas", color: "#484F58" },
-  { id: "structural", label: "Perfil estrutural", desc: "Vigas e colunas", color: "#484F58" },
-  { id: "seamless_pipe", label: "Cano sem costura", desc: "Alta pressão", color: "#8B949E" },
-  { id: "rebar", label: "Vergalhão", desc: "Construção civil", color: "#8B949E" },
-  { id: "galvanized_tube", label: "Tubo galvanizado", desc: "Anti-corrosão", color: "#8B949E" },
-  { id: "special_steel", label: "Aço especial", desc: "Ferramentas e moldes", color: "#484F58" },
-] as const;
+// O catálogo de aço NAO e declarado aqui: vem de @/lib/steel, fonte unica da
+// vertical. Esta tela tinha a propria copia, com ids que o banco nao aceitava
+// ("plate" contra "chapa_grossa"), e por isso nenhum frete podia ser publicado.
 
+// Tipos de caminhao aceitos no frete. E conceito GENERICO de frete, nao da
+// vertical de aco, por isso fica aqui e nao em @/lib/steel. O `satisfies`
+// amarra os ids ao enum `public.truck_type` -- a mesma trava que faltava no
+// catalogo de aco. "carreta_ext" nao existia no enum (o valor e
+// "carreta_extendida") e "prancha" nao existe: ambos faziam a publicacao
+// falhar com 22P02 assim que fossem escolhidos.
 const TRUCK_TYPES = [
   { id: "truck_simples", label: "Truck simples", capacity: 23 },
   { id: "toco", label: "Toco", capacity: 15 },
+  { id: "truck", label: "Truck", capacity: 14 },
+  { id: "bitruck", label: "Bitruck", capacity: 28 },
   { id: "carreta", label: "Carreta", capacity: 33 },
-  { id: "carreta_ext", label: "Carreta ext.", capacity: 45 },
+  { id: "carreta_extendida", label: "Carreta ext.", capacity: 45 },
   { id: "bitrem", label: "Bitrem", capacity: 57 },
   { id: "rodotrem", label: "Rodotrem", capacity: 74 },
-  { id: "prancha", label: "Prancha (AET)", capacity: 0 },
-] as const;
+] as const satisfies readonly { id: Enums<"truck_type">; label: string; capacity: number }[];
 
 const HOUR_OPTIONS = Array.from({ length: 15 }, (_, i) => `${String(i + 6).padStart(2, "0")}:00`);
 
@@ -182,16 +179,31 @@ export function NewFreightPage() {
   const v = watch();
 
   // ── Load draft once ──
+  // Rascunho antigo e conferido contra os catalogos atuais antes de voltar ao
+  // formulario. Sem isso, um rascunho gravado antes da correcao do catalogo
+  // devolvia steel_type "plate" -- que nao existe mais -- e a publicacao
+  // falhava com 22P02 sem a pessoa entender por que. O que for descartado e
+  // avisado, em vez de sumir em silencio.
   useEffect(() => {
     const raw = localStorage.getItem(DRAFT_KEY);
     if (!raw) return;
     try {
       const parsed = JSON.parse(raw) as Partial<FormState>;
-      (Object.keys(parsed) as Array<keyof FormState>).forEach((k) =>
-        setValue(k, parsed[k] as never),
+      const { draft, discarded } = sanitizeDraft(
+        parsed,
+        STEEL_TYPES.map((s) => s.id),
+        TRUCK_TYPES.map((t) => t.id),
       );
+      (Object.keys(draft) as Array<keyof FormState>).forEach((k) =>
+        setValue(k, draft[k] as never),
+      );
+      if (discarded.length) {
+        toast.warning(
+          `Rascunho recuperado. Confira novamente: ${discarded.join(" e ")} — a opção salva não existe mais.`,
+        );
+      }
     } catch {
-      /* ignore */
+      /* rascunho ilegivel: comeca do zero, sem quebrar a tela */
     }
   }, [setValue]);
 
@@ -247,7 +259,7 @@ export function NewFreightPage() {
       // L2a: publicar exige valor anunciado positivo. A RPC recusa o contrario.
       if (!(Number(v.budget_brl) > 0)) {
         toast.error("Informe o valor anunciado");
-        setCurrentStep(3);
+        setCurrentStep(4); // o orcamento esta na etapa Comercial, nao na Logistica
         return;
       }
     }
@@ -262,49 +274,21 @@ export function NewFreightPage() {
     const requestId = requestIdRef.current[idemKey] as string;
 
     setSubmitting(true);
-    const dbCategory =
-      v.category === "green"
-        ? "green_low_carbon"
-        : v.category === "green_ev"
-          ? "green_ev"
-          : "traditional";
-
-    const pickupWindow = v.pickup_from && v.pickup_to ? `${v.pickup_from}-${v.pickup_to}` : null;
-
-    const num = (x: unknown) => {
-      const n = Number(x);
-      return Number.isFinite(n) && n > 0 ? n : null;
-    };
 
     // L2a: criacao e publicacao passam por RPC transacional. INSERT direto em
     // public.freights foi revogado de authenticated: status, published_at,
     // company_id e created_by sao fixados no servidor e NAO vao no payload.
-    const payload = {
-      steel_type: v.steel_type || null,
-      weight_tons: num(v.weight_tons),
-      cargo_value_brl: num(v.cargo_value_brl),
-      notes: v.notes || null,
-      origin_name: v.origin_name || null,
-      origin_city: v.origin_city || null,
-      origin_state: v.origin_state || null,
-      dest_name: v.dest_name || null,
-      dest_city: v.dest_city || null,
-      dest_state: v.dest_state || null,
-      distance_km: num(v.distance_km),
-      category: dbCategory as never,
-      required_truck: v.required_truck.length ? (v.required_truck as never) : null,
-      pickup_date: v.pickup_date || null,
-      delivery_date: v.delivery_date || null,
-      pickup_window: pickupWindow,
-      budget_brl: num(v.budget_brl),
-      bid_deadline: v.bid_deadline ? new Date(v.bid_deadline).toISOString() : null,
-    };
+    // O payload NAO leva budget_brl: e coluna governada por
+    // freights_enforce_publication_event, e create_freight_draft_core a aplica
+    // num UPDATE sem evento de publicacao, o que a RPC recusava com 42501. O
+    // orcamento vai pelo parametro p_budget_brl. Ver src/lib/freightDraft.ts.
+    const payload = buildFreightPayload(v);
 
     const { data, error } = publish
       ? await supabase.rpc("create_and_publish_freight", {
           p_company_id: company.id,
           p_payload: payload as never,
-          p_budget_brl: num(v.budget_brl) as number,
+          p_budget_brl: Number(v.budget_brl),
           p_request_id: requestId,
         })
       : await supabase.rpc("create_freight_draft", {
@@ -349,7 +333,11 @@ export function NewFreightPage() {
             <div className="mb-6 text-sm font-semibold text-[#E6EDF3]">Publicar frete</div>
             <div className="flex flex-col gap-1">
               {STEPS.map((s) => {
-                const done = currentStep > s.id;
+                // Concluida e etapa COM DADO, nao etapa por onde se passou. O
+                // indicador marcava `currentStep > s.id`, entao dava para chegar
+                // na revisao com Carga e Rota em verde e os campos vazios -- e o
+                // rascunho era gravado assim.
+                const done = currentStep > s.id && isStepComplete(s.id, v);
                 const active = currentStep === s.id;
                 return (
                   <button

@@ -23,6 +23,13 @@ import { OpenDisputeModal } from "@/components/dispute/OpenDisputeModal";
 import { fetchDisputeCases } from "@/lib/disputes";
 import { fetchMyTrips } from "@/lib/trips";
 import { tripStatusMeta } from "@/lib/tripStatus";
+import { fetchContractCounterparties } from "@/lib/paymentLedger";
+import {
+  documentText,
+  resolveContractParties,
+  type IdentificationInput,
+} from "@/lib/contractParties";
+import { fetchContractPartyIdentification } from "@/lib/contractIdentity";
 
 type Role = "shipper" | "carrier";
 
@@ -170,6 +177,41 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
     },
   });
 
+  // Nomes das contrapartes. A leitura direta de `companies` so enxerga a
+  // propria empresa (policy companies_select), entao para o embarcador a
+  // transportadora voltava nula e a tela escrevia "—". Esta RPC e SECURITY
+  // DEFINER e devolve apenas id e nome comercial das duas empresas de
+  // contratos que o chamador ja pode ver. Mesma fonte usada no ledger de
+  // pagamentos. A RLS nao foi afrouxada.
+  const { data: counterparty = null } = useQuery({
+    queryKey: ["contract-counterparties", contractId],
+    queryFn: async () =>
+      (await fetchContractCounterparties([contractId])).get(contractId) ?? null,
+  });
+
+  // Identificacao empresarial da contraparte. A RPC so responde a quem e PARTE
+  // do contrato; motorista e administrador recebem lista vazia, e nesse caso a
+  // tela continua dizendo "nao visivel para voce". Falha nao derruba a pagina.
+  const { data: identification = null } = useQuery({
+    queryKey: ["contract-party-identification", contractId],
+    retry: false,
+    queryFn: async (): Promise<IdentificationInput> => {
+      try {
+        return (
+          (await fetchContractPartyIdentification([contractId])).get(contractId) ?? {
+            status: "sem_autorizacao",
+          }
+        );
+      } catch (e) {
+        // Excecao fora do contrato de erro da RPC (rede caiu, por exemplo).
+        // Continua sendo FALHA, nao restricao de acesso.
+        const detalhe = e instanceof Error ? e.message : String(e);
+        console.error("[contrato] identificacao empresarial falhou", e);
+        return { status: "falha", detalhe };
+      }
+    },
+  });
+
   const { data: carrierMeta } = useQuery({
     queryKey: ["contract-carrier-meta", data?.carrier_company?.id],
     enabled: !!data?.carrier_company?.id,
@@ -278,10 +320,25 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
   if (!data) return <div className="p-12 text-center text-[#54657C]">Contrato não encontrado.</div>;
 
   const f = data.freights;
-  const shipper = data.shipper_company;
-  const carrier = data.carrier_company;
   const truck = data.trucks;
-  const driver = data.drivers;
+  // O rotulo do motorista vem da viagem (list_my_trips ja o devolve
+  // sanitizado); `drivers` nao e legivel pelo embarcador.
+  const parties = resolveContractParties({
+    direct: {
+      shipper: data.shipper_company,
+      carrier: data.carrier_company,
+      driver: data.drivers,
+    },
+    counterparty,
+    tripDriverLabel: trip?.driver_label ?? null,
+    carrierAntt: carrierMeta?.antt_rntrc ?? null,
+    identification,
+    refs: {
+      shipperCompany: !!data.shipper_company_id,
+      carrierCompany: !!data.carrier_company_id,
+      driver: !!data.driver_id,
+    },
+  });
   const isGreen = f?.category && f.category !== "traditional";
 
   const refetchAll = () => {
@@ -310,17 +367,25 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
 
             <div className="border-t border-[#E6EDF3] mt-4 pt-2">
               <Row label="Embarcador">
-                {shipper?.name ?? "—"} • CNPJ {shipper?.cnpj ?? "—"}
+                {parties.shipper.name ?? "não informado"} • CNPJ{" "}
+                {documentText(parties.shipper.document)}
               </Row>
               <Row label="Transportadora">
-                {carrier?.name ?? "—"} • CNPJ {carrier?.cnpj ?? "—"} • ANTT{" "}
-                {carrierMeta?.antt_rntrc ?? "—"}
+                {parties.carrier.name ?? "não informado"} • CNPJ{" "}
+                {documentText(parties.carrier.document)} • ANTT{" "}
+                {documentText(parties.carrier.antt)}
               </Row>
               <Row label="Motorista">
-                {driver?.full_name ?? "—"}
-                {driver?.cpf ? ` • CPF ${driver.cpf}` : ""}
-                {driver?.license_number ? ` • CNH ${driver.license_number}` : ""}
-                {driver?.license_category ? ` (${driver.license_category})` : ""}
+                {parties.driver.name ?? "não designado"} • CPF{" "}
+                {documentText(parties.driver.cpf, {
+                  naoVisivel: "não visível para você",
+                  semRegistro: "não designado",
+                })}
+                {" • CNH "}
+                {documentText(parties.driver.license, {
+                  naoVisivel: "não visível para você",
+                  semRegistro: "não designado",
+                })}
               </Row>
               <Row label="Caminhão">
                 {truck?.plate ?? "—"}
@@ -407,7 +472,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SignatureBox
                 label="Embarcador"
-                subtitle={shipper?.name ?? ""}
+                subtitle={parties.shipper.name ?? ""}
                 signedAt={data.shipper_signed_at}
                 sigUrl={data.shipper_signature_url}
                 ip={data.shipper_signed_ip}
@@ -416,7 +481,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
               />
               <SignatureBox
                 label="Transportadora"
-                subtitle={carrier?.name ?? ""}
+                subtitle={parties.carrier.name ?? ""}
                 signedAt={data.carrier_signed_at}
                 sigUrl={data.carrier_signature_url}
                 ip={data.carrier_signed_ip}
@@ -621,7 +686,7 @@ export function ContractDetailView({ contractId, viewerRole }: Props) {
           contractId={contractId}
           amount={data.total_amount_brl ?? 0}
           lastCheckpoint={lastCheckpoint}
-          driverName={driver?.full_name}
+          driverName={parties.driver.name ?? undefined}
           onReleased={refetchAll}
         />
       )}

@@ -8010,6 +8010,17 @@ export type Database = {
           status: string
         }[]
       }
+      list_contract_party_identification: {
+        Args: { p_contract_ids: string[] }
+        Returns: {
+          carrier_antt_rntrc: string
+          carrier_cnpj: string
+          carrier_company_id: string
+          contract_id: string
+          shipper_cnpj: string
+          shipper_company_id: string
+        }[]
+      }
       list_dispute_admins: {
         Args: never
         Returns: {

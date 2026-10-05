@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, EmptyState, Spinner, Button } from "@/components/steel";
 import { StatusPill } from "@/components/steel/StatusPill";
 import { formatBRL } from "@/lib/steel";
+import { fetchContractCounterparties } from "@/lib/paymentLedger";
 
 const FILTERS = [
   { id: "all", label: "Todos", statuses: null as string[] | null },
@@ -30,16 +31,29 @@ export function ContractsPage() {
     queryKey: ["shipper-contracts", company?.id, filter],
     enabled: !!company?.id,
     queryFn: async () => {
+      // Sem embutir a empresa da transportadora: a policy companies_select
+      // deixa cada empresa ler apenas a si mesma, entao o embutido voltava
+      // nulo e a coluna TRANSPORTADORA ficava em "—" em todas as linhas.
+      // O nome vem da RPC sanitizada, em lote, como no ledger de pagamentos.
       let q = supabase
         .from("contracts")
-        .select(
-          "*, freights(id, origin_city, dest_city, origin_state, dest_state), carrier_company:carrier_company_id (name)",
-        )
+        .select("*, freights(id, origin_city, dest_city, origin_state, dest_state)")
         .eq("shipper_company_id", company!.id)
         .order("created_at", { ascending: false });
       if (f.statuses) q = q.in("status", f.statuses as never);
       const { data } = await q;
-      return data ?? [];
+      const rows = data ?? [];
+      let nomes = new Map<string, { carrier_company_name: string | null }>();
+      try {
+        nomes = await fetchContractCounterparties(rows.map((r) => String(r.id)));
+      } catch (e) {
+        // Falha da RPC nao apaga a lista: as linhas ficam sem nome e dizem isso.
+        console.error("[contratos] contrapartes indisponiveis", e);
+      }
+      return rows.map((r) => ({
+        ...r,
+        carrier_name: nomes.get(String(r.id))?.carrier_company_name ?? null,
+      }));
     },
   });
 
@@ -95,7 +109,7 @@ export function ContractsPage() {
                     origin_city?: string;
                     dest_city?: string;
                   } | null;
-                  const ca = (c as { carrier_company?: { name?: string } | null }).carrier_company;
+                  const carrierName = (c as { carrier_name?: string | null }).carrier_name;
                   return (
                     <tr
                       key={c.id}
@@ -110,7 +124,9 @@ export function ContractsPage() {
                       <td className="px-4 py-3 text-[#10274A]">
                         {fr?.origin_city ?? "—"} → {fr?.dest_city ?? "—"}
                       </td>
-                      <td className="px-4 py-3 text-[#2C3E50]">{ca?.name ?? "—"}</td>
+                      <td className="px-4 py-3 text-[#2C3E50]">
+                        {carrierName ?? "não visível para você"}
+                      </td>
                       <td className="px-4 py-3 text-right tabular-nums">
                         {formatBRL(c.total_amount_brl)}
                       </td>
