@@ -49,6 +49,34 @@ para até cada um reconhecer de novo, pelo celular, na estrada.
 Nenhuma correção de texto, por menor que seja, é inócua: qualquer mudança no
 corpo muda o sha256.
 
+### 2.1 Reproduzido, não deduzido
+
+Em 05/10/2026, com a viagem `SG-2026-00003-V1` em `en_route_to_pickup` e
+rastreamento ativo, `v0.2` foi publicada com vigência imediata. Em ~20 segundos,
+sem recarregar a tela:
+
+| | |
+|---|---|
+| painel do motorista | de **Rastreamento ativo** para **Rastreamento DESLIGADO · `aviso_nao_reconhecido`** |
+| status da viagem | **não muda** (`en_route_to_pickup`) |
+| sessão de rastreamento | **continua aberta** (`ended_at` nulo) |
+| posições | congelam |
+
+Depois do novo reconhecimento, o rastreamento volta **na mesma sessão**, sem
+sessão nova e sem duplicata — com um intervalo sem ponto na trilha
+correspondente ao tempo parado (~4 min no ensaio).
+
+Três achados dessa reprodução, registrados em
+`SteelGo-Fase0\simulacao-viagem-20261002\03-TROCA-DE-AVISO-EM-VIAGEM.md`:
+
+1. a tela da viagem **não oferece** o caminho de novo reconhecimento — mostra só
+   o motivo técnico; o caminho que funciona está em Perfil → "Ler aviso";
+2. a transportadora **não distingue** "sem sinal" de "aguardando reconhecimento":
+   nem `get_trip` nem `list_my_trips` expõem o estado do aviso;
+3. o texto do perfil diz que o reconhecimento é "necessário para aceitar
+   viagens"; também é necessário para **manter** o rastreamento de viagem já em
+   curso.
+
 ## 3. Procedimento
 
 ### 3.1 Papéis
@@ -70,9 +98,14 @@ nominalmente, e a lista de quem o tem é revisada a cada publicação.
    redação sem mudança de tratamento incrementa `MINOR`. **As duas invalidam o
    aceite** — a distinção serve ao aviso prévio, não à técnica.
 3. **Vigência com antecedência**: `p_effective_from` **no futuro**, nunca `now()`.
-   Mínimo sugerido: 7 dias corridos para mudança material, 48 h para correção de
-   redação. Isso dá janela para os motoristas reconhecerem antes de o aviso
-   antigo deixar de valer.
+   Isso dá janela para os motoristas reconhecerem antes de o aviso antigo deixar
+   de valer — e §2.1 mostra, com medida, o que acontece sem essa janela.
+
+   > **Proposta, não exigência.** Sugiro 7 dias corridos para mudança material e
+   > 48 horas para correção de redação. **Esses prazos são proposta minha**: não
+   > foram aprovados por você, não vieram de parecer jurídico e não correspondem
+   > a nenhum prazo legal que eu tenha apurado. Servem como ponto de partida
+   > para a decisão, e precisam de conferência jurídica antes de virar regra.
 4. **Aviso à frota** antes da vigência, pelos canais já existentes, dizendo que
    haverá novo reconhecimento no aplicativo.
 5. **Janela de execução**: fora do pico operacional. Não publicar com viagens em
@@ -83,8 +116,10 @@ nominalmente, e a lista de quem o tem é revisada a cada publicação.
    esperada; `trip_admin_actions` tem a linha com ator, sha256 e vigência; a tela
    do motorista mostra a versão e o início da vigência.
 8. **Acompanhamento**: medir a fração de motoristas com `privacy_notice_version`
-   igual à vigente nas primeiras 48 h; quem não reconheceu não pode aceitar
-   viagem, e isso é consequência operacional, não bug.
+   igual à vigente logo após a vigência (sugiro as primeiras 48 h — mesma
+   proposta do item 3, sujeita à sua decisão). Quem não reconheceu não pode
+   aceitar viagem **e, se já estiver em viagem, para de ser rastreado** (§2.1).
+   Isso é consequência do desenho, não defeito.
 
 ### 3.3 Enquanto não houver tela
 
