@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { useHydrated } from "@/lib/useHydrated";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button, Card, Input } from "@/components/steel";
@@ -7,6 +8,7 @@ import { Button, Card, Input } from "@/components/steel";
 export const Route = createFileRoute("/reset-password")({ component: ResetPasswordPage });
 
 function ResetPasswordPage() {
+  const hydrated = useHydrated();
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,10 +29,11 @@ function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-bg-base p-4">
       <Card className="w-full max-w-md">
         <h1 className="mb-6 text-2xl font-bold text-graphite-50">Nova senha</h1>
-        <form onSubmit={onSubmit} className="space-y-4">
+        {/* Ver src/lib/useHydrated.ts: antes da hidratacao o envio e nativo. */}
+        <form method="post" onSubmit={onSubmit} className="space-y-4">
           <Input type="password" placeholder="Nova senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
-          <Button type="submit" size="lg" className="w-full" disabled={loading}>
-            {loading ? "Salvando..." : "Salvar"}
+          <Button type="submit" size="lg" className="w-full" disabled={!hydrated || loading}>
+            {!hydrated ? "Carregando..." : loading ? "Salvando..." : "Salvar"}
           </Button>
         </form>
       </Card>
