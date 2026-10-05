@@ -6,6 +6,10 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  aguardandoReconhecimento,
+  fetchTripPrivacyAcknowledgement,
+} from "@/lib/tripPrivacy";
 import { toast } from "sonner";
 import {
   AlertTriangle,
@@ -275,6 +279,18 @@ function DriverCard({ trip }: { trip: TripDetail }) {
 }
 
 function EtaCard({ trip }: { trip: TripDetail }) {
+  // "Sem sinal" e "aguardando o motorista reconhecer o aviso" sao coisas
+  // diferentes, e ate aqui a tela mostrava as duas do mesmo jeito. A consulta
+  // abaixo so responde para quem ja enxerga a viagem (trip_visible) e nao traz
+  // dado pessoal nenhum. Falha dela NAO vira "esta tudo bem".
+  const { data: privacidade } = useQuery({
+    queryKey: ["trip-privacy-ack", trip.id],
+    refetchInterval: 30_000,
+    retry: false,
+    queryFn: async () =>
+      (await fetchTripPrivacyAcknowledgement([trip.id])).get(trip.id) ?? null,
+  });
+  const pausadoPorAviso = aguardandoReconhecimento(privacidade);
   return (
     <Card variant="light" className="p-4 space-y-2 text-sm">
       <h3 className={`font-medium ${H} flex items-center gap-2`}>
@@ -303,6 +319,22 @@ function EtaCard({ trip }: { trip: TripDetail }) {
         v={trip.last_location_at ? `${relativeMinutes(trip.last_location_at)} atrás` : "sem sinal"}
       />
       <Row k="Rastreamento" v={trip.tracking_state} />
+      {pausadoPorAviso && (
+        <div className="mt-2 rounded-[10px] border border-[#F0A500] bg-[#FFF7E6] px-3 py-2 text-[12px] text-[#7A5200]">
+          <strong>Não é falta de sinal.</strong> O aviso de privacidade
+          {privacidade && privacidade.status === "ok" && privacidade.notice_version
+            ? " v" + privacidade.notice_version
+            : ""}{" "}
+          entrou em vigor e o rastreamento fica pausado até o motorista reconhecer no aplicativo.
+          A viagem segue designada.
+        </div>
+      )}
+      {privacidade?.status === "falha" && (
+        <div className="mt-2 rounded-[10px] border border-[#E3EAF3] bg-[#F8FAFD] px-3 py-2 text-[12px] text-[#54657C]">
+          Não foi possível conferir o estado do aviso de privacidade desta viagem. Isso é uma
+          falha de consulta, não uma afirmação de que está tudo certo.
+        </div>
+      )}
       {trip.loaded_at && <Row k="Carregada em" v={fmtDateTime(trip.loaded_at)} />}
       {trip.delivered_at && <Row k="Entregue em" v={fmtDateTime(trip.delivered_at)} />}
       {trip.returned_at && <Row k="Devolvida em" v={fmtDateTime(trip.returned_at)} />}

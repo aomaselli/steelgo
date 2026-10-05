@@ -8186,6 +8186,15 @@ export type Database = {
           trip_number: string
         }[]
       }
+      list_trip_privacy_acknowledgement: {
+        Args: { p_trip_ids: string[] }
+        Returns: {
+          driver_acknowledged: boolean
+          driver_assigned: boolean
+          notice_version: string
+          trip_id: string
+        }[]
+      }
       list_visible_contract_counterparties: {
         Args: { p_contract_ids: string[] }
         Returns: {

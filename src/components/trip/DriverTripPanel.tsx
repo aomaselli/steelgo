@@ -429,6 +429,31 @@ export function DriverTripPanel({
 
       {assignment.state === "accepted" && (
         <>
+          {/* Aviso novo entrou em vigor NO MEIO da viagem. Antes desta carta, a
+              tela mostrava so o motivo tecnico "aviso_nao_reconhecido" no painel
+              de rastreamento, e o caminho para reconhecer estava escondido em
+              Perfil -> Ler aviso. Na estrada, isso e falha de uso.
+              O aceite continua explicito: este botao so ABRE o aviso; quem
+              reconhece e o motorista, marcando a caixa e tocando "Reconhecer". */}
+          {privacy_notice.published && !privacy_notice.acknowledged && (
+            <div className="mx-4 mt-3 rounded-[14px] border border-[#F0A500] bg-[#221A05] p-3">
+              <div className="text-[13px] font-medium text-[#F0A500]">
+                Rastreamento pausado — aviso de privacidade atualizado
+              </div>
+              <div className="mt-1 text-[12px] text-[#C6CFD8]">
+                Entrou em vigor a versão {privacy_notice.version ?? "nova"} do aviso. Enquanto
+                você não reconhecer, sua localização não é coletada. A viagem continua sua: nada
+                foi cancelado e nenhuma etapa foi perdida.
+              </div>
+              <button
+                type="button"
+                onClick={() => setNoticeOpen(true)}
+                className="mt-3 w-full rounded-[10px] bg-[#F0A500] px-3 py-2 text-sm font-medium text-[#1A1200]"
+              >
+                Ler aviso e reconhecer
+              </button>
+            </div>
+          )}
           <TrackingStatusCard trackingRequired={tracking_required} />
           <PushSection />
         </>
