@@ -1,14 +1,18 @@
 # Pedágio: composição veicular, eixos e proteção contra consulta duplicada
 
-**Escopo desta nota.** Recomendação técnica, sem alteração de esquema. Nenhuma
-coluna `axle_count` foi acrescentada. O que existe hoje em código é o serviço
-de cotação em `src/server/toll/`, que **recusa** cotar sem quantidade de eixos
-válida (`quoteToll`, guarda no início) — ou seja, a ausência do dado já é
-tratada como falha, não como zero.
+**Escopo.** Recomendação técnica revisada, **sem alteração de esquema**. Nenhuma
+coluna `axle_count` foi criada. O serviço em `src/server/toll/` já **recusa**
+cotar sem quantidade de eixos válida — a ausência do dado é tratada como falha,
+nunca como zero.
 
-Evidência de esquema verificada no banco descartável da simulação
-(`supabase_db_fcgsint1001`), que carrega as mesmas migrations do repositório.
-**Não** foi consultado o ambiente remoto.
+Esquema verificado no banco descartável da simulação (`supabase_db_fcgsint1001`),
+que carrega as mesmas migrations do repositório. **Produção não foi acessada.**
+
+> **Revisão.** Uma versão anterior desta nota propunha derivar os eixos de uma
+> tabela de referência por `truck_type`. **Referência por tipo não basta** — ver
+> §3. E propunha um índice único parcial com `where expires_at > now()`, que o
+> PostgreSQL **recusa**: `functions in index predicate must be marked IMMUTABLE`
+> (erro reproduzido). Ver §5.
 
 ---
 
@@ -16,157 +20,182 @@ Evidência de esquema verificada no banco descartável da simulação
 
 `public.trucks` tem 22 colunas. As relevantes:
 
-| coluna | tipo | o que já representa |
+| coluna | tipo | o que representa |
 |---|---|---|
-| `type` | enum `truck_type` | a composição: `truck_simples`, `toco`, `truck`, `bitruck`, `carreta`, `carreta_extendida`, `rodotrem`, `bitrem`, `ev_carreta`, `ev_truck` |
+| `type` | enum `truck_type` | `truck_simples`, `toco`, `truck`, `bitruck`, `carreta`, `carreta_extendida`, `rodotrem`, `bitrem`, `ev_carreta`, `ev_truck` |
 | `body_type` | text | carroceria |
 | `payload_tons`, `max_weight_tons`, `capacity_tons` | numeric | capacidade |
 | `registration_number`, `crlv_url` | text | vínculo com o documento oficial |
-| `regulatory_attributes` | jsonb | campo já existente para atributos regulatórios |
+| `regulatory_attributes` | jsonb | campo existente para atributos regulatórios |
 
-O enum `truck_type` **já é**, na prática, a declaração de composição. `rodotrem`
-e `bitrem` não são "tipos de caminhão": são combinações de veículos com número
-de eixos característico. Acrescentar `axle_count` como coluna livre ao lado
-desse enum cria **duas fontes para o mesmo fato**, que passam a poder discordar
-— e, quando discordarem, nada no sistema diz qual vale.
+O enum já declara a **classe** de composição. Não declara a composição em
+operação: `rodotrem` e `bitrem` são combinações cujo implemento é trocável.
 
 ## 2. Por que `axle_count` em `trucks` seria o lugar errado
 
-1. **O eixo não é do cavalo, é da combinação.** Em `carreta`, `bitrem` e
-   `rodotrem` o implemento é trocável. Uma linha em `trucks` descreve o veículo
-   cadastrado; a quantidade de eixos muda quando o implemento muda, sem que a
-   linha mude. Uma coluna fixa estaria errada exatamente nos casos que mais
-   pesam na tarifa.
-2. **O implemento não está modelado.** Não há tabela de semirreboques. Enquanto
-   não houver, `axle_count` em `trucks` seria uma média disfarçada de fato.
-3. **Eixo suspenso é evento, não cadastro.** No Brasil, eixo suspenso não é
-   tarifado. Isso varia a cada passagem, por decisão do motorista. Já está no
-   lugar certo: `VehicleConfiguration.raisedAxles`, no **pedido** de cotação
-   (`src/server/toll/types.ts`), não no veículo.
-4. **Coluna nova nasce nula para a frota inteira.** Uma coluna obrigatória
-   quebra o cadastro existente; uma opcional vira `null` em 100% das linhas e
-   não resolve nada até alguém preencher — e aí voltamos a precisar de um
-   padrão por composição.
+1. **O eixo não é do cavalo, é da combinação em uso.** O implemento muda sem que
+   a linha de `trucks` mude. Uma coluna fixa estaria errada exatamente nos casos
+   que mais pesam na tarifa.
+2. **O implemento não está modelado.** Não há tabela de semirreboques.
+3. **Eixo suspenso é evento, não cadastro.** Não é tarifado quando suspenso, e
+   isso varia a cada passagem. Já está no lugar certo:
+   `VehicleConfiguration.raisedAxles`, no **pedido** de cotação.
+4. **Coluna nova nasce nula para a frota inteira.**
 
-## 3. Recomendação, em três camadas
+## 3. O ponto que a revisão corrige: referência por tipo não basta
 
-### 3.1 Tabela de referência por composição (dado de referência, não estado)
+A versão anterior propunha `vehicle_axle_profiles(truck_type, country_code,
+axle_count, …)` como fonte do número de eixos. **Isso é insuficiente, e perigoso
+pelo mesmo motivo que a coluna fixa:** `carreta` pode rodar com 5, 6 ou 7 eixos;
+`rodotrem` varia conforme o conjunto. Um padrão por tipo produz número plausível
+e errado — e o pedágio é cobrado sobre o número real que passou na praça.
+
+**A quantidade de eixos usada numa cotação tem de ser a configuração efetiva
+daquela viagem, confirmada por alguém, com registro de quem confirmou e quando.**
+
+### 3.1 Onde a confirmação vive
+
+A viagem já tem designação de motorista e veículo (`trip_assignments`). A
+configuração efetiva pertence a esse mesmo momento — é parte de "quem vai levar
+com o quê":
 
 ```
-vehicle_axle_profiles(
-  truck_type      truck_type,
-  country_code    text,
-  axle_count      smallint,      -- padrão da composição naquele país
-  source          text,          -- norma/tabela tarifária que embasa
-  verified_at     timestamptz,   -- nulo = não conferido, não pode liberar cotação
-  primary key (truck_type, country_code)
+trip_vehicle_configurations(
+  trip_id            uuid,
+  axle_count         smallint not null,     -- eixos da combinação em operação
+  implement_plate    text,                  -- placa do implemento, quando houver
+  source             text not null,         -- 'crlv' | 'motorista' | 'transportadora'
+  confirmed_by       uuid not null,         -- quem confirmou
+  confirmed_at       timestamptz not null,
+  superseded_at      timestamptz            -- nova confirmação substitui a anterior
 )
 ```
 
-É **dado de referência com procedência**, no mesmo espírito de
-`CORRIDOR_COVERAGE`: um perfil sem `verified_at` não libera cotação, recusa.
-Não duplica estado de veículo nenhum — descreve a composição, não o caminhão.
+Isto **não duplica** `trucks`: `trucks` descreve o veículo cadastrado; esta
+tabela descreve a combinação que de fato saiu para a viagem.
 
-### 3.2 Exceção medida vai para o jsonb que já existe
+### 3.2 O papel que sobra para a referência por tipo
 
-Quando a combinação real diverge do padrão, a exceção entra em
-`trucks.regulatory_attributes`, com chave documentada e procedência:
+Apenas **sugerir o valor inicial do campo**, na tela de designação, para reduzir
+digitação. Nunca ser aceita sozinha:
 
-```json
-{ "axles": { "count": 7, "source": "crlv", "verified_at": "2026-10-02T12:00:00Z" } }
-```
+- a tela mostra o sugerido e **exige confirmação explícita**;
+- sem confirmação, não há configuração efetiva e a cotação é **recusada**;
+- a origem do valor fica registrada em `source` — eixo informado pelo motorista
+  e eixo lido do CRLV não têm o mesmo peso em disputa.
 
-Uma exceção opcional em campo existente, em vez de uma coluna nova nula para
-toda a frota. E com `source`: eixo informado pelo motorista e eixo lido do CRLV
-não têm o mesmo peso.
-
-### 3.3 Resolução no momento da cotação, com recusa explícita
+### 3.3 Resolução no momento da cotação
 
 ```
-eixos = exceção em regulatory_attributes.axles
-      ?? perfil verificado (truck_type, country_code)
-      ?? RECUSA  ("quantidade de eixos ausente ou inválida")
+eixos = configuração efetiva confirmada e vigente para esta viagem
+      ?? RECUSA ("quantidade de eixos ausente ou inválida")
 ```
 
-A recusa já está implementada e testada. Nada de supor 5 eixos: supor produz
-número errado com aparência de certo, que é o modo de falha que esta integração
-inteira foi desenhada para evitar.
+Sem segundo nível. A recusa já está implementada e testada.
 
-### 3.4 Quando promover a coluna
+### 3.4 Reconfirmação
 
-Só com os dois gatilhos juntos: (a) existir fonte oficial por veículo
-(CRLV/ANTT) efetivamente lida pelo sistema, e (b) a exceção estar em uso em
-parcela relevante da frota. Antes disso, coluna é aposta.
+Trocar veículo, trocar implemento ou reatribuir a viagem **invalida** a
+confirmação anterior (`superseded_at`) e exige nova. A cotação guardada também
+cai: `recalculationReasons` já devolve `configuracao_veicular_alterada`.
+
+### 3.5 Quando promover a coluna em `trucks`
+
+Só quando existir leitura automática de fonte oficial (CRLV/ANTT) por veículo
+**e** a combinação for estável o bastante para que o cadastro valha mais que a
+confirmação por viagem. Antes disso, coluna é aposta.
 
 ---
 
-## 4. Impedir consulta concorrente duplicada antes da chamada externa
+## 4. O que existe hoje contra duplicidade, e o que não garante
 
-### 4.1 O que existe hoje, e o que ele não garante
+`InMemoryTollQuoteCache` e o mapa `inFlight` em `quoteToll` evitam duas chamadas
+para a mesma pergunta **dentro de uma instância**. **Não é garantia entre várias
+instâncias**: dois processos, ou duas regiões, chamam o provedor duas vezes e
+pagam duas vezes. É redução de custo, não idempotência.
 
-`InMemoryTollQuoteCache` + o mapa `inFlight` em `quoteToll` evitam que **a mesma
-instância** faça duas chamadas para a mesma pergunta. **Não é garantia entre
-várias instâncias**: dois processos do servidor, ou duas regiões, chamam o
-provedor duas vezes e pagam duas vezes. É redução de custo, não idempotência.
+## 5. Reserva com unicidade — desenho revisado
 
-### 4.2 Proposta: reserva com unicidade no banco
+### 5.1 O erro da versão anterior
 
-`route_estimates` já guarda `toll_amount`, `currency_code`, `provider`,
-`provider_route_id`, `route_payload`, `expires_at`. Faltam a chave e a reserva:
+Propunha:
 
-1. **Chave canônica persistida.** `quote_key text` — o mesmo `quoteKey(request)`
-   já implementado (coordenadas a 5 casas, eixos, tipo, eixos suspensos, data,
-   moeda). Índice único parcial sobre as cotações vigentes:
-   ```sql
-   create unique index route_estimates_quote_key_uidx
-     on public.route_estimates (quote_key)
-     where expires_at > now();
-   ```
-2. **Reserva antes da chamada.** Quem vai consultar o provedor insere primeiro
-   uma linha `status = 'pending'`:
-   ```sql
-   insert into public.route_estimates (quote_key, status, ...)
-   values ($1, 'pending', ...)
-   on conflict (quote_key) where expires_at > now() do nothing
-   returning id;
-   ```
-   - Voltou linha: este processo ganhou a corrida e **só ele** chama o provedor.
-   - Não voltou linha: outro já está consultando. Este lê a linha existente e
-     espera o resultado (ou devolve "cotação em andamento") — nunca dispara uma
-     segunda chamada paga.
-3. **Transação curta.** A inserção da reserva e a chamada externa ficam em
-   transações separadas. A chamada pode levar segundos; manter transação aberta
-   durante I/O externo prende conexão e multiplica deadlock.
-4. **Reserva vencida pode ser retomada.** Processo que morre não pode travar a
-   chave para sempre:
-   ```sql
-   update public.route_estimates
-      set status = 'pending', attempt = attempt + 1, updated_at = now()
-    where quote_key = $1 and status = 'pending'
-      and updated_at < now() - interval '2 minutes'   -- timeout do provedor + folga
-   returning id;
-   ```
-   `attempt` limitado, para que falha persistente vire erro e não laço infinito.
-5. **Idempotência no provedor.** Se o provedor aceitar chave de idempotência,
-   enviar o `quote_key`: fecha a janela entre "reserva gravada" e "requisição
-   efetivamente enviada".
-6. **O mapa em memória continua** — como primeiro filtro barato dentro da
-   instância. Ele deixa de ser apresentado como garantia e passa a ser o que é:
-   economia local.
+```sql
+create unique index route_estimates_quote_key_uidx
+  on public.route_estimates (quote_key)
+  where expires_at > now();          -- NÃO FUNCIONA
+```
 
-### 4.3 Por que não `pg_advisory_lock`
+O PostgreSQL recusa: predicado de índice precisa ser imutável, e `now()` é
+estável. Reproduzido no banco descartável:
+`ERROR: functions in index predicate must be marked IMMUTABLE`.
 
-Serializaria igual, sem escrever linha. Mas o lock de transação exige manter a
-transação aberta durante a chamada externa (item 3 acima), e o lock de sessão
-exige liberação explícita — que não acontece se o processo morrer. A reserva com
-unicidade tem o estado visível, auditável e com retomada por tempo.
+### 5.2 Desenho correto: uma linha por chave, renovada
+
+Índice único **total**, sem predicado — a linha é o slot único daquela pergunta:
+
+```sql
+create unique index route_estimates_quote_key_uidx
+  on public.route_estimates (quote_key);
+```
+
+A reserva vira um `INSERT … ON CONFLICT DO UPDATE` **condicional**. Só quem
+consegue atualizar a linha ganha o direito de chamar o provedor:
+
+```sql
+insert into public.route_estimates (quote_key, status, reserved_at, attempt, …)
+values ($1, 'pending', now(), 1, …)
+on conflict (quote_key) do update
+   set status      = 'pending',
+       reserved_at = now(),
+       attempt     = route_estimates.attempt + 1
+ where route_estimates.expires_at   <  now()                              -- cotação venceu
+    or (route_estimates.status = 'pending'
+        and route_estimates.reserved_at < now() - interval '2 minutes')   -- reserva abandonada
+returning id;
+```
+
+- **Voltou linha:** este processo ganhou a corrida e **só ele** chama o provedor.
+- **Não voltou linha:** ou há cotação válida (lê e usa), ou outro processo está
+  consultando agora (espera ou devolve "cotação em andamento"). Nunca dispara
+  uma segunda chamada paga.
+
+O `ON CONFLICT DO UPDATE` trava a linha, então chamadas concorrentes serializam
+no banco, não no processo. O `where` do `DO UPDATE` é avaliado em tempo de
+execução — e aí `now()` é perfeitamente válido; o que não se podia era usá-lo no
+**predicado do índice**.
+
+### 5.3 Pontos de atenção do desenho
+
+1. **Transação curta.** Reserva e chamada externa em transações separadas. Nunca
+   manter transação aberta durante I/O externo.
+2. **Reserva abandonada é retomada por tempo**, com `attempt` limitado: falha
+   persistente vira erro registrado, não laço infinito.
+3. **A chave precisa carregar a configuração confirmada**, não só o número de
+   eixos: incluir o id da configuração efetiva em `quoteKey`, para que toda
+   cotação seja rastreável até a confirmação que a justificou. Sem isso, duas
+   confirmações diferentes com o mesmo número de eixos colapsam na mesma chave e
+   a auditoria perde o rastro.
+4. **Idempotência no provedor**, se houver: enviar o `quote_key`, fechando a
+   janela entre reserva gravada e requisição enviada.
+5. **O mapa em memória continua** como primeiro filtro barato dentro da
+   instância — apresentado pelo que é.
+6. **Colunas novas em `route_estimates`** (`quote_key`, `status`, `reserved_at`,
+   `attempt`) **exigem migration**. Não foram criadas.
+
+### 5.4 Por que não `pg_advisory_lock`
+
+Serializaria igual, sem escrever linha. Mas o lock de transação exigiria manter
+a transação aberta durante a chamada externa, e o lock de sessão exige liberação
+explícita, que não acontece se o processo morrer. A reserva tem estado visível,
+auditável e retomada por tempo.
 
 ---
 
-## 5. O que esta nota não cobre
+## 6. O que esta nota não cobre
 
-- Não há corredor com cobertura verificada: `CORRIDOR_COVERAGE` está com
+- Nenhum corredor tem cobertura verificada: `CORRIDOR_COVERAGE` está com
   `verified_at: null`. Nenhuma cotação é liberada hoje, por desenho.
-- Tabela de perfis e colunas de reserva **não foram criadas**. Isto é
-  recomendação; a migration depende de decisão sua.
+- Nenhuma tabela, coluna ou índice foi criado. Isto é recomendação; a migration
+  depende de decisão sua.
 - Nada aqui foi verificado contra o ambiente remoto.
