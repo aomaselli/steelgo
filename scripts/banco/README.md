@@ -90,7 +90,34 @@ A regra, então, não é "ninguém desliga a parada", e sim **quem decide**:
 
 A permissão **não se combina com `-1`**. Uma é para bateria que segue após erro;
 a outra é para aplicação atômica, que tem de parar no primeiro. Juntas seriam o
-pior dos dois mundos. Aplicação de migration usa `-1` e nunca esta permissão.
+pior dos dois mundos.
+
+#### E ela nunca alcança migration
+
+Seguir depois do erro é exatamente o que não se pode fazer ao **aplicar** uma
+migration: metade aplicada e registrada como inteira é o pior estado possível.
+Por isso a permissão não vale para qualquer SQL — o script exige, do próprio
+texto, que aquilo seja uma bateria de teste **com veredito próprio**:
+
+| # | exigência | como é verificada |
+|---|---|---|
+| 1 | desliga a parada de propósito | tem `\set ON_ERROR_STOP off` |
+| 2 | não confirma nada | nenhuma instrução `commit` |
+| 3 | não deixa resíduo | tem instrução `rollback` |
+| 4 | julga a si mesma | tem ao menos um `raise` |
+| 5 | não registra migration | não escreve em `supabase_migrations.schema_migrations` |
+| 6 | não **é** uma migration | o arquivo não vem de `supabase/migrations/` |
+
+Uma migration falha 1, 3 e 6 ao mesmo tempo — não é barreira que se atravesse
+por descuido. Copiar o conteúdo da migration para um arquivo fora da pasta
+também não resolve: continua sem `rollback`.
+
+`commit` e `rollback` são procurados como **instrução**, no começo da linha.
+Procurar a palavra solta daria falso positivo em `create temp table … on commit
+drop`, que quatro das baterias de `supabase/tests` usam e que não confirma coisa
+nenhuma — foi a própria suíte que acusou isso.
+
+Aplicação de migration usa `-1` e nunca esta permissão.
 
 ## Uso
 

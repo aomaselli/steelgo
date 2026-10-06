@@ -236,15 +236,68 @@ echo
 echo "=============================================================="
 echo "I. A permissão de parada desligada é do OPERADOR, não do SQL"
 echo "=============================================================="
-printf '\\set ON_ERROR_STOP off\nselect 1;\n' > "$TMP/bateria.sql"
-recusa "bateria SEM a permissão"              "afrouxa" -- teste --sql-arquivo "$TMP/bateria.sql"
-aceita "bateria COM a permissão"              teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
-recusa "permissão junto de --single-transaction" "não se combina" \
+# Bateria mínima, com a forma das de supabase/tests: desliga a parada, julga a
+# si mesma e desfaz tudo.
+bateria() {
+  printf '\\set ON_ERROR_STOP off\nbegin;\n%s\ndo $x$ begin raise notice $$VEREDITO: ok$$; end $x$;\nrollback;\n' "$1"
+}
+bateria "select 1;" > "$TMP/bateria.sql"
+
+recusa "bateria SEM a permissão"                  "afrouxa"        -- teste --sql-arquivo "$TMP/bateria.sql"
+aceita "bateria COM a permissão"                  teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
+recusa "permissão junto de --single-transaction"  "não se combina" \
   -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada -1
 printf '\\unset ON_ERROR_STOP\nselect 1;\n' > "$TMP/unset.sql"
-recusa "\\unset ON_ERROR_STOP sem a permissão" "unset" -- teste --sql-arquivo "$TMP/unset.sql"
-recusa "AUTOCOMMIT continua barrado mesmo com a permissão" "AUTOCOMMIT" \
+recusa "\\unset ON_ERROR_STOP sem a permissão"    "unset"          -- teste --sql-arquivo "$TMP/unset.sql"
+recusa "AUTOCOMMIT barrado mesmo com a permissão" "AUTOCOMMIT" \
   -- teste -c '\set AUTOCOMMIT off' --permitir-parada-desligada
+
+echo
+echo "=============================================================="
+echo "J. A permissão NUNCA alcança migration"
+echo "=============================================================="
+# Este é o ponto todo: seguir depois do erro é exatamente o que NÃO se pode
+# fazer ao aplicar migration. Metade aplicada e registrada como inteira seria o
+# pior estado possível.
+# Migrations REAIS desta árvore, sejam quais forem. Nada de nomear arquivos que
+# podem não existir na branch: um `for` sobre um glob vazio passa calado, e um
+# caso que não roda parece um caso que passou.
+migracoes=0
+while IFS= read -r m; do
+  [ -r "$m" ] || continue
+  migracoes=$((migracoes+1))
+  recusa "migration real + permissão: $(basename "$m" | cut -c1-26)" "supabase/migrations" \
+    -- teste --sql-arquivo "$m" --permitir-parada-desligada
+done < <(ls "$RAIZ"/supabase/migrations/*.sql 2>/dev/null | tail -2)
+
+if [ "$migracoes" -eq 0 ]; then
+  echo "  FALHOU  nenhuma migration encontrada para testar a recusa"; falha_
+else
+  # Mesmo disfarçada: conteúdo de migration copiado para fora da pasta.
+  ultima=$(ls "$RAIZ"/supabase/migrations/*.sql | tail -1)
+  { printf '\\set ON_ERROR_STOP off\n'; cat "$ultima"; } > "$TMP/disfarce.sql"
+  recusa "migration disfarçada fora da pasta"     "rollback"       -- teste --sql-arquivo "$TMP/disfarce.sql" --permitir-parada-desligada
+fi
+
+bateria "insert into supabase_migrations.schema_migrations(version) values ('20261005120000');" > "$TMP/registra.sql"
+recusa "escreve no registro de migrations"        "schema_migrations" -- teste --sql-arquivo "$TMP/registra.sql" --permitir-parada-desligada
+
+printf '\\set ON_ERROR_STOP off\nbegin;\nselect 1;\ndo $x$ begin raise notice $$x$$; end $x$;\ncommit;\n' > "$TMP/comcommit.sql"
+recusa "confirma transação (commit)"              "commit"         -- teste --sql-arquivo "$TMP/comcommit.sql" --permitir-parada-desligada
+
+printf '\\set ON_ERROR_STOP off\nbegin;\nselect 1;\nrollback;\n' > "$TMP/semveredito.sql"
+recusa "sem veredito próprio (nenhum raise)"      "veredito"       -- teste --sql-arquivo "$TMP/semveredito.sql" --permitir-parada-desligada
+
+printf 'select 1;\n' > "$TMP/semoff.sql"
+recusa "permissão em SQL que nem desliga a parada" "nem desliga"   -- teste --sql-arquivo "$TMP/semoff.sql" --permitir-parada-desligada
+
+# E as baterias de verdade continuam passando, uma a uma.
+for b in "$RAIZ"/supabase/tests/fcg_*.sql; do
+  [ -r "$b" ] || continue
+  if grep -qiE '\\set[[:space:]]+ON_ERROR_STOP[[:space:]]+(off|0|false)' "$b"; then
+    aceita "bateria real: $(basename "$b")" teste --sql-arquivo "$b" --permitir-parada-desligada
+  fi
+done
 
 echo
 echo "=============================================================="

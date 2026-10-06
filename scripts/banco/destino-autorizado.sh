@@ -307,6 +307,64 @@ if [ "$SO_CONFERIR" = "0" ] && [ "$TEM_PAYLOAD" = "0" ]; then
   erro "sem SQL. Use -c \"…\", --sql-arquivo <arquivo> ou --conferir."
 fi
 
+# -----------------------------------------------------------------------------
+# O modo de parada desligada é SÓ para bateria de teste com veredito próprio.
+# -----------------------------------------------------------------------------
+# Permitir "segue depois do erro" é exatamente o que não se pode fazer ao
+# APLICAR uma migration: metade aplicada e registrada como inteira é o pior
+# estado possível. Então a permissão não vale para qualquer SQL — ela vale para
+# o que é, comprovadamente, uma bateria que julga a si mesma e não deixa nada.
+#
+# Cinco exigências, todas verificáveis no próprio texto:
+#
+#   1. desliga a parada de propósito .... tem `\set ON_ERROR_STOP off`
+#   2. não deixa resíduo ................ tem `rollback` e nenhum `commit`
+#   3. tem veredito próprio ............. tem ao menos um `raise`
+#   4. não aplica migration ............. não escreve em schema_migrations
+#   5. não É uma migration .............. o arquivo não vem de supabase/migrations
+#
+# Uma migration falha a 1, a 2 e a 5 ao mesmo tempo. Não é uma barreira que se
+# atravessa por descuido.
+if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
+  nega_modo() {
+    erro "--permitir-parada-desligada só vale para bateria de TESTE com veredito
+         próprio, nunca para aplicar migration. $1
+         Para aplicar migration, use -1 (que para no primeiro erro e desfaz)."
+  }
+
+  if [ -n "$SQL_ARQUIVO" ]; then
+    caminho_norm=$(printf '%s' "$SQL_ARQUIVO" | tr '\\' '/')
+    case "$caminho_norm" in
+      */supabase/migrations/*|supabase/migrations/*)
+        nega_modo "O arquivo vem de supabase/migrations/." ;;
+    esac
+  fi
+
+  if ! printf '%s' "$SQL" | grep -qiE '\\set[[:space:]]+ON_ERROR_STOP[[:space:]]+(off|0|false)'; then
+    nega_modo "O SQL nem desliga a parada: a permissão não teria efeito, e pedi-la
+         para outro SQL é sinal de que ela foi usada para calar outra coisa."
+  fi
+  # `commit` e `rollback` são procurados como INSTRUÇÃO, no começo da linha.
+  # Procurar a palavra solta daria falso positivo em `create temp table … on
+  # commit drop`, que quatro das baterias de supabase/tests usam e que não
+  # confirma coisa nenhuma — foi o que a própria suíte acusou.
+  if printf '%s' "$SQL" | grep -qiE '^[[:space:]]*commit[[:space:]]*(;|$)'; then
+    nega_modo "O SQL confirma transação (commit). Bateria de teste não confirma."
+  fi
+  if ! printf '%s' "$SQL" | grep -qiE '^[[:space:]]*rollback[[:space:]]*(;|$)'; then
+    nega_modo "O SQL não termina em rollback — logo, deixa resíduo. Bateria de
+         teste desfaz o que criou; migration, não."
+  fi
+  if ! printf '%s' "$SQL" | grep -qiE 'raise[[:space:]]+(notice|exception|warning)'; then
+    nega_modo "O SQL não emite veredito algum (nenhum raise). Seguir depois do erro
+         sem ninguém julgando o resultado não é diagnóstico, é ruído."
+  fi
+  if printf '%s' "$SQL" | grep -qiE '(insert|update|delete|merge)[[:space:]][^;]*schema_migrations'; then
+    nega_modo "O SQL escreve em supabase_migrations.schema_migrations, que é o ato
+         de registrar uma migration aplicada."
+  fi
+fi
+
 # =============================================================================
 # Barreiras
 # =============================================================================
