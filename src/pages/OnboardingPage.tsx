@@ -28,10 +28,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
 import { maskCPF, maskPlate } from "@/lib/masks";
 import { cn } from "@/lib/utils";
+import { STEEL_TYPES } from "@/lib/steel";
 import type { TruckType, UserRole } from "@/types/database";
 
 const UFS = ["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
-const STEEL_TYPES = ["Bobina frio","Bobina quente","Chapa grossa","Perfil","Cano","Vergalhão","Tubo galv.","Aço especial"];
+// O catalogo de aco vem de @/lib/steel. Esta tela tinha a terceira copia da
+// lista, com rotulos soltos ("Perfil", "Tubo galv.") que nao correspondiam nem
+// ao catalogo nem ao enum. A preferencia passa a guardar o id do catalogo.
 const TRUCK_TYPES: TruckType[] = ["toco","truck","bitruck","carreta","carreta_extendida","rodotrem","bitrem","ev_truck","ev_carreta"];
 
 const STEPS_BY_ROLE: Record<string, { label: string; icon: LucideIcon }[]> = {
@@ -551,7 +554,7 @@ function ShipperPreferences({ userId, onNext }: { userId: string; onNext: () => 
 
       <div className="mb-3 mt-6 text-sm text-[#5B6B80]">Tipos de aço mais usados:</div>
       <div className="flex flex-wrap gap-2">
-        {STEEL_TYPES.map((s) => <Pill key={s} active={steels.includes(s)} onClick={() => setSteels(toggle(steels, s))}>{s}</Pill>)}
+        {STEEL_TYPES.map((s) => <Pill key={s.id} active={steels.includes(s.id)} onClick={() => setSteels(toggle(steels, s.id))}>{s.label}</Pill>)}
       </div>
 
       <div className="mb-3 mt-6 text-sm text-[#5B6B80]">Meta de logística verde:</div>
