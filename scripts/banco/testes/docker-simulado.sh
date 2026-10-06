@@ -52,7 +52,30 @@ case "$sub" in
     todos="$*"
     case "$todos" in
       *pg_control_system*) echo "${SIM_SYSID:-}" ;;
-      *)                   cat > /dev/null; echo "PSQL-SIMULADO-EXECUTOU" ;;
+      *)
+        cat > /dev/null
+        # No modo de parada desligada o validador deriva o veredito da SAÍDA.
+        # SIM_VEREDITO escolhe o que a "suíte" relata: ok (padrão), falhou, ou
+        # mudo — nenhum marcador, para provar que ausência de veredito reprova.
+        # SIM_NOTICES  quantas linhas de veredito emitir (padrao 1)
+        # SIM_ULTIMA   o rotulo da ultima delas
+        n="${SIM_NOTICES:-1}"
+        ult="${SIM_ULTIMA:-1. verificacao simulada}"
+        case "${SIM_VEREDITO:-ok}" in
+          falhou)     echo "NOTICE:  $ult ......... FALHOU" ;;
+          mudo)       echo "PSQL-SIMULADO-EXECUTOU" ;;
+          # Parou antes do fim: emite veredito, mas NAO o ultimo declarado.
+          incompleto) echo "NOTICE:  0. preparacao ......... OK" ;;
+          *)
+            i=1
+            while [ "$i" -lt "$n" ]; do
+              echo "NOTICE:  $i. intermediaria ......... OK"
+              i=$((i+1))
+            done
+            echo "NOTICE:  $ult ......... OK"
+            ;;
+        esac
+        ;;
     esac
     ;;
   *)

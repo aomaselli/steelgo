@@ -308,61 +308,81 @@ if [ "$SO_CONFERIR" = "0" ] && [ "$TEM_PAYLOAD" = "0" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# O modo de parada desligada é SÓ para bateria de teste com veredito próprio.
+# O modo de parada desligada: LISTA EXPLÍCITA, não heurística de texto
 # -----------------------------------------------------------------------------
-# Permitir "segue depois do erro" é exatamente o que não se pode fazer ao
-# APLICAR uma migration: metade aplicada e registrada como inteira é o pior
-# estado possível. Então a permissão não vale para qualquer SQL — ela vale para
-# o que é, comprovadamente, uma bateria que julga a si mesma e não deixa nada.
+# A versão anterior decidia por grep: tem `rollback`? tem `raise`? Isso não
+# prova nada. Presença textual de `rollback` não garante que a transação seja
+# desfeita (o caminho pode nem ser alcançado), e presença de `raise` não garante
+# veredito nenhum — as baterias de supabase/tests usam `raise notice`, que
+# **não muda o código de saída do psql**. Uma bateria podia imprimir FALHOU
+# quinze vezes e terminar em 0.
 #
-# Cinco exigências, todas verificáveis no próprio texto:
+# Duas trocas:
 #
-#   1. desliga a parada de propósito .... tem `\set ON_ERROR_STOP off`
-#   2. não deixa resíduo ................ tem `rollback` e nenhum `commit`
-#   3. tem veredito próprio ............. tem ao menos um `raise`
-#   4. não aplica migration ............. não escreve em schema_migrations
-#   5. não É uma migration .............. o arquivo não vem de supabase/migrations
+#   AUTORIZAÇÃO  deixa de ser inferida do texto e passa a ser uma LISTA de
+#                suítes revisadas, por sha256 + caminho. Editar uma suíte
+#                invalida a autorização até alguém revisar de novo.
 #
-# Uma migration falha a 1, a 2 e a 5 ao mesmo tempo. Não é uma barreira que se
-# atravessa por descuido.
+#   VEREDITO     deixa de ser suposto e passa a ser derivado da SAÍDA de
+#                execução: o script conta os marcadores que a suíte imprimiu e
+#                TERMINA EM CÓDIGO NÃO ZERO se houver falha. A garantia passa a
+#                ser do script, não da boa vontade do SQL.
+SUITES_ARQUIVO="${DESTINO_AUTORIZADO_SUITES:-$AQUI/suites-permitidas.txt}"
+
 if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
   nega_modo() {
-    erro "--permitir-parada-desligada só vale para bateria de TESTE com veredito
-         próprio, nunca para aplicar migration. $1
+    erro "--permitir-parada-desligada só vale para suíte REVISADA e listada em
+         $(basename "$SUITES_ARQUIVO"). $1
          Para aplicar migration, use -1 (que para no primeiro erro e desfaz)."
   }
 
-  if [ -n "$SQL_ARQUIVO" ]; then
-    caminho_norm=$(printf '%s' "$SQL_ARQUIVO" | tr '\\' '/')
-    case "$caminho_norm" in
-      */supabase/migrations/*|supabase/migrations/*)
-        nega_modo "O arquivo vem de supabase/migrations/." ;;
-    esac
-  fi
+  [ -n "$SQL_ARQUIVO" ] \
+    || nega_modo "A autorização é por ARQUIVO revisado; com -c não há o que listar."
 
-  if ! printf '%s' "$SQL" | grep -qiE '\\set[[:space:]]+ON_ERROR_STOP[[:space:]]+(off|0|false)'; then
-    nega_modo "O SQL nem desliga a parada: a permissão não teria efeito, e pedi-la
-         para outro SQL é sinal de que ela foi usada para calar outra coisa."
+  # Guarda explícita, antes do hash, só para a mensagem ser a certa: uma
+  # migration também seria recusada por não estar na lista, mas aí a causa
+  # ficaria parecendo esquecimento de cadastro.
+  case "$(printf '%s' "$SQL_ARQUIVO" | tr '\\' '/')" in
+    */supabase/migrations/*|supabase/migrations/*)
+      nega_modo "O arquivo vem de supabase/migrations/. Migration se aplica com -1,
+         que para no primeiro erro e desfaz o que já tinha feito." ;;
+  esac
+  [ -r "$SUITES_ARQUIVO" ] \
+    || nega_modo "Não há lista de suítes revisadas em '$SUITES_ARQUIVO'."
+
+  HASH_REAL=$(sha256sum "$SQL_ARQUIVO" | awk '{print $1}')
+  LINHA_SUITE=$(grep -iE "^${HASH_REAL}[[:space:]]" "$SUITES_ARQUIVO" | head -1 || true)
+  if [ -z "$LINHA_SUITE" ]; then
+    echo "  arquivo: $SQL_ARQUIVO" >&2
+    echo "  sha256:  $HASH_REAL" >&2
+    nega_modo "Este conteúdo não está na lista — ou a suíte foi editada desde a
+         revisão, e nesse caso a autorização caduca de propósito."
   fi
-  # `commit` e `rollback` são procurados como INSTRUÇÃO, no começo da linha.
-  # Procurar a palavra solta daria falso positivo em `create temp table … on
-  # commit drop`, que quatro das baterias de supabase/tests usam e que não
-  # confirma coisa nenhuma — foi o que a própria suíte acusou.
-  if printf '%s' "$SQL" | grep -qiE '^[[:space:]]*commit[[:space:]]*(;|$)'; then
-    nega_modo "O SQL confirma transação (commit). Bateria de teste não confirma."
-  fi
-  if ! printf '%s' "$SQL" | grep -qiE '^[[:space:]]*rollback[[:space:]]*(;|$)'; then
-    nega_modo "O SQL não termina em rollback — logo, deixa resíduo. Bateria de
-         teste desfaz o que criou; migration, não."
-  fi
-  if ! printf '%s' "$SQL" | grep -qiE 'raise[[:space:]]+(notice|exception|warning)'; then
-    nega_modo "O SQL não emite veredito algum (nenhum raise). Seguir depois do erro
-         sem ninguém julgando o resultado não é diagnóstico, é ruído."
-  fi
-  if printf '%s' "$SQL" | grep -qiE '(insert|update|delete|merge)[[:space:]][^;]*schema_migrations'; then
-    nega_modo "O SQL escreve em supabase_migrations.schema_migrations, que é o ato
-         de registrar uma migration aplicada."
-  fi
+  CAMINHO_LISTADO=$(printf '%s' "$LINHA_SUITE" | awk '{print $2}')
+  # Campo 3: quantos erros de SQL a suíte produz legitimamente. Ausente vira
+  # `*` — "não conferido" — e NÃO zero: afirmar zero sem ter medido seria
+  # inventar uma garantia.
+  ERROS_ESPERADOS=$(printf '%s' "$LINHA_SUITE" | awk '{print ($3=="" ? "*" : $3)}')
+  # Campo 4: quantas linhas de veredito a suíte emite quando roda inteira.
+  # Campo 5 (resto da linha): o rótulo da ÚLTIMA delas.
+  ASSERCOES_MINIMAS=$(printf '%s' "$LINHA_SUITE" | awk '{print $4}')
+  MARCADOR_FINAL=$(printf '%s' "$LINHA_SUITE" | awk '{ for (i=5;i<=NF;i++) printf "%s%s", $i, (i<NF?OFS:"") }')
+
+  # Sem esses dois a suíte não é executável neste modo. Não há valor padrão:
+  # "quantas asserções" e "onde termina" são justamente o que a revisão apura, e
+  # supor qualquer coisa aqui reabriria o buraco que esta lista veio fechar.
+  case "$ASSERCOES_MINIMAS" in
+    ''|*[!0-9]*) nega_modo "A linha da lista não declara quantas asserções a suíte
+         emite (campo 4). Sem isso não há como distinguir 'rodou inteira' de
+         'parou no meio'." ;;
+  esac
+  [ -n "$MARCADOR_FINAL" ] || nega_modo "A linha da lista não declara o marcador
+         final da suíte (campo 5). Sem ele, saída truncada passaria por completa."
+  case "$(printf '%s' "$SQL_ARQUIVO" | tr '\\' '/')" in
+    *"/$CAMINHO_LISTADO"|"$CAMINHO_LISTADO") : ;;
+    *) nega_modo "O conteúdo confere com '$CAMINHO_LISTADO', mas o arquivo veio de
+         outro caminho. A lista autoriza arquivo, não conteúdo solto." ;;
+  esac
 fi
 
 # =============================================================================
@@ -444,13 +464,83 @@ echo "  5 api        $PORTA_REAL" >&2
 echo "  6 cluster    $SYSID_REAL" >&2
 echo "[destino] seis conferências passaram; conexão fixa em $PG_USUARIO@$PG_SOCKET/$PG_BASE, ON_ERROR_STOP=1" >&2
 if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
-  echo "[destino] ATENÇÃO: --permitir-parada-desligada em uso. O SQL pode seguir" >&2
-  echo "          após um erro. Só para bateria de diagnóstico; não aplique" >&2
-  echo "          migration assim." >&2
+  echo "[destino] ATENÇÃO: --permitir-parada-desligada em uso, para a suíte revisada" >&2
+  echo "          $CAMINHO_LISTADO" >&2
+  echo "          sha256 $HASH_REAL" >&2
+  echo "          erros de SQL esperados: $ERROS_ESPERADOS" >&2
 fi
 
 if [ "$SO_CONFERIR" = "1" ]; then exit 0; fi
 
 # O SQL vai pela ENTRADA PADRÃO: nada de caminho de arquivo interpretado dentro
 # do contêiner, e o conteúdo é o mesmo que foi inspecionado acima.
-printf '%s\n' "$SQL" | docker exec -i "$ALVO" psql "${ARGS[@]}" "${CONEXAO_FIXA[@]}" "${ENTRADA_FIXA[@]}"
+if [ "$PARADA_DESLIGADA_OK" = "0" ]; then
+  printf '%s\n' "$SQL" | docker exec -i "$ALVO" psql "${ARGS[@]}" "${CONEXAO_FIXA[@]}" "${ENTRADA_FIXA[@]}"
+  exit $?
+fi
+
+# ---------------------------------------------------------------------------
+# Modo de parada desligada: o VEREDITO vem da saída, não do código do psql
+# ---------------------------------------------------------------------------
+# Com ON_ERROR_STOP desligado o psql termina em 0 mesmo quando instruções
+# falharam, e as baterias relatam por `raise notice` — que não muda código de
+# saída nenhum. Quem converte o relatório em veredito, aqui, é este script.
+SAIDA=$(mktemp)
+set +e
+printf '%s\n' "$SQL" \
+  | docker exec -i "$ALVO" psql "${ARGS[@]}" "${CONEXAO_FIXA[@]}" "${ENTRADA_FIXA[@]}" 2>&1 \
+  | tee "$SAIDA"
+RC_PSQL=${PIPESTATUS[1]}
+set -e
+
+FALHOU=$(grep -cE '(^|[^A-Za-z])FALHOU([^A-Za-z]|$)' "$SAIDA" || true)
+OKS=$(grep -cE '(^|[^A-Za-z])OK([^A-Za-z]|$)' "$SAIDA" || true)
+ERROS=$(grep -cE '^(psql:[^:]*:[0-9]+: )?(ERROR|FATAL|PANIC):' "$SAIDA" || true)
+# Linhas de veredito EXECUTADAS: cada `raise notice` da suíte produz uma. É
+# isto, e não a contagem de OK, que diz quantas asserções chegaram a rodar —
+# uma asserção pode terminar em "SEM DADOS" e não imprimir OK nem FALHOU.
+NOTICES=$(grep -cE '^(psql:[^:]*:[0-9]+: )?NOTICE:' "$SAIDA" || true)
+ULTIMA_NOTICE=$(grep -E '^(psql:[^:]*:[0-9]+: )?NOTICE:' "$SAIDA" | tail -1 || true)
+rm -f "$SAIDA"
+
+echo "[veredito] psql=$RC_PSQL  asserções=$NOTICES (mínimo $ASSERCOES_MINIMAS)  OK=$OKS  FALHOU=$FALHOU  erros de SQL=$ERROS (esperados $ERROS_ESPERADOS)" >&2
+
+# `[ ... ] && { ...; }` encadeado sairia do script sob `set -e` quando o teste
+# fosse falso. Aqui cada conferência é um `if` próprio, de propósito.
+ruim=0
+if [ "$RC_PSQL" -ne 0 ]; then
+  echo "[veredito] o psql terminou em $RC_PSQL" >&2; ruim=1
+fi
+if [ "$FALHOU" -gt 0 ]; then
+  echo "[veredito] a suíte declarou $FALHOU falha(s)" >&2; ruim=1
+fi
+# Veredito que não aparece na saída não existe: zero marcador significa que a
+# bateria não chegou a julgar nada — não que estava tudo bem.
+if [ $(( OKS + FALHOU )) -eq 0 ]; then
+  echo "[veredito] nenhum marcador OK/FALHOU na saída: a suíte não chegou a julgar" >&2; ruim=1
+fi
+# ASSERÇÕES EXECUTADAS. Menos linhas de veredito do que a revisão apurou
+# significa que parte da bateria não rodou — e o que não rodou não aprovou.
+if [ "$NOTICES" -lt "$ASSERCOES_MINIMAS" ]; then
+  echo "[veredito] só $NOTICES asserção(ões) executada(s); a lista declara $ASSERCOES_MINIMAS" >&2
+  ruim=1
+fi
+# MARCADOR FINAL. Com a parada desligada, uma suíte interrompida no meio ainda
+# imprime vereditos e ainda termina em 0. A última linha de veredito tem de ser
+# a que a revisão registrou como última; se não for, a saída está incompleta.
+if ! printf '%s' "$ULTIMA_NOTICE" | grep -qF "$MARCADOR_FINAL"; then
+  echo "[veredito] a última asserção não é a declarada — saída incompleta" >&2
+  echo "           esperada: $MARCADOR_FINAL" >&2
+  echo "           obtida:   ${ULTIMA_NOTICE:-<nenhuma>}" >&2
+  ruim=1
+fi
+if [ "$ERROS_ESPERADOS" != "*" ] && [ "$ERROS" -ne "$ERROS_ESPERADOS" ]; then
+  echo "[veredito] $ERROS erro(s) de SQL, $ERROS_ESPERADOS esperado(s) pela lista" >&2
+  ruim=1
+fi
+
+if [ "$ruim" = "1" ]; then
+  echo "[veredito] REPROVADO" >&2
+  exit 1
+fi
+echo "[veredito] aprovado" >&2

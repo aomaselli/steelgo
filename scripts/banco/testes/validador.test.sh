@@ -98,6 +98,19 @@ aceita() {
   echo "  ok      $desc"; ok_
 }
 
+# Faz o psql simulado emitir EXATAMENTE o que a lista versionada declara para
+# aquela suíte: tantas linhas de veredito, terminando no marcador final. É o que
+# permite exercitar, sob simulação, a checagem de asserções executadas e de
+# saída completa contra os valores de verdade da lista.
+prepara_sim_para() {
+  local arq="$1" rel linha
+  rel=${arq#"$RAIZ/"}
+  linha=$(grep -F "  $rel  " "$RAIZ/scripts/banco/suites-permitidas.txt" 2>/dev/null | head -1)
+  if [ -z "$linha" ]; then unset SIM_NOTICES SIM_ULTIMA; return; fi
+  export SIM_NOTICES=$(printf '%s' "$linha" | awk '{print $4}')
+  export SIM_ULTIMA=$(printf '%s' "$linha" | awk '{ for (i=5;i<=NF;i++) printf "%s%s", $i, (i<NF?OFS:"") }')
+}
+
 afirma_argv() {
   local desc="$1" padrao="$2"
   if grep -qF "$padrao" "$SIM_ARGV"; then
@@ -223,7 +236,9 @@ while IFS= read -r arq; do
   if grep -qiE '\\set[[:space:]]+ON_ERROR_STOP[[:space:]]+(off|0|false)' "$arq"; then
     # Bateria de diagnóstico: desliga a parada de propósito, para rodar todas as
     # verificações e relatar. Precisa da permissão explícita de quem chama.
-    aceita "aceita $(basename "$arq") (bateria)" teste --sql-arquivo "$arq" --permitir-parada-desligada
+    prepara_sim_para "$arq"
+    PERMITE_EXEC=1 aceita "aceita $(basename "$arq") (bateria)" teste --sql-arquivo "$arq" --permitir-parada-desligada
+    unset SIM_NOTICES SIM_ULTIMA
   else
     aceita "aceita $(basename "$arq")" teste --sql-arquivo "$arq" -1
   fi
@@ -234,19 +249,53 @@ fi
 
 echo
 echo "=============================================================="
-echo "I. A permissão de parada desligada é do OPERADOR, não do SQL"
+echo "I. A autorização é por LISTA REVISADA, não por texto"
 echo "=============================================================="
-# Bateria mínima, com a forma das de supabase/tests: desliga a parada, julga a
-# si mesma e desfaz tudo.
+# Bateria mínima, com a forma das de supabase/tests: desliga a parada, relata
+# por `raise notice` com OK/FALHOU, e desfaz tudo.
 bateria() {
-  printf '\\set ON_ERROR_STOP off\nbegin;\n%s\ndo $x$ begin raise notice $$VEREDITO: ok$$; end $x$;\nrollback;\n' "$1"
+  printf '\\set ON_ERROR_STOP off\nbegin;\n%s\ndo $x$ begin raise notice $$1. verificacao ... OK$$; end $x$;\nrollback;\n' "$1"
 }
 bateria "select 1;" > "$TMP/bateria.sql"
+export DESTINO_AUTORIZADO_SUITES="$TMP/suites.txt"
+: > "$TMP/suites.txt"
 
-recusa "bateria SEM a permissão"                  "afrouxa"        -- teste --sql-arquivo "$TMP/bateria.sql"
-aceita "bateria COM a permissão"                  teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
+recusa "não listada: recusada"                    "não está na lista" \
+  -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
+
+# Cinco campos: hash, caminho, erros esperados, asserções mínimas, marcador final.
+MARCADOR="1. verificacao simulada"
+HASH_BAT=$(sha256sum "$TMP/bateria.sql" | awk '{print $1}')
+printf '%s  %s  0  1  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites.txt"
+PERMITE_EXEC=1 aceita "listada: aceita"           teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
+
+# A lista tem de declarar os dois campos novos; sem eles a suíte não roda.
+printf '%s  %s  0\n' "$HASH_BAT" "bateria.sql" > "$TMP/suites-sem-campos.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-sem-campos.txt"
+  recusa "lista sem quantas asserções"            "campo 4" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+printf '%s  %s  0  1\n' "$HASH_BAT" "bateria.sql" > "$TMP/suites-sem-marcador.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-sem-marcador.txt"
+  recusa "lista sem marcador final"               "campo 5" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
+cp "$TMP/bateria.sql" "$TMP/bateria-editada.sql"
+printf -- '-- comentario acrescentado depois da revisao\n' >> "$TMP/bateria-editada.sql"
+recusa "editada depois da revisão: caduca"        "não está na lista" \
+  -- teste --sql-arquivo "$TMP/bateria-editada.sql" --permitir-parada-desligada
+
+mkdir -p "$TMP/outro"; cp "$TMP/bateria.sql" "$TMP/outro/bateria-mesma.sql"
+recusa "mesmo conteúdo, outro caminho"            "outro caminho" \
+  -- teste --sql-arquivo "$TMP/outro/bateria-mesma.sql" --permitir-parada-desligada
+
+recusa "-c com a permissão"                       "por ARQUIVO" \
+  -- teste -c 'select 1;' --permitir-parada-desligada
 recusa "permissão junto de --single-transaction"  "não se combina" \
   -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada -1
+( export DESTINO_AUTORIZADO_SUITES="$TMP/nao-existe.txt"
+  recusa "lista ausente"                          "Não há lista" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
 printf '\\unset ON_ERROR_STOP\nselect 1;\n' > "$TMP/unset.sql"
 recusa "\\unset ON_ERROR_STOP sem a permissão"    "unset"          -- teste --sql-arquivo "$TMP/unset.sql"
 recusa "AUTOCOMMIT barrado mesmo com a permissão" "AUTOCOMMIT" \
@@ -256,48 +305,73 @@ echo
 echo "=============================================================="
 echo "J. A permissão NUNCA alcança migration"
 echo "=============================================================="
-# Este é o ponto todo: seguir depois do erro é exatamente o que NÃO se pode
-# fazer ao aplicar migration. Metade aplicada e registrada como inteira seria o
-# pior estado possível.
-# Migrations REAIS desta árvore, sejam quais forem. Nada de nomear arquivos que
-# podem não existir na branch: um `for` sobre um glob vazio passa calado, e um
-# caso que não roda parece um caso que passou.
+# Seguir depois do erro é exatamente o que NÃO se pode fazer ao aplicar
+# migration: metade aplicada e registrada como inteira seria o pior estado
+# possível. Nada de nomear arquivos que podem não existir na branch — um `for`
+# sobre glob vazio passa calado, e caso que não roda parece caso que passou.
 migracoes=0
 while IFS= read -r m; do
   [ -r "$m" ] || continue
   migracoes=$((migracoes+1))
-  recusa "migration real + permissão: $(basename "$m" | cut -c1-26)" "supabase/migrations" \
+  recusa "migration real: $(basename "$m" | cut -c1-26)" "supabase/migrations" \
     -- teste --sql-arquivo "$m" --permitir-parada-desligada
 done < <(ls "$RAIZ"/supabase/migrations/*.sql 2>/dev/null | tail -2)
 
 if [ "$migracoes" -eq 0 ]; then
   echo "  FALHOU  nenhuma migration encontrada para testar a recusa"; falha_
 else
-  # Mesmo disfarçada: conteúdo de migration copiado para fora da pasta.
+  # Mesmo copiada para fora da pasta: continua fora da lista.
   ultima=$(ls "$RAIZ"/supabase/migrations/*.sql | tail -1)
   { printf '\\set ON_ERROR_STOP off\n'; cat "$ultima"; } > "$TMP/disfarce.sql"
-  recusa "migration disfarçada fora da pasta"     "rollback"       -- teste --sql-arquivo "$TMP/disfarce.sql" --permitir-parada-desligada
+  recusa "migration copiada para fora da pasta"   "não está na lista" \
+    -- teste --sql-arquivo "$TMP/disfarce.sql" --permitir-parada-desligada
 fi
 
-bateria "insert into supabase_migrations.schema_migrations(version) values ('20261005120000');" > "$TMP/registra.sql"
-recusa "escreve no registro de migrations"        "schema_migrations" -- teste --sql-arquivo "$TMP/registra.sql" --permitir-parada-desligada
+# E as suítes revisadas de verdade, com a lista versionada do repositório.
+( export DESTINO_AUTORIZADO_SUITES="$RAIZ/scripts/banco/suites-permitidas.txt"
+  listadas=0
+  while IFS= read -r linha; do
+    case "$linha" in ""|\#*) continue ;; esac
+    arq=$(printf '%s' "$linha" | awk '{print $2}')
+    [ -r "$RAIZ/$arq" ] || continue
+    listadas=$((listadas+1))
+    prepara_sim_para "$RAIZ/$arq"
+    PERMITE_EXEC=1 aceita "suíte revisada: $(basename "$arq")" \
+      teste --sql-arquivo "$RAIZ/$arq" --permitir-parada-desligada
+  done < "$RAIZ/scripts/banco/suites-permitidas.txt"
+  if [ "$listadas" -eq 0 ]; then
+    echo "  FALHOU  a lista versionada não trouxe nenhuma suíte"; falha_
+  fi )
 
-printf '\\set ON_ERROR_STOP off\nbegin;\nselect 1;\ndo $x$ begin raise notice $$x$$; end $x$;\ncommit;\n' > "$TMP/comcommit.sql"
-recusa "confirma transação (commit)"              "commit"         -- teste --sql-arquivo "$TMP/comcommit.sql" --permitir-parada-desligada
+echo
+echo "=============================================================="
+echo "K. O veredito vem da SAÍDA, não do código de saída do psql"
+echo "=============================================================="
+# Com ON_ERROR_STOP desligado o psql termina em 0 mesmo com instrução que
+# falhou, e as baterias relatam por `raise notice`, que não muda código nenhum.
+# Quem converte relatório em veredito é o validador.
+export DESTINO_AUTORIZADO_SUITES="$TMP/suites.txt"
+( export SIM_VEREDITO=ok
+  PERMITE_EXEC=1 aceita "suíte relata OK -> aprovado" \
+    teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+( export SIM_VEREDITO=falhou
+  PERMITE_EXEC=1 recusa "suíte relata FALHOU -> REPROVADO" "REPROVADO" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+( export SIM_VEREDITO=mudo
+  PERMITE_EXEC=1 recusa "suíte sem marcador -> REPROVADO" "não chegou a julgar" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
 
-printf '\\set ON_ERROR_STOP off\nbegin;\nselect 1;\nrollback;\n' > "$TMP/semveredito.sql"
-recusa "sem veredito próprio (nenhum raise)"      "veredito"       -- teste --sql-arquivo "$TMP/semveredito.sql" --permitir-parada-desligada
+# SAÍDA INCOMPLETA: a suíte emitiu veredito, mas parou antes da última asserção.
+( export SIM_VEREDITO=incompleto
+  PERMITE_EXEC=1 recusa "última asserção não é a declarada -> REPROVADO" "saída incompleta" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
 
-printf 'select 1;\n' > "$TMP/semoff.sql"
-recusa "permissão em SQL que nem desliga a parada" "nem desliga"   -- teste --sql-arquivo "$TMP/semoff.sql" --permitir-parada-desligada
-
-# E as baterias de verdade continuam passando, uma a uma.
-for b in "$RAIZ"/supabase/tests/fcg_*.sql; do
-  [ -r "$b" ] || continue
-  if grep -qiE '\\set[[:space:]]+ON_ERROR_STOP[[:space:]]+(off|0|false)' "$b"; then
-    aceita "bateria real: $(basename "$b")" teste --sql-arquivo "$b" --permitir-parada-desligada
-  fi
-done
+# ASSERÇÕES EXECUTADAS: a lista declara três, a saída trouxe uma.
+printf '%s  %s  0  3  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites-tres.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-tres.txt"
+  export SIM_VEREDITO=ok
+  PERMITE_EXEC=1 recusa "menos asserções que o declarado -> REPROVADO" "a lista declara 3" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
 
 echo
 echo "=============================================================="

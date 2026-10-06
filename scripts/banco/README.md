@@ -96,26 +96,55 @@ pior dos dois mundos.
 
 Seguir depois do erro é exatamente o que não se pode fazer ao **aplicar** uma
 migration: metade aplicada e registrada como inteira é o pior estado possível.
-Por isso a permissão não vale para qualquer SQL — o script exige, do próprio
-texto, que aquilo seja uma bateria de teste **com veredito próprio**:
 
-| # | exigência | como é verificada |
-|---|---|---|
-| 1 | desliga a parada de propósito | tem `\set ON_ERROR_STOP off` |
-| 2 | não confirma nada | nenhuma instrução `commit` |
-| 3 | não deixa resíduo | tem instrução `rollback` |
-| 4 | julga a si mesma | tem ao menos um `raise` |
-| 5 | não registra migration | não escreve em `supabase_migrations.schema_migrations` |
-| 6 | não **é** uma migration | o arquivo não vem de `supabase/migrations/` |
+A primeira versão desta regra decidia por heurística de texto — tem `rollback`?
+tem `raise`? **Isso não prova nada.** `rollback` no texto não garante que a
+transação seja desfeita; o caminho pode nem ser alcançado. E `raise` no texto não
+garante veredito algum: as oito baterias de `supabase/tests` relatam por
+`raise notice`, que **não muda o código de saída do psql**. Uma bateria pode
+imprimir `FALHOU` quinze vezes e terminar em 0 — foi medido.
 
-Uma migration falha 1, 3 e 6 ao mesmo tempo — não é barreira que se atravesse
-por descuido. Copiar o conteúdo da migration para um arquivo fora da pasta
-também não resolve: continua sem `rollback`.
+Então duas coisas deixaram de ser inferidas do texto.
 
-`commit` e `rollback` são procurados como **instrução**, no começo da linha.
-Procurar a palavra solta daria falso positivo em `create temp table … on commit
-drop`, que quatro das baterias de `supabase/tests` usam e que não confirma coisa
-nenhuma — foi a própria suíte que acusou isso.
+#### Autorização: lista explícita de suítes revisadas
+
+`suites-permitidas.txt`, cinco campos por linha:
+
+```
+<sha256>  <caminho>  <erros_esperados>  <assercoes_minimas>  <marcador_final>
+```
+
+* **sha256** é a autorização. Editar a suíte muda o hash e a autorização
+  **caduca**: quem editar revisa e atualiza a lista no mesmo pull request.
+* **erros_esperados** — quantos erros de SQL a suíte produz legitimamente.
+  `*` significa *não conferido*; não se escreve `0` sem ter medido.
+* **assercoes_minimas** — quantas linhas de veredito a suíte emite quando roda
+  inteira.
+* **marcador_final** — o rótulo da **última** delas.
+
+Os dois últimos vêm da revisão do fonte, não de medição de execução. Se
+estiverem errados, a suíte **reprova** quando rodar — falha fechada, nunca
+aprovação indevida.
+
+Além da lista, continua valendo: o arquivo não pode vir de
+`supabase/migrations/`, e a permissão não se combina com `-1`.
+
+#### Veredito: derivado da saída, não do código do psql
+
+Quem roda com esta permissão não decide se passou. O validador lê a saída e
+**termina em código não zero** se:
+
+| condição | por quê |
+|---|---|
+| o psql terminou em código não zero | falha explícita |
+| a suíte imprimiu qualquer `FALHOU` | a própria suíte reprovou |
+| não houve marcador `OK`/`FALHOU` nenhum | veredito que não aparece na saída não existe |
+| menos asserções do que a lista declara | o que não rodou não aprovou |
+| a última asserção não é o `marcador_final` | **saída incompleta** — a suíte parou no meio |
+| o número de erros de SQL diverge do declarado | comportamento mudou |
+
+As duas últimas são o que fecha o caso: com a parada desligada, uma bateria
+interrompida no meio ainda imprime vereditos e ainda termina em 0.
 
 Aplicação de migration usa `-1` e nunca esta permissão.
 
