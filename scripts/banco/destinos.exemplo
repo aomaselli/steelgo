@@ -1,0 +1,36 @@
+# Destinos autorizados do validador — MODELO
+#
+# Copie para `destinos.local` (que NÃO é versionado) e preencha à mão, com os
+# valores da SUA máquina. Enquanto `destinos.local` não existir, o validador
+# recusa tudo: não há destino implícito.
+#
+# Um destino por linha, sete campos separados por `|`:
+#
+#   apelido | id do projeto | diretório de origem | porta pg | porta api | ID completo do contêiner | system_identifier
+#
+#   apelido .................. o nome curto que você vai digitar
+#   id do projeto ............ rótulo com.supabase.cli.project do contêiner
+#   diretório de origem ...... rótulo com.supabase.cli.workdir do contêiner
+#   porta pg ................. porta publicada de 5432/tcp
+#   porta api ................ porta publicada de 8000/tcp do kong
+#   ID completo .............. 64 hex, de `docker inspect <ct> --format '{{.Id}}'`
+#   system_identifier ........ de `select system_identifier from pg_control_system()`
+#
+# NÃO liste aqui a instância do projeto principal. O validador já a recusa
+# sozinho: ele lê o `project_id` de supabase/config.toml e barra esse id antes
+# de qualquer outra conferência.
+#
+# Como levantar os valores de um contêiner que você JÁ sabe ser descartável:
+#
+#   ct=supabase_db_<id-do-projeto>
+#   docker inspect "$ct" --format '{{.Id}}'
+#   docker inspect "$ct" --format '{{index .Config.Labels "com.supabase.cli.project"}}'
+#   docker inspect "$ct" --format '{{index .Config.Labels "com.supabase.cli.workdir"}}'
+#   docker port "$ct" 5432/tcp
+#   docker port "supabase_kong_<id-do-projeto>" 8000/tcp
+#   docker exec -i "$ct" psql -U postgres -d postgres -tAX \
+#     -c "select system_identifier from pg_control_system();"
+#
+# Exemplo (valores inventados):
+#
+# ensaio|projetodescartavel|/caminho/para/a/pilha|55322|55321|0000000000000000000000000000000000000000000000000000000000000000|1234567890123456789
