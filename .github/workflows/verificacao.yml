@@ -29,51 +29,62 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Instalar com o lockfile
-        run: npm ci 2>&1 | tee npm-ci.log
+      # ------------------------------------------------------------------
+      # Quem verifica o verificador
+      # ------------------------------------------------------------------
+      # A comparação de TypeScript é código, e código com defeito aprova o que
+      # deveria reprovar — foi o que aconteceu com a versão anterior. Estas
+      # regressões rodam ANTES de qualquer medição e não dependem do projeto
+      # instalar nem compilar: trabalham sobre logs de tsc fabricados.
+      - name: Regressoes dos scripts de verificacao
         shell: bash
+        run: |
+          set -o pipefail
+          node --test .github/scripts/diagnosticos-tsc.test.mjs 2>&1 | tee regressoes-scripts.log
+
+      - name: Instalar com o lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee npm-ci.log
 
       # ------------------------------------------------------------------
       # TypeScript: compara DIAGNÓSTICOS, não contagens. Nada de sucesso forçado.
       # ------------------------------------------------------------------
       # Contagem igual não prova ausência de regressão: um erro novo que apaga
-      # um antigo mantém o número e passa despercebido. A comparação aqui é do
-      # CONJUNTO — arquivo, código e mensagem de cada diagnóstico, com a
-      # quantidade de ocorrências. Linha e coluna ficam de fora de propósito:
-      # elas andam a cada edição e acusariam regressão onde não houve.
+      # um antigo mantém o número e passa despercebido. A comparação aqui é de
+      # MAPA diagnóstico → quantidade, com a chave formada por arquivo, código e
+      # mensagem. Linha e coluna ficam de fora de propósito: elas andam a cada
+      # edição e acusariam regressão onde não houve.
       #
-      # O `set +e` existe só para CAPTURAR a saída do tsc; quem decide o
-      # resultado é o `diff` contra a linha de base versionada, que chama
-      # `exit 1` quando aparece diagnóstico novo. Não há `|| true` governando
-      # o resultado deste passo.
-      - name: Verificar tipos (diagnósticos, não contagens)
+      #   diagnóstico novo        -> REPROVA
+      #   mesma chave, mais       -> REPROVA
+      #   mesma chave, menos      -> aprova, e pede atualização da linha de base
+      #   chave que sumiu         -> aprova, idem
+      #
+      # O `set +e` existe só para CAPTURAR o código de saída do tsc, que é
+      # repassado ao extrator. É ele quem distingue "compilou e achou erros" de
+      # "não chegou a compilar": log vazio com código 127 é falha de execução, e
+      # não "zero erros". Não há `|| true` governando o resultado deste passo.
+      - name: Verificar tipos (diagnosticos, nao contagens)
         shell: bash
         run: |
+          set -euo pipefail
           set +e
           npx tsc --noEmit > tsc.log 2>&1
-          saida_tsc=$?
+          codigo_tsc=$?
           set -e
-          node .github/scripts/diagnosticos-tsc.mjs tsc.log > tsc-diagnosticos.txt
-          echo "tsc terminou com codigo $saida_tsc"
-          if diff -u .github/tsc-baseline.txt tsc-diagnosticos.txt > tsc-diff.txt; then
-            echo "conjunto de diagnosticos identico a linha de base"
-            exit 0
-          fi
-          echo "--- diferenca contra a linha de base ---"
-          cat tsc-diff.txt
-          novos=$(grep -c '^+[^+]' tsc-diff.txt || true)
-          resolvidos=$(grep -c '^-[^-]' tsc-diff.txt || true)
-          if [ "$novos" -gt 0 ]; then
-            echo "::error::$novos diagnostico(s) de tipo novo(s) ou mais frequente(s). Veja tsc-diff.txt no artefato."
-            exit 1
-          fi
-          echo "::notice::$resolvidos diagnostico(s) resolvido(s) e nenhum novo. Atualize .github/tsc-baseline.txt neste PR."
+          echo "tsc terminou com codigo $codigo_tsc"
+          node .github/scripts/diagnosticos-tsc.mjs tsc.log \
+            --codigo-tsc "$codigo_tsc" --saida tsc-diagnosticos.txt
+          node .github/scripts/comparar-diagnosticos.mjs \
+            .github/tsc-baseline.txt tsc-diagnosticos.txt | tee tsc-comparacao.txt
 
       # ------------------------------------------------------------------
       # Suíte de testes
       # ------------------------------------------------------------------
       # `pipefail` garante que o `tee` não engula a falha do vitest.
-      - name: Rodar a suíte
+      - name: Rodar a suite
         shell: bash
         run: |
           set -o pipefail
@@ -86,17 +97,19 @@ jobs:
           npm run build 2>&1 | tee build.log
 
       # `if: always()` é o que preserva o log QUANDO FALHA — que é justamente
-      # quando ele serve para alguma coisa.
+      # quando ele serve para alguma coisa. `tsc.log` inteiro vai junto: quando
+      # o extrator recusa a medição, é nele que está a causa.
       - name: Preservar logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: logs-verificacao-${{ github.run_id }}
           path: |
+            regressoes-scripts.log
             npm-ci.log
             tsc.log
             tsc-diagnosticos.txt
-            tsc-diff.txt
+            tsc-comparacao.txt
             vitest.log
             build.log
           if-no-files-found: warn
