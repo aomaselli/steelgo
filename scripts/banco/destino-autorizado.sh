@@ -359,21 +359,25 @@ if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
          revisão, e nesse caso a autorização caduca de propósito."
   fi
   CAMINHO_LISTADO=$(printf '%s' "$LINHA_SUITE" | awk '{print $2}')
-  # Campo 3: quantos erros de SQL a suíte produz legitimamente. Ausente vira
-  # `*` — "não conferido" — e NÃO zero: afirmar zero sem ter medido seria
-  # inventar uma garantia.
-  ERROS_ESPERADOS=$(printf '%s' "$LINHA_SUITE" | awk '{print ($3=="" ? "*" : $3)}')
-  # Campo 4: quantas linhas de veredito a suíte emite quando roda inteira.
-  # Campo 5 (resto da linha): o rótulo da ÚLTIMA delas.
+  # Campo 3: quantos erros de SQL a suíte produz legitimamente.
+  # Campo 4: quantas asserções a suíte APROVA quando roda inteira.
+  # Campo 5 (resto da linha): o rótulo da última linha de veredito.
+  ERROS_ESPERADOS=$(printf '%s' "$LINHA_SUITE" | awk '{print $3}')
   ASSERCOES_MINIMAS=$(printf '%s' "$LINHA_SUITE" | awk '{print $4}')
   MARCADOR_FINAL=$(printf '%s' "$LINHA_SUITE" | awk '{ for (i=5;i<=NF;i++) printf "%s%s", $i, (i<NF?OFS:"") }')
 
-  # Sem esses dois a suíte não é executável neste modo. Não há valor padrão:
-  # "quantas asserções" e "onde termina" são justamente o que a revisão apura, e
-  # supor qualquer coisa aqui reabriria o buraco que esta lista veio fechar.
+  # Os três são obrigatórios e numéricos onde cabe. Não há valor padrão nem
+  # curinga: havia um `*` em erros_esperados para dizer "não conferido", e ele
+  # deixava a suíte rodar com essa conferência DESLIGADA — o que é aprovar sem
+  # contrato. Suíte sem contrato de erros revisado não roda neste modo.
+  case "$ERROS_ESPERADOS" in
+    ''|*[!0-9]*) nega_modo "A linha da lista não declara quantos erros de SQL a
+         suíte produz legitimamente (campo 3), ou declara um curinga. Esse
+         contrato é revisado e medido, não suposto." ;;
+  esac
   case "$ASSERCOES_MINIMAS" in
     ''|*[!0-9]*) nega_modo "A linha da lista não declara quantas asserções a suíte
-         emite (campo 4). Sem isso não há como distinguir 'rodou inteira' de
+         aprova (campo 4). Sem isso não há como distinguir 'rodou inteira' de
          'parou no meio'." ;;
   esac
   [ -n "$MARCADOR_FINAL" ] || nega_modo "A linha da lista não declara o marcador
@@ -496,14 +500,15 @@ set -e
 FALHOU=$(grep -cE '(^|[^A-Za-z])FALHOU([^A-Za-z]|$)' "$SAIDA" || true)
 OKS=$(grep -cE '(^|[^A-Za-z])OK([^A-Za-z]|$)' "$SAIDA" || true)
 ERROS=$(grep -cE '^(psql:[^:]*:[0-9]+: )?(ERROR|FATAL|PANIC):' "$SAIDA" || true)
-# Linhas de veredito EXECUTADAS: cada `raise notice` da suíte produz uma. É
-# isto, e não a contagem de OK, que diz quantas asserções chegaram a rodar —
-# uma asserção pode terminar em "SEM DADOS" e não imprimir OK nem FALHOU.
+# INCONCLUSIVO. Uma asserção que termina em "SEM DADOS" não reprovou — mas
+# também não aprovou nada: ela diz que não havia o que verificar. Contar isso
+# como passagem seria aprovar por ausência de prova, que é o oposto de verificar.
+INCONCLUSIVAS=$(grep -ciE '(^|[^A-Za-z])SEM DADOS([^A-Za-z]|$)' "$SAIDA" || true)
 NOTICES=$(grep -cE '^(psql:[^:]*:[0-9]+: )?NOTICE:' "$SAIDA" || true)
 ULTIMA_NOTICE=$(grep -E '^(psql:[^:]*:[0-9]+: )?NOTICE:' "$SAIDA" | tail -1 || true)
 rm -f "$SAIDA"
 
-echo "[veredito] psql=$RC_PSQL  asserções=$NOTICES (mínimo $ASSERCOES_MINIMAS)  OK=$OKS  FALHOU=$FALHOU  erros de SQL=$ERROS (esperados $ERROS_ESPERADOS)" >&2
+echo "[veredito] psql=$RC_PSQL  aprovadas=$OKS (mínimo $ASSERCOES_MINIMAS)  FALHOU=$FALHOU  inconclusivas=$INCONCLUSIVAS  linhas de veredito=$NOTICES  erros de SQL=$ERROS (esperados $ERROS_ESPERADOS)" >&2
 
 # `[ ... ] && { ...; }` encadeado sairia do script sob `set -e` quando o teste
 # fosse falso. Aqui cada conferência é um `if` próprio, de propósito.
@@ -519,10 +524,17 @@ fi
 if [ $(( OKS + FALHOU )) -eq 0 ]; then
   echo "[veredito] nenhum marcador OK/FALHOU na saída: a suíte não chegou a julgar" >&2; ruim=1
 fi
-# ASSERÇÕES EXECUTADAS. Menos linhas de veredito do que a revisão apurou
-# significa que parte da bateria não rodou — e o que não rodou não aprovou.
-if [ "$NOTICES" -lt "$ASSERCOES_MINIMAS" ]; then
-  echo "[veredito] só $NOTICES asserção(ões) executada(s); a lista declara $ASSERCOES_MINIMAS" >&2
+# INCONCLUSIVO REPROVA. "SEM DADOS" é a bateria dizendo que não havia o que
+# verificar. Rodar a suíte inteira e não ter verificado nada não é aprovação.
+if [ "$INCONCLUSIVAS" -gt 0 ]; then
+  echo "[veredito] $INCONCLUSIVAS asserção(ões) inconclusiva(s) (SEM DADOS): não verificaram nada" >&2
+  ruim=1
+fi
+# ASSERÇÕES APROVADAS. A comparação é com o número de OK, não com o de linhas
+# de veredito: uma linha "SEM DADOS" foi executada mas não aprovou, e contá-la
+# aqui deixaria uma bateria sem dado nenhum passar por bateria completa.
+if [ "$OKS" -lt "$ASSERCOES_MINIMAS" ]; then
+  echo "[veredito] só $OKS asserção(ões) aprovada(s); a lista declara $ASSERCOES_MINIMAS" >&2
   ruim=1
 fi
 # MARCADOR FINAL. Com a parada desligada, uma suíte interrompida no meio ainda
@@ -534,7 +546,7 @@ if ! printf '%s' "$ULTIMA_NOTICE" | grep -qF "$MARCADOR_FINAL"; then
   echo "           obtida:   ${ULTIMA_NOTICE:-<nenhuma>}" >&2
   ruim=1
 fi
-if [ "$ERROS_ESPERADOS" != "*" ] && [ "$ERROS" -ne "$ERROS_ESPERADOS" ]; then
+if [ "$ERROS" -ne "$ERROS_ESPERADOS" ]; then
   echo "[veredito] $ERROS erro(s) de SQL, $ERROS_ESPERADOS esperado(s) pela lista" >&2
   ruim=1
 fi

@@ -269,6 +269,18 @@ HASH_BAT=$(sha256sum "$TMP/bateria.sql" | awk '{print $1}')
 printf '%s  %s  0  1  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites.txt"
 PERMITE_EXEC=1 aceita "listada: aceita"           teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
 
+# CONTRATO DE ERROS: obrigatório e numérico. O curinga saiu do caminho de
+# aprovação — ele deixava a suíte rodar com essa conferência desligada, que é o
+# mesmo que aprovar sem contrato.
+printf '%s  %s  *  1  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites-curinga.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-curinga.txt"
+  recusa "curinga em erros esperados"              "campo 3" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+printf '%s  %s\n' "$HASH_BAT" "bateria.sql" > "$TMP/suites-sem-erros.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-sem-erros.txt"
+  recusa "sem contrato de erros revisado"          "campo 3" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
 # A lista tem de declarar os dois campos novos; sem eles a suíte não roda.
 printf '%s  %s  0\n' "$HASH_BAT" "bateria.sql" > "$TMP/suites-sem-campos.txt"
 ( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-sem-campos.txt"
@@ -366,7 +378,13 @@ export DESTINO_AUTORIZADO_SUITES="$TMP/suites.txt"
   PERMITE_EXEC=1 recusa "última asserção não é a declarada -> REPROVADO" "saída incompleta" \
     -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
 
-# ASSERÇÕES EXECUTADAS: a lista declara três, a saída trouxe uma.
+# INCONCLUSIVO: "SEM DADOS" não é aprovação. A contagem e o marcador final
+# continuam satisfeitos nesse caso — só o inconclusivo reprova.
+( export SIM_VEREDITO=semdados
+  PERMITE_EXEC=1 recusa "asserção SEM DADOS -> REPROVADO" "inconclusiva" \
+    -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
+# ASSERÇÕES APROVADAS: a lista declara três, a saída trouxe uma.
 printf '%s  %s  0  3  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites-tres.txt"
 ( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-tres.txt"
   export SIM_VEREDITO=ok

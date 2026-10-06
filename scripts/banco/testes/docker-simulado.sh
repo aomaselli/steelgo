@@ -66,6 +66,13 @@ case "$sub" in
           mudo)       echo "PSQL-SIMULADO-EXECUTOU" ;;
           # Parou antes do fim: emite veredito, mas NAO o ultimo declarado.
           incompleto) echo "NOTICE:  0. preparacao ......... OK" ;;
+          # Uma assercao sem o que verificar, mais a ultima declarada em OK.
+          # Isola a regra de inconclusivo: contagem e marcador final continuam
+          # satisfeitos, so o SEM DADOS reprova.
+          semdados)
+            echo "NOTICE:  0. contrato presente ......... SEM DADOS"
+            echo "NOTICE:  $ult ......... OK"
+            ;;
           *)
             i=1
             while [ "$i" -lt "$n" ]; do
