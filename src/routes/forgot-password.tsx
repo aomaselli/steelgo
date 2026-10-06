@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useHydrated } from "@/lib/useHydrated";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button, Card, Input } from "@/components/steel";
@@ -7,6 +8,7 @@ import { Button, Card, Input } from "@/components/steel";
 export const Route = createFileRoute("/forgot-password")({ component: ForgotPasswordPage });
 
 function ForgotPasswordPage() {
+  const hydrated = useHydrated();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -26,10 +28,11 @@ function ForgotPasswordPage() {
       <Card className="w-full max-w-md">
         <h1 className="mb-1 text-2xl font-bold text-graphite-50">Recuperar senha</h1>
         <p className="mb-6 text-sm text-graphite-400">Enviaremos um link para você redefinir.</p>
-        <form onSubmit={onSubmit} className="space-y-4">
+        {/* Ver src/lib/useHydrated.ts: antes da hidratacao o envio e nativo. */}
+        <form method="post" onSubmit={onSubmit} className="space-y-4">
           <Input type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
-          <Button type="submit" size="lg" className="w-full" disabled={loading}>
-            {loading ? "Enviando..." : "Enviar link"}
+          <Button type="submit" size="lg" className="w-full" disabled={!hydrated || loading}>
+            {!hydrated ? "Carregando..." : loading ? "Enviando..." : "Enviar link"}
           </Button>
         </form>
         <div className="mt-6 text-center text-sm">

@@ -9,6 +9,7 @@ import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
+import { useHydrated } from "@/lib/useHydrated";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
 /**
@@ -96,6 +97,7 @@ const VALUE_PROPS = [
 ];
 
 export function LoginPage() {
+  const hydrated = useHydrated();
   const {
     signIn,
     isAuthenticated,
@@ -246,7 +248,11 @@ export function LoginPage() {
           <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">Bem-vindo de volta</h2>
           <p className="text-sm text-[#8B949E] mb-8">Entre na sua conta para continuar</p>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          {/* method="post": se um envio nativo escapar (antes da hidratação,
+              ou se o botão for reabilitado por engano), os campos vão no CORPO
+              da requisição, nunca na barra de endereço. O padrão do HTML e GET,
+              e era por isso que a senha aparecia em /login?...&password=... */}
+          <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div>
               <label className="block text-sm text-[#C9D1D9] mb-1.5">Email</label>
               <div className="relative">
@@ -350,12 +356,14 @@ export function LoginPage() {
               </Link>
             </div>
 
+            {/* Desabilitado ate hidratar: fecha o clique E o Enter, porque o
+                envio implicito por Enter exige um botao de envio habilitado. */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={!hydrated || loading}
               className="w-full h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors"
             >
-              {loading ? "Entrando..." : "Entrar"}
+              {!hydrated ? "Carregando..." : loading ? "Entrando..." : "Entrar"}
             </button>
 
             {authError && (
