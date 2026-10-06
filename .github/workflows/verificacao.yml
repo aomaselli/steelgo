@@ -24,9 +24,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Node 24, não 22. A primeira execução real deste workflow reprovou em
+      # `npm ci` com "Missing: lru-cache@11.5.3 from lock file", e no mesmo log
+      # avisou "EBADENGINE @zxing/library required: node >= 24.0.0, current
+      # v22.23.3". O package-lock.json deste repositório foi gerado por npm 11,
+      # que vem com o node 24; o npm 10 do node 22 rejeita esse arquivo. Pinar 22
+      # era erro meu — a árvore já vive em 24, e é nela que tudo foi medido.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       # ------------------------------------------------------------------
