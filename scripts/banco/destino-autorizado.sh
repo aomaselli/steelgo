@@ -350,7 +350,13 @@ if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
   [ -r "$SUITES_ARQUIVO" ] \
     || nega_modo "Não há lista de suítes revisadas em '$SUITES_ARQUIVO'."
 
-  HASH_REAL=$(sha256sum "$SQL_ARQUIVO" | awk '{print $1}')
+  # O hash é do CONTEÚDO, com os fins de linha normalizados. Sem isso a
+  # autorização dependia de como o repositório foi conferido: no Windows, com
+  # `core.autocrlf`, o mesmo arquivo revisado aparece em CRLF ou em LF conforme
+  # o checkout, e o sha muda. A própria suíte acusou isso, recusando as oito
+  # suítes revisadas. Diferença de CR não é mudança de SQL; mudança de conteúdo
+  # é — e essa continua caducando a autorização.
+  HASH_REAL=$(tr -d '\r' < "$SQL_ARQUIVO" | sha256sum | awk '{print $1}')
   LINHA_SUITE=$(grep -iE "^${HASH_REAL}[[:space:]]" "$SUITES_ARQUIVO" | head -1 || true)
   if [ -z "$LINHA_SUITE" ]; then
     echo "  arquivo: $SQL_ARQUIVO" >&2

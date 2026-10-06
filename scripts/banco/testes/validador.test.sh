@@ -291,6 +291,17 @@ printf '%s  %s  0  1\n' "$HASH_BAT" "bateria.sql" > "$TMP/suites-sem-marcador.tx
   recusa "lista sem marcador final"               "campo 5" \
     -- teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
 
+# FIM DE LINHA NÃO É MUDANÇA DE CONTEÚDO. A mesma suíte revisada, conferida em
+# CRLF, tem de continuar autorizada — senão a autorização depende de como o
+# repositório foi clonado. Foi a própria suíte que acusou isso, recusando as
+# oito suítes reais quando o disco tinha LF e a lista guardava outro hash.
+# Mesmo nome de arquivo, noutro diretório, só que em CRLF — a lista autoriza
+# pelo caminho declarado, então o nome tem de ser o mesmo.
+mkdir -p "$TMP/crlf"
+sed 's/$/\r/' "$TMP/bateria.sql" > "$TMP/crlf/bateria.sql"
+PERMITE_EXEC=1 aceita "mesma suíte em CRLF: continua autorizada" \
+  teste --sql-arquivo "$TMP/crlf/bateria.sql" --permitir-parada-desligada
+
 cp "$TMP/bateria.sql" "$TMP/bateria-editada.sql"
 printf -- '-- comentario acrescentado depois da revisao\n' >> "$TMP/bateria-editada.sql"
 recusa "editada depois da revisão: caduca"        "não está na lista" \
