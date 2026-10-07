@@ -23,6 +23,7 @@ import {
   Factory,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useHydrated } from "@/lib/useHydrated";
 import { useLanguage } from "@/lib/i18n";
 import { maskCPF, maskCNPJ, maskPhone, onlyDigits, UFS } from "@/lib/masks";
 import type { UserRole } from "@/types/database";
@@ -373,11 +374,12 @@ function StepPersonal({
     resolver: zodResolver(personalSchema),
     defaultValues: initial ?? undefined,
   });
+  const hydrated = useHydrated();
   const pwd = watch("password") ?? "";
   const strength = passwordTier(pwd);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">Seus dados</h2>
 
       <IconInput
@@ -504,10 +506,10 @@ function StepPersonal({
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={!hydrated || submitting}
           className="flex-1 h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors"
         >
-          {submitting ? "Criando..." : "Próximo →"}
+          {!hydrated ? "Carregando..." : submitting ? "Criando..." : "Próximo →"}
         </button>
       </div>
     </form>
@@ -541,6 +543,7 @@ function StepCompany({
     resolver: zodResolver(schema),
     defaultValues: { type: role === "carrier" ? "transportadora" : "" },
   });
+  const hydrated = useHydrated();
   const [cnpjLoading, setCnpjLoading] = useState(false);
   const [cnpjStatus, setCnpjStatus] = useState<"ok" | "error" | null>(null);
 
@@ -574,7 +577,7 @@ function StepCompany({
       : [{ v: "transportadora", l: "Transportadora" }];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+    <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
       <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">Sua empresa</h2>
 
       <div>
@@ -702,11 +705,11 @@ function StepCompany({
         </button>
         <button
           type="submit"
-          disabled={submitting}
+          disabled={!hydrated || submitting}
           className="flex-1 h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors flex items-center justify-center gap-2"
         >
           {submitting && <Loader2 size={16} className="animate-spin" />}
-          {submitting ? "Criando..." : "Criar conta →"}
+          {!hydrated ? "Carregando..." : submitting ? "Criando..." : "Criar conta →"}
         </button>
       </div>
     </form>
