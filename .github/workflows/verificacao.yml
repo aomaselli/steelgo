@@ -9,6 +9,12 @@ name: verificacao
 
 on:
   pull_request:
+  # Sem este gatilho o resultado de um MERGE nunca era verificado: o workflow
+  # so rodava no pull request, contra o merge de base+head, e a main em si
+  # ficava sem execucao propria. Dois pull requests verdes podem produzir uma
+  # main quebrada ao se encontrarem, e ninguem ficava sabendo.
+  push:
+    branches: [main]
   workflow_dispatch:
 
 # Uma execução por referência: push novo cancela a anterior, que já não importa.
