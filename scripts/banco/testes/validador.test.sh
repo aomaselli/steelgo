@@ -15,6 +15,9 @@
 set -uo pipefail
 
 AQUI="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Invocado por `bash`, nao direto: assim a suite nao depende do bit de
+# execucao sobreviver ao checkout. Foi o que derrubou a primeira execucao no
+# runner Linux -- no Windows o Git Bash ignora o bit, e o defeito nao aparecia.
 VALIDADOR="$AQUI/../destino-autorizado.sh"
 RAIZ="$(cd "$AQUI/../../.." && pwd)"
 TMP="$(mktemp -d)"
@@ -69,7 +72,7 @@ recusa() {
   local desc="$1" esperado="$2"; shift 3
   : > "$SIM_ARGV"
   local saida rc
-  saida="$("$VALIDADOR" "$@" 2>&1)"; rc=$?
+  saida="$(bash "$VALIDADOR" "$@" 2>&1)"; rc=$?
   if [ "$rc" -eq 0 ]; then
     echo "  FALHOU  $desc -> ACEITOU (deveria recusar)"; falha_; return
   fi
@@ -89,7 +92,7 @@ aceita() {
   local desc="$1"; shift
   : > "$SIM_ARGV"
   local saida rc
-  saida="$("$VALIDADOR" "$@" 2>&1)"; rc=$?
+  saida="$(bash "$VALIDADOR" "$@" 2>&1)"; rc=$?
   if [ "$rc" -ne 0 ]; then
     echo "  FALHOU  $desc -> RECUSOU (deveria aceitar), rc=$rc"
     printf '%s\n' "$saida" | sed 's/^/            /' | head -6
