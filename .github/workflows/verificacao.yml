@@ -1,0 +1,162 @@
+name: verificacao
+
+# POR QUE ESTE ARQUIVO EXISTE
+# Até agora os checks do GitHub neste repositório eram só da Vercel: o
+# deployment de Preview (que roda `npm ci` + `vite build`) e um bot de
+# comentários. Nenhum deles executa `tsc`, `vitest` ou `eslint` — ou seja, o
+# "✅ All checks have passed" garantia apenas que o aplicativo empacota. Teste
+# quebrado e erro de tipo passavam direto.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Uma execução por referência: push novo cancela a anterior, que já não importa.
+concurrency:
+  group: verificacao-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Node 24, lido de `.nvmrc` — uma fonte só.
+      #
+      # A primeira execução real deste workflow reprovou em `npm ci` com
+      # "Missing: lru-cache@11.5.3 from lock file", e no mesmo log avisou
+      # "EBADENGINE @zxing/library required: node >= 24.0.0, current v22.23.3".
+      # O package-lock.json deste repositório foi gerado por npm 11, que vem com
+      # o node 24; o npm 10 do node 22 rejeita esse arquivo.
+      #
+      # Pinar a versão aqui dentro resolvia a CI e deixava o resto por conta do
+      # acaso: a Vercel escolhia a dela pelo painel, e quem clona não tinha onde
+      # ler qual é. Agora `.nvmrc` manda na CI, `engines.node` no package.json
+      # manda na Vercel, e os dois dizem 24.
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # A versão efetiva fica no log, para não ter de ser deduzida depois.
+      - name: Registrar a versao de Node em uso
+        shell: bash
+        run: |
+          set -o pipefail
+          { echo "node:         $(node -v)"
+            echo "npm:          $(npm -v)"
+            echo ".nvmrc:       $(cat .nvmrc)"
+            echo "engines.node: $(node -p "require('./package.json').engines.node")"
+          } | tee versao-node.log
+
+      # ------------------------------------------------------------------
+      # Quem verifica o verificador
+      # ------------------------------------------------------------------
+      # A comparação de TypeScript é código, e código com defeito aprova o que
+      # deveria reprovar — foi o que aconteceu com a versão anterior. Estas
+      # regressões rodam ANTES de qualquer medição e não dependem do projeto
+      # instalar nem compilar: trabalham sobre logs de tsc fabricados.
+      - name: Regressoes dos scripts de verificacao
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test .github/scripts/diagnosticos-tsc.test.mjs 2>&1 | tee regressoes-scripts.log
+
+      # ------------------------------------------------------------------
+      # Regressões do validador de destino de banco
+      # ------------------------------------------------------------------
+      # O validador decide se um comando chega a uma pilha Supabase local, e
+      # suas barreiras eram verificadas só na máquina de quem mexia nele. Aqui
+      # elas passam a ser verificadas a cada pull request.
+      #
+      # NÃO TOCA EM BANCO NENHUM. A suíte põe um `docker` SIMULADO na frente do
+      # PATH: nenhum contêiner é criado ou consultado, nenhuma conexão é aberta,
+      # e a lista de destinos usada é sintética, escrita num diretório
+      # temporário. Por isso roda no runner sem Docker e sem Postgres.
+      #
+      # `set -o pipefail` é o que faz uma falha da suíte derrubar o job: sem
+      # ele, o `tee` devolveria 0 e a reprovação passaria despercebida — que é
+      # exatamente o tipo de defeito que esta suíte existe para pegar.
+      - name: Regressoes do validador de destino (docker simulado)
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/banco/testes/validador.test.sh 2>&1 | tee regressoes-validador.log
+
+      - name: Instalar com o lockfile
+        shell: bash
+        run: |
+          set -o pipefail
+          npm ci 2>&1 | tee npm-ci.log
+
+      # ------------------------------------------------------------------
+      # TypeScript: compara DIAGNÓSTICOS, não contagens. Nada de sucesso forçado.
+      # ------------------------------------------------------------------
+      # Contagem igual não prova ausência de regressão: um erro novo que apaga
+      # um antigo mantém o número e passa despercebido. A comparação aqui é de
+      # MAPA diagnóstico → quantidade, com a chave formada por arquivo, código e
+      # mensagem. Linha e coluna ficam de fora de propósito: elas andam a cada
+      # edição e acusariam regressão onde não houve.
+      #
+      #   diagnóstico novo        -> REPROVA
+      #   mesma chave, mais       -> REPROVA
+      #   mesma chave, menos      -> aprova, e pede atualização da linha de base
+      #   chave que sumiu         -> aprova, idem
+      #
+      # O `set +e` existe só para CAPTURAR o código de saída do tsc, que é
+      # repassado ao extrator. É ele quem distingue "compilou e achou erros" de
+      # "não chegou a compilar": log vazio com código 127 é falha de execução, e
+      # não "zero erros". Não há `|| true` governando o resultado deste passo.
+      - name: Verificar tipos (diagnosticos, nao contagens)
+        shell: bash
+        run: |
+          set -euo pipefail
+          set +e
+          npx tsc --noEmit > tsc.log 2>&1
+          codigo_tsc=$?
+          set -e
+          echo "tsc terminou com codigo $codigo_tsc"
+          node .github/scripts/diagnosticos-tsc.mjs tsc.log \
+            --codigo-tsc "$codigo_tsc" --saida tsc-diagnosticos.txt
+          node .github/scripts/comparar-diagnosticos.mjs \
+            .github/tsc-baseline.txt tsc-diagnosticos.txt | tee tsc-comparacao.txt
+
+      # ------------------------------------------------------------------
+      # Suíte de testes
+      # ------------------------------------------------------------------
+      # `pipefail` garante que o `tee` não engula a falha do vitest.
+      - name: Rodar a suite
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee vitest.log
+
+      - name: Empacotar
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee build.log
+
+      # `if: always()` é o que preserva o log QUANDO FALHA — que é justamente
+      # quando ele serve para alguma coisa. `tsc.log` inteiro vai junto: quando
+      # o extrator recusa a medição, é nele que está a causa.
+      - name: Preservar logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-verificacao-${{ github.run_id }}
+          path: |
+            regressoes-scripts.log
+            regressoes-validador.log
+            npm-ci.log
+            tsc.log
+            tsc-diagnosticos.txt
+            tsc-comparacao.txt
+            vitest.log
+            build.log
+            versao-node.log
+          if-no-files-found: warn
+          retention-days: 30

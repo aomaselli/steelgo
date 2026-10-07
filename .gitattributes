@@ -1,0 +1,5 @@
+# Scripts de shell precisam de fim de linha LF mesmo quando conferidos no
+# Windows: com CRLF o interpretador le "#!/usr/bin/env bash\r" e falha com
+# "bad interpreter" ou "\r: command not found".
+*.sh text eol=lf
+scripts/banco/destinos.exemplo text eol=lf
