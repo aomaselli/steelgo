@@ -47,6 +47,31 @@ type RequestRow = {
   message?: string | null;
 };
 
+/**
+ * Consulta que falhou NAO e lista vazia. Lista vazia afirma "nao ha"; falha de
+ * consulta nao afirma nada, e dizer "nao ha" nesse caso esconde o defeito --
+ * foi exatamente o que aconteceu com a aba de convites, onde um 403 virava
+ * "Nenhum convite".
+ */
+function FalhaDeConsulta({ o, erro }: { o: string; erro: unknown }) {
+  const detalhe =
+    typeof erro === "object" && erro && "message" in erro
+      ? String((erro as { message: unknown }).message)
+      : String(erro);
+  return (
+    <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#F0C9C9] bg-[#FDF6F6] px-6 py-16 text-center">
+      <h3 className="text-xl font-semibold text-[#8B1F1F]">
+        Não foi possível carregar {o}
+      </h3>
+      <p className="max-w-md text-sm text-[#5B6B80]">
+        Isto é uma falha de consulta, não uma afirmação de que a lista está
+        vazia.
+      </p>
+      <p className="max-w-md text-xs text-[#8B1F1F]">{detalhe}</p>
+    </div>
+  );
+}
+
 function DriversPage() {
   const { company } = useAuth();
   const qc = useQueryClient();
@@ -78,16 +103,26 @@ function DriversPage() {
     },
   });
 
-  const { data: invitations = [] } = useQuery<InvitationRow[]>({
+  const { data: invitations = [], error: invitationsError } = useQuery<InvitationRow[]>({
     queryKey: ["carrier-invitations", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("driver_carrier_invitations").select("*").eq("carrier_id", carrier!.id).order("created_at", { ascending: false });
+      // Mesma regra da aba de solicitacoes, que faltava aqui: erro NAO pode
+      // virar lista vazia. Medido na instancia isolada: esta consulta volta
+      // 403 Forbidden, porque driver_carrier_invitations tem policy de SELECT
+      // para a transportadora mas NAO tem GRANT SELECT para `authenticated`.
+      // A aba dizia "Nenhum convite" -- uma afirmacao, nao um silencio.
+      const { data, error } = await supabase
+        .from("driver_carrier_invitations")
+        .select("*")
+        .eq("carrier_id", carrier!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data ?? []) as InvitationRow[];
     },
   });
 
-  const { data: requests = [] } = useQuery<RequestRow[]>({
+  const { data: requests = [], error: requestsError } = useQuery<RequestRow[]>({
     queryKey: ["carrier-requests", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
@@ -299,7 +334,9 @@ function DriversPage() {
 
       {tab === "invitations" && (
         <Card>
-          {invitations.length === 0 ? (
+          {invitationsError ? (
+            <FalhaDeConsulta o="os convites" erro={invitationsError} />
+          ) : invitations.length === 0 ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
                 <FileCheck2 className="h-6 w-6" />
@@ -331,7 +368,9 @@ function DriversPage() {
 
       {tab === "requests" && (
         <Card>
-          {requests.length === 0 ? (
+          {requestsError ? (
+            <FalhaDeConsulta o="as solicitações" erro={requestsError} />
+          ) : requests.length === 0 ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
                 <ShieldCheck className="h-6 w-6" />
