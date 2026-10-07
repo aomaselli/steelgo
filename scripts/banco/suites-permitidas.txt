@@ -1,0 +1,42 @@
+# Suites REVISADAS que podem rodar com --permitir-parada-desligada.
+#
+# Uma linha por suite, cinco campos:
+#
+#   <sha256>  <caminho>  <erros_esperados>  <assercoes_aprovadas>  <marcador_final>
+#
+# sha256 .............. a autorizacao. Editar a suite muda o hash e a
+#                       autorizacao CADUCA: quem editar revisa e atualiza esta
+#                       lista no mesmo pull request. A alternativa seria
+#                       adivinhar pelo texto se o arquivo ainda e confiavel, e
+#                       presenca textual de `rollback` ou `raise` nao prova nada
+#                       sobre o que acontece em execucao.
+# erros_esperados ..... quantos erros de SQL a suite produz LEGITIMAMENTE.
+#                       E OBRIGATORIO e numerico. Nao ha curinga: um `*` para
+#                       "nao conferido" deixava a suite rodar com essa
+#                       conferencia desligada, que e o mesmo que aprovar sem
+#                       contrato. Suite sem contrato de erros revisado nao roda.
+# assercoes_aprovadas . quantas assercoes a suite APROVA quando roda inteira.
+#                       Nao e o numero de linhas de veredito: uma linha
+#                       "SEM DADOS" foi executada e nao aprovou nada.
+# marcador_final ...... o rotulo da ULTIMA linha de veredito. Se a ultima linha
+#                       da saida nao for essa, a saida esta incompleta.
+#
+# PROCEDENCIA DOS NUMEROS. Campos 3 e 4 foram MEDIDOS em 06/10/2026 no destino
+# descartavel autorizado 'simulacao' (fcgsint1001, 87 migrations, as tres do
+# Compliance Gate aplicadas), numa execucao em que as oito suites deram
+# FALHOU=0 e inconclusivas=0. O campo 5 vem da revisao do fonte. Se qualquer um
+# estiver errado, a suite REPROVA ao rodar -- falha fechada, nunca aprovacao
+# indevida.
+#
+# Quem roda com esta permissao nao decide se passou: o validador conta as
+# assercoes APROVADAS na saida, reprova qualquer "SEM DADOS", exige o marcador
+# final, e termina em codigo nao zero se houver falha, saida incompleta,
+# ausencia de veredito ou divergencia no numero de erros.
+a448d07b3cee185cdcb3da6c3725a298d6202be9a62b2b579ca5041019d4ee1c  supabase/tests/fcg_behavioral.sql  0  19  B9. categoria sem tratamento recusada
+c4c684f1c59f77ebdc04b3db5442194bc02d0c557a8d2894bbc855c0db227dc2  supabase/tests/fcg_failure_containment.sql  0  8  B3. LIMITE DECLARADO: registro perdido
+8e8b7ee0a3c54b894080c4071de04b93189759a8ccf89a2d765e912588c85425  supabase/tests/fcg_idempotency.sql  0  10  I11. nulo != preenchido na impressao
+602d075b45d5d207215ddc6105a1f3c5286392ba2709570ff13d061642dad036  supabase/tests/fcg_migration_atomicity.sql  0  4  A4. as cinco tabelas da 1/3 seguem prese
+efb75b69b85b1771cc7ff23070e42d6119ea317f58460911e9e26f34c5cf3f5f  supabase/tests/fcg_observational_mode.sql  0  15  2.9 nenhuma falha de infraestrutura
+08ec674af2dc7559e974b6881e511aaac5f3519270bba0c8351386da8fd89f19  supabase/tests/fcg_phase1_checks.sql  0  15  15. flag restaurada ao valor original
+6f64b16e3ae22c45cf35691807cbd5e35d746a6c1d3401cb660f19c37a845913  supabase/tests/fcg_privilege_closure.sql  0  9  P9. a 1/3 nao cria sequencia nem view
+26da53ac36d868f11b11c1b4a3d6ae9d3ba10a97a8aff7791b2352399e4b928a  supabase/tests/fcg_rls_matrix.sql  0  13  R13. service_role le (

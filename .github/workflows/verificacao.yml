@@ -65,6 +65,27 @@ jobs:
           set -o pipefail
           node --test .github/scripts/diagnosticos-tsc.test.mjs 2>&1 | tee regressoes-scripts.log
 
+      # ------------------------------------------------------------------
+      # Regressões do validador de destino de banco
+      # ------------------------------------------------------------------
+      # O validador decide se um comando chega a uma pilha Supabase local, e
+      # suas barreiras eram verificadas só na máquina de quem mexia nele. Aqui
+      # elas passam a ser verificadas a cada pull request.
+      #
+      # NÃO TOCA EM BANCO NENHUM. A suíte põe um `docker` SIMULADO na frente do
+      # PATH: nenhum contêiner é criado ou consultado, nenhuma conexão é aberta,
+      # e a lista de destinos usada é sintética, escrita num diretório
+      # temporário. Por isso roda no runner sem Docker e sem Postgres.
+      #
+      # `set -o pipefail` é o que faz uma falha da suíte derrubar o job: sem
+      # ele, o `tee` devolveria 0 e a reprovação passaria despercebida — que é
+      # exatamente o tipo de defeito que esta suíte existe para pegar.
+      - name: Regressoes do validador de destino (docker simulado)
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/banco/testes/validador.test.sh 2>&1 | tee regressoes-validador.log
+
       - name: Instalar com o lockfile
         shell: bash
         run: |
@@ -129,6 +150,7 @@ jobs:
           name: logs-verificacao-${{ github.run_id }}
           path: |
             regressoes-scripts.log
+            regressoes-validador.log
             npm-ci.log
             tsc.log
             tsc-diagnosticos.txt
