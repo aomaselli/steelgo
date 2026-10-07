@@ -53,7 +53,9 @@ case "$sub" in
     case "$todos" in
       *pg_control_system*) echo "${SIM_SYSID:-}" ;;
       *)
-        cat > /dev/null
+        # SIM_STDIN guarda o que o psql REALMENTE recebeu, para a suite poder
+        # provar que o texto executado e o mesmo que foi autorizado.
+        if [ -n "${SIM_STDIN:-}" ]; then cat > "$SIM_STDIN"; else cat > /dev/null; fi
         # No modo de parada desligada o validador deriva o veredito da SAÍDA.
         # SIM_VEREDITO escolhe o que a "suíte" relata: ok (padrão), falhou, ou
         # mudo — nenhum marcador, para provar que ausência de veredito reprova.

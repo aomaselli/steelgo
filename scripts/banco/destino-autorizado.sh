@@ -298,7 +298,15 @@ if [ -n "$SQL_DIRETO" ]; then
 fi
 if [ -n "$SQL_ARQUIVO" ]; then
   [ -r "$SQL_ARQUIVO" ] || erro "não consigo ler '$SQL_ARQUIVO' no host"
-  conteudo="$(cat "$SQL_ARQUIVO")"
+  # NORMALIZAÇÃO DE FIM DE LINHA, UMA VEZ SÓ, AQUI. Daqui para a frente existe
+  # um texto só: é ele que é inspecionado, é dele que sai o sha256 da
+  # autorização, e é ele que vai para o psql. Validar um conteúdo e executar
+  # outro seria o buraco que a lista veio fechar.
+  #
+  # `sed 's/\r$//'` tira o CR apenas no FIM DA LINHA. Um CR no meio de uma
+  # cadeia é conteúdo, e continua contando: dois arquivos que diferem por isso
+  # têm hashes diferentes, e o segundo não está autorizado.
+  conteudo="$(sed 's/\r$//' "$SQL_ARQUIVO")"
   conferir_payload "$conteudo" "--sql-arquivo"
   SQL="${SQL:+$SQL$'\n'}$conteudo"
 fi
@@ -350,18 +358,19 @@ if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
   [ -r "$SUITES_ARQUIVO" ] \
     || nega_modo "Não há lista de suítes revisadas em '$SUITES_ARQUIVO'."
 
-  # O hash é do CONTEÚDO, com os fins de linha normalizados. Sem isso a
-  # autorização dependia de como o repositório foi conferido: no Windows, com
+  # O hash é do MESMO texto que vai ser executado — o `$SQL` já normalizado lá
+  # em cima, não uma segunda leitura do arquivo. Sem isso a autorização
+  # dependia de como o repositório foi conferido: no Windows, com
   # `core.autocrlf`, o mesmo arquivo revisado aparece em CRLF ou em LF conforme
   # o checkout, e o sha muda. A própria suíte acusou isso, recusando as oito
-  # suítes revisadas. Diferença de CR não é mudança de SQL; mudança de conteúdo
-  # é — e essa continua caducando a autorização.
-  HASH_REAL=$(tr -d '\r' < "$SQL_ARQUIVO" | sha256sum | awk '{print $1}')
+  # suítes revisadas. Fim de linha não é conteúdo; o resto é, e continua
+  # caducando a autorização.
+  HASH_REAL=$(printf '%s\n' "$SQL" | sha256sum | awk '{print $1}')
   # A própria lista também é um arquivo versionado, e também chega em CRLF numa
   # conferência no Windows. Sem tirar o CR aqui, o marcador final carregaria um
   # `\r` invisível e NUNCA casaria com a saída — a suíte reprovaria por "saída
   # incompleta" sem nada de errado. É o mesmo defeito do hash, um nível acima.
-  LINHA_SUITE=$(tr -d '\r' < "$SUITES_ARQUIVO" | grep -iE "^${HASH_REAL}[[:space:]]" | head -1 || true)
+  LINHA_SUITE=$(sed 's/\r$//' "$SUITES_ARQUIVO" | grep -iE "^${HASH_REAL}[[:space:]]" | head -1 || true)
   if [ -z "$LINHA_SUITE" ]; then
     echo "  arquivo: $SQL_ARQUIVO" >&2
     echo "  sha256:  $HASH_REAL" >&2

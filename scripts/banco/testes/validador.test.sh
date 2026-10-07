@@ -265,7 +265,9 @@ recusa "não listada: recusada"                    "não está na lista" \
 
 # Cinco campos: hash, caminho, erros esperados, asserções mínimas, marcador final.
 MARCADOR="1. verificacao simulada"
-HASH_BAT=$(sha256sum "$TMP/bateria.sql" | awk '{print $1}')
+# O hash é o do texto CANÔNICO — fim de linha normalizado — que é o mesmo que o
+# validador calcula e o mesmo que ele manda para o psql.
+HASH_BAT=$(printf '%s\n' "$(sed 's/\r$//' "$TMP/bateria.sql")" | sha256sum | awk '{print $1}')
 printf '%s  %s  0  1  %s\n' "$HASH_BAT" "bateria.sql" "$MARCADOR" > "$TMP/suites.txt"
 PERMITE_EXEC=1 aceita "listada: aceita"           teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada
 
@@ -309,6 +311,31 @@ sed 's/$/\r/' "$TMP/suites.txt" > "$TMP/suites-crlf.txt"
 ( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-crlf.txt"
   PERMITE_EXEC=1 aceita "lista em CRLF: marcador final ainda casa" \
     teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
+# EXECUTA EXATAMENTE O QUE FOI AUTORIZADO. O psql simulado guarda o que
+# recebeu; o sha disso tem de ser o sha que a lista autoriza. Normalizar para
+# validar e mandar outra coisa para o banco seria o buraco que a lista fechou.
+export SIM_STDIN="$TMP/recebido.sql"
+PERMITE_EXEC=1 aceita "(preparo) execução a partir do arquivo em CRLF" \
+  teste --sql-arquivo "$TMP/crlf/bateria.sql" --permitir-parada-desligada
+sha_recebido=$(sha256sum "$SIM_STDIN" | awk '{print $1}')
+if [ "$sha_recebido" = "$HASH_BAT" ]; then
+  echo "  ok      o psql recebeu exatamente o conteúdo autorizado"; ok_
+else
+  echo "  FALHOU  o psql recebeu conteúdo diferente do autorizado"
+  echo "            autorizado: $HASH_BAT"
+  echo "            recebido:   $sha_recebido"
+  falha_
+fi
+unset SIM_STDIN
+
+# CR NO MEIO DA LINHA É CONTEÚDO, não fim de linha. Dois arquivos que diferem
+# só por isso são arquivos diferentes, e o segundo não está autorizado.
+sed 's/select 1;/select 1;\r-- resto/' "$TMP/bateria.sql" > "$TMP/cr-no-meio.sql" 2>/dev/null \
+  || printf '\\set ON_ERROR_STOP off\nbegin;\nselect 1;\r-- resto\ndo $x$ begin raise notice $$1. verificacao ... OK$$; end $x$;\nrollback;\n' > "$TMP/cr-no-meio.sql"
+mkdir -p "$TMP/meio"; cp "$TMP/cr-no-meio.sql" "$TMP/meio/bateria.sql"
+recusa "CR no meio da linha é mudança de conteúdo" "não está na lista" \
+  -- teste --sql-arquivo "$TMP/meio/bateria.sql" --permitir-parada-desligada
 
 cp "$TMP/bateria.sql" "$TMP/bateria-editada.sql"
 printf -- '-- comentario acrescentado depois da revisao\n' >> "$TMP/bateria-editada.sql"
