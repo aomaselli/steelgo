@@ -357,7 +357,11 @@ if [ "$PARADA_DESLIGADA_OK" = "1" ]; then
   # suítes revisadas. Diferença de CR não é mudança de SQL; mudança de conteúdo
   # é — e essa continua caducando a autorização.
   HASH_REAL=$(tr -d '\r' < "$SQL_ARQUIVO" | sha256sum | awk '{print $1}')
-  LINHA_SUITE=$(grep -iE "^${HASH_REAL}[[:space:]]" "$SUITES_ARQUIVO" | head -1 || true)
+  # A própria lista também é um arquivo versionado, e também chega em CRLF numa
+  # conferência no Windows. Sem tirar o CR aqui, o marcador final carregaria um
+  # `\r` invisível e NUNCA casaria com a saída — a suíte reprovaria por "saída
+  # incompleta" sem nada de errado. É o mesmo defeito do hash, um nível acima.
+  LINHA_SUITE=$(tr -d '\r' < "$SUITES_ARQUIVO" | grep -iE "^${HASH_REAL}[[:space:]]" | head -1 || true)
   if [ -z "$LINHA_SUITE" ]; then
     echo "  arquivo: $SQL_ARQUIVO" >&2
     echo "  sha256:  $HASH_REAL" >&2

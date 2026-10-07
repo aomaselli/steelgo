@@ -302,6 +302,14 @@ sed 's/$/\r/' "$TMP/bateria.sql" > "$TMP/crlf/bateria.sql"
 PERMITE_EXEC=1 aceita "mesma suíte em CRLF: continua autorizada" \
   teste --sql-arquivo "$TMP/crlf/bateria.sql" --permitir-parada-desligada
 
+# A LISTA também chega em CRLF numa conferência no Windows. Sem tirar o CR, o
+# marcador final carregaria um `\r` invisível e a suíte reprovaria por "saída
+# incompleta" sem nada de errado.
+sed 's/$/\r/' "$TMP/suites.txt" > "$TMP/suites-crlf.txt"
+( export DESTINO_AUTORIZADO_SUITES="$TMP/suites-crlf.txt"
+  PERMITE_EXEC=1 aceita "lista em CRLF: marcador final ainda casa" \
+    teste --sql-arquivo "$TMP/bateria.sql" --permitir-parada-desligada )
+
 cp "$TMP/bateria.sql" "$TMP/bateria-editada.sql"
 printf -- '-- comentario acrescentado depois da revisao\n' >> "$TMP/bateria-editada.sql"
 recusa "editada depois da revisão: caduca"        "não está na lista" \
