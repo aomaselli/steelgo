@@ -43,3 +43,4 @@ supabase/.branches/
 # Destinos locais do validador de banco: caminhos e identificadores da
 # maquina de quem executa. Nunca versionar.
 scripts/banco/destinos.local
+scripts/banco/publicacao/destino-producao.local

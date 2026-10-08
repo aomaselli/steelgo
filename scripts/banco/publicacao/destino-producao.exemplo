@@ -1,0 +1,43 @@
+# Destino de produção — modelo
+#
+# Copie para `destino-producao.local` (que NÃO é versionado) e preencha.
+# Sem esse arquivo, ou sem uma identidade preenchida, 02-aplicar.sh RECUSA.
+# Essa recusa é o ponto: identidade insuficiente bloqueia a execução.
+#
+# Nenhum segredo entra aqui. Ref e identificadores de cluster não são
+# credenciais; a senha e as chaves ficam fora, na conexão (SUPABASE_DB_URL).
+
+# -----------------------------------------------------------------------------
+# ref do projeto Supabase de produção
+# -----------------------------------------------------------------------------
+# Confirmado em 08/10/2026 por três evidências independentes:
+#
+#   1. supabase/.temp/linked-project.json  -> {"ref":"lnzgddbnvrbjfvkzbmgf",
+#                                              "name":"steelgo"}
+#   2. bundle público de https://steelgobr.com.br -> lnzgddbnvrbjfvkzbmgf.supabase.co
+#   3. docs/fcg/procedimento-interrupcao-retomada.md declara que o `project_id`
+#      de supabase/config.toml NÃO é o projeto de produção
+#
+# Evidência negativa: o ref de supabase/config.toml não aparece em produção.
+ref=lnzgddbnvrbjfvkzbmgf
+
+# -----------------------------------------------------------------------------
+# identidade do cluster — PREENCHA ANTES DE APLICAR
+# -----------------------------------------------------------------------------
+# O ref vem da URL, que é texto de quem chama. A identidade vem de DENTRO do
+# banco e não acompanha um erro de digitação na URL. É a diferença entre
+# "alguém disse que é" e "é".
+#
+# Preencha ao menos UM dos dois. Rode:
+#
+#     ./02-aplicar.sh --capturar-identidade
+#
+# anote o que ele imprimir, CONFIRA no painel do Supabase que corresponde ao
+# projeto lnzgddbnvrbjfvkzbmgf, e só então cole aqui.
+#
+# `system_identifier` é gravado pelo initdb e identifica um diretório de dados.
+# Em serviço gerenciado o papel de aplicação costuma não poder lê-lo; nesse caso
+# use `datid`, o OID do banco, que é legível por qualquer papel e também difere
+# entre projetos.
+system_identifier=
+datid=
