@@ -6,7 +6,7 @@ import { Copy, FileCheck2, Plus, ShieldCheck, User as UserIcon } from "lucide-re
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
-import { Button, Card, Input, Modal, Select, Spinner } from "@/components/steel";
+import { Button, Card, Input, Modal, Select } from "@/components/steel";
 import { maskCPF } from "@/lib/masks";
 import { normalizeInviteContact } from "@/lib/driverLink";
 
@@ -48,26 +48,69 @@ type RequestRow = {
 };
 
 /**
- * Consulta que falhou NAO e lista vazia. Lista vazia afirma "nao ha"; falha de
- * consulta nao afirma nada, e dizer "nao ha" nesse caso esconde o defeito --
- * foi exatamente o que aconteceu com a aba de convites, onde um 403 virava
- * "Nenhum convite".
+ * O estado "nao ha nada" so pode ser exibido quando a consulta TERMINOU BEM.
+ *
+ * Uma consulta que falhou nao afirma nada sobre o conteudo da lista. Dizer
+ * "Nenhum convite" nesse caso afirma algo falso E esconde o defeito: foi
+ * exatamente o que aconteceu aqui, onde o PostgREST respondia 403
+ * (permission denied for table driver_carrier_invitations) e a tela mostrava
+ * "Nenhum convite -- ainda nao ha convites ativos para este carrier" com dois
+ * convites gravados no banco.
+ *
+ * Condicionar a exibicao apenas a `error` tambem nao resolve, porque existe um
+ * estado intermediario em que a consulta JA FALHOU mas `error` ainda e null:
+ *
+ *     status=pending  fetchStatus=paused  fetchFailureCount=1  error=null
+ *
+ * E o intervalo entre tentativas. O query-core so prossegue com a repeticao
+ * quando `focusManager.isFocused() && (networkMode === "always" ||
+ * onlineManager.isOnline())` (retryer.js), entao a janela sem foco ou sem rede
+ * mantem a consulta parada e o erro fora de `error` por tempo indeterminado.
+ *
+ * Por isso o criterio e `status === "success"`, nao a ausencia de erro:
+ * qualquer coisa diferente de sucesso nao autoriza a tela a falar pela lista.
  */
-function FalhaDeConsulta({ o, erro }: { o: string; erro: unknown }) {
-  const detalhe =
-    typeof erro === "object" && erro && "message" in erro
+function ConsultaIncompleta({
+  o,
+  erro,
+  fetchStatus,
+}: {
+  o: string;
+  erro: unknown;
+  fetchStatus: string;
+}) {
+  const pausada = fetchStatus === "paused";
+  const falhou = !!erro || pausada;
+  const detalhe = erro
+    ? typeof erro === "object" && erro && "message" in erro
       ? String((erro as { message: unknown }).message)
-      : String(erro);
+      : String(erro)
+    : pausada
+      ? "A tentativa não concluiu e a repetição está pausada. Ela é retomada quando esta janela volta ao foco ou a conexão é restabelecida."
+      : null;
+
   return (
-    <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#F0C9C9] bg-[#FDF6F6] px-6 py-16 text-center">
-      <h3 className="text-xl font-semibold text-[#8B1F1F]">
-        Não foi possível carregar {o}
+    <div
+      className={`flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border px-6 py-16 text-center ${
+        falhou
+          ? "border-[#F0C9C9] bg-[#FDF6F6]"
+          : "border-[#E2E8F0] bg-[#F8FAFC]"
+      }`}
+    >
+      <h3
+        className={`text-xl font-semibold ${falhou ? "text-[#8B1F1F]" : "text-[#1F3350]"}`}
+      >
+        {falhou ? `Não foi possível carregar ${o}` : `Carregando ${o}…`}
       </h3>
-      <p className="max-w-md text-sm text-[#5B6B80]">
-        Isto é uma falha de consulta, não uma afirmação de que a lista está
-        vazia.
-      </p>
-      <p className="max-w-md text-xs text-[#8B1F1F]">{detalhe}</p>
+      {falhou && (
+        <p className="max-w-md text-sm text-[#5B6B80]">
+          Isto é uma falha de consulta, não uma afirmação de que a lista está
+          vazia.
+        </p>
+      )}
+      {detalhe && (
+        <p className="max-w-md text-xs text-[#8B1F1F]">{detalhe}</p>
+      )}
     </div>
   );
 }
@@ -94,35 +137,47 @@ function DriversPage() {
     },
   });
 
-  const { data: drivers = [], isLoading: driversLoading } = useQuery<DriverRow[]>({
+  const { data: drivers = [], error: driversError, status: drvStatus, fetchStatus: drvFetch } = useQuery<DriverRow[]>({
     queryKey: ["carrier-drivers", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("drivers").select("*").eq("carrier_id", carrier!.id).order("created_at", { ascending: false });
+      // O erro era descartado aqui, e `data` indefinido virava lista vazia: a
+      // tela diria "nenhum motorista" para uma consulta que falhou. E o mesmo
+      // defeito que a aba de convites tinha.
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("*")
+        .eq("carrier_id", carrier!.id)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
       return (data ?? []) as DriverRow[];
     },
   });
 
-  const { data: invitations = [], error: invitationsError } = useQuery<InvitationRow[]>({
+  const { data: invitations = [], error: invitationsError, status: invStatus, fetchStatus: invFetch } = useQuery<InvitationRow[]>({
     queryKey: ["carrier-invitations", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
-      // Mesma regra da aba de solicitacoes, que faltava aqui: erro NAO pode
-      // virar lista vazia. Medido na instancia isolada: esta consulta volta
-      // 403 Forbidden, porque driver_carrier_invitations tem policy de SELECT
-      // para a transportadora mas NAO tem GRANT SELECT para `authenticated`.
-      // A aba dizia "Nenhum convite" -- uma afirmacao, nao um silencio.
-      const { data, error } = await supabase
-        .from("driver_carrier_invitations")
-        .select("*")
-        .eq("carrier_id", carrier!.id)
-        .order("created_at", { ascending: false });
+      // Pela RPC, nao pela tabela. `driver_carrier_invitations` tem o SELECT
+      // revogado de anon e authenticated DE PROPOSITO (20260813220000), porque
+      // guarda token_hash, expected_cpf_hash e expected_license_hash -- um
+      // `grant select` publicaria esses hashes pelo PostgREST, e hash de CPF e
+      // reversivel na pratica. Ler a tabela direto daqui devolvia 403 e a aba
+      // mostrava "Nenhum convite": uma afirmacao, nao um silencio.
+      //
+      // A funcao devolve so as colunas que esta tela usa, para o dono ou membro
+      // da empresa dona da transportadora. Ver
+      // supabase/migrations/20261008120000_list_carrier_driver_invitations_rpc.sql
+      const { data, error } = await supabase.rpc(
+        "list_carrier_driver_invitations",
+        { p_carrier_id: carrier!.id },
+      );
       if (error) throw error;
       return (data ?? []) as InvitationRow[];
     },
   });
 
-  const { data: requests = [], error: requestsError } = useQuery<RequestRow[]>({
+  const { data: requests = [], error: requestsError, status: reqStatus, fetchStatus: reqFetch } = useQuery<RequestRow[]>({
     queryKey: ["carrier-requests", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
@@ -274,8 +329,8 @@ function DriversPage() {
 
       {tab === "drivers" && (
         <>
-          {driversLoading ? (
-            <div className="flex justify-center p-12"><Spinner /></div>
+          {drvStatus !== "success" ? (
+            <ConsultaIncompleta o="os motoristas" erro={driversError} fetchStatus={drvFetch} />
           ) : !drivers.length ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
@@ -334,8 +389,8 @@ function DriversPage() {
 
       {tab === "invitations" && (
         <Card>
-          {invitationsError ? (
-            <FalhaDeConsulta o="os convites" erro={invitationsError} />
+          {invStatus !== "success" ? (
+            <ConsultaIncompleta o="os convites" erro={invitationsError} fetchStatus={invFetch} />
           ) : invitations.length === 0 ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
@@ -368,8 +423,8 @@ function DriversPage() {
 
       {tab === "requests" && (
         <Card>
-          {requestsError ? (
-            <FalhaDeConsulta o="as solicitações" erro={requestsError} />
+          {reqStatus !== "success" ? (
+            <ConsultaIncompleta o="as solicitações" erro={requestsError} fetchStatus={reqFetch} />
           ) : requests.length === 0 ? (
             <div className="flex min-h-[220px] flex-col items-center justify-center gap-3 rounded-[16px] border border-[#E3EAF3] bg-[#F8FAFD] px-6 py-16 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#EAF2FF] text-[#1B6CB8]">
