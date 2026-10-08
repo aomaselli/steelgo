@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { LogOut, Star, BadgeCheck, Truck, Settings, ChevronRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { DriverShell } from "@/components/driver/DriverShell";
 import { useAuth } from "@/contexts/AuthContext";
 import { DriverPrivacyCard } from "@/components/trip/DriverPrivacyCard";
@@ -10,8 +12,33 @@ import { tripTracker } from "@/lib/geoTracker";
 export const Route = createFileRoute("/driver/profile")({ component: ProfilePage });
 
 function ProfilePage() {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, user } = useAuth();
   const navigate = useNavigate();
+
+  // O selo dizia "Motorista verificado" para qualquer conta. Aqui ele passa a
+  // repetir o que o banco registra sobre a CNH — inclusive quando é "pending".
+  const { data: licenseStatus } = useQuery<string | null>({
+    queryKey: ["driver-license-status", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("drivers")
+        .select("license_verification_status")
+        .eq("profile_id", user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data?.license_verification_status as string | null) ?? null;
+    },
+  });
+  const licenseApproved = licenseStatus === "approved";
+  const licenseLabel =
+    licenseStatus === "approved"
+      ? "CNH verificada"
+      : licenseStatus === "rejected"
+        ? "CNH recusada"
+        : licenseStatus
+          ? "CNH em verificação"
+          : "Sem registro de motorista";
   const name = profile?.full_name ?? "Motorista";
   const initials = name
     .split(" ")
@@ -37,22 +64,31 @@ function ProfilePage() {
           <div className="text-[17px] text-graphite-50 font-medium truncate">{name}</div>
           <div className="text-[13px] text-graphite-200 truncate">{profile?.email}</div>
           <div className="flex items-center gap-1 mt-1">
-            <BadgeCheck size={14} className="text-steel-blue-400" />
-            <span className="text-[12px] text-steel-blue-400">Motorista verificado</span>
+            <BadgeCheck
+              size={14}
+              className={licenseApproved ? "text-steel-blue-400" : "text-graphite-200"}
+            />
+            <span
+              className={`text-[12px] ${licenseApproved ? "text-steel-blue-400" : "text-graphite-200"}`}
+            >
+              {licenseLabel}
+            </span>
           </div>
         </div>
       </div>
 
+      {/* 4.9 e 127 eram literais, iguais para toda conta. Enquanto não houver
+          avaliação e contagem apuradas, a tela declara a ausência. */}
       <div className="mx-4 mt-3 grid grid-cols-2 gap-2">
         <Stat
-          icon={<Star size={20} className="text-amber-400 fill-amber-400" />}
-          value="4.9"
-          label="Avaliação"
+          icon={<Star size={20} className="text-graphite-200" />}
+          value="—"
+          label="Sem avaliação"
         />
         <Stat
-          icon={<Truck size={20} className="text-steel-blue-400" />}
-          value="127"
-          label="Entregas"
+          icon={<Truck size={20} className="text-graphite-200" />}
+          value="—"
+          label="Entregas não apuradas"
         />
       </div>
 

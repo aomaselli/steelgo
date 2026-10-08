@@ -493,6 +493,8 @@ const translations = {
       toastInviteCreated: "Convite criado",
       toastCopyFail: "Não foi possível copiar o token",
       toastRequestApproved: "Solicitação aprovada",
+      toastDuplicateLicense:
+        "Já existe motorista cadastrado com esta CNH nesta transportadora. Verifique o cadastro existente antes de aprovar.",
       toastRequestRejected: "Solicitação rejeitada",
       toastDefaultRejectReason: "Sem justificativa",
       toastLicenseApproved: "Licença aprovada",
@@ -1146,6 +1148,8 @@ const translations = {
       toastInviteCreated: "Invitation created",
       toastCopyFail: "Could not copy the token",
       toastRequestApproved: "Request approved",
+      toastDuplicateLicense:
+        "A driver with this licence is already registered for this carrier. Check the existing record before approving.",
       toastRequestRejected: "Request rejected",
       toastDefaultRejectReason: "No justification",
       toastLicenseApproved: "License approved",
@@ -1655,6 +1659,8 @@ const translations = {
       toastInviteCreated: "Invitación creada",
       toastCopyFail: "No se pudo copiar el token",
       toastRequestApproved: "Solicitud aprobada",
+      toastDuplicateLicense:
+        "Ya existe un conductor registrado con esta licencia en esta transportadora. Revise el registro existente antes de aprobar.",
       toastRequestRejected: "Solicitud rechazada",
       toastDefaultRejectReason: "Sin justificación",
       toastLicenseApproved: "Licencia aprobada",
