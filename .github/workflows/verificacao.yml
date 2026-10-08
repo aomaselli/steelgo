@@ -92,6 +92,25 @@ jobs:
           set -o pipefail
           bash scripts/banco/testes/validador.test.sh 2>&1 | tee regressoes-validador.log
 
+      # ------------------------------------------------------------------
+      # Regressões do procedimento de publicação da migration
+      # ------------------------------------------------------------------
+      # O procedimento de publicação decide a que projeto Supabase um DDL de
+      # produção chega. Uma versão dele derivava a negação do destino proibido
+      # apenas de `supabase/config.toml`: bastava editar uma linha daquele
+      # arquivo para o destino proibido deixar de ser negado. Estas regressões
+      # existem para que isso não volte — a seção A troca e apaga o
+      # `project_id` e exige que o proibido continue recusado.
+      #
+      # NÃO CONECTA A BANCO NENHUM e não precisa de rede. Cada caso monta uma
+      # árvore temporária com o seu próprio `config.toml` e para nas barreiras
+      # de shell, antes de qualquer psql.
+      - name: Regressoes do procedimento de publicacao
+        shell: bash
+        run: |
+          set -o pipefail
+          bash scripts/banco/publicacao/testes/publicacao.test.sh 2>&1 | tee regressoes-publicacao.log
+
       - name: Instalar com o lockfile
         shell: bash
         run: |
@@ -157,6 +176,7 @@ jobs:
           path: |
             regressoes-scripts.log
             regressoes-validador.log
+            regressoes-publicacao.log
             npm-ci.log
             tsc.log
             tsc-diagnosticos.txt

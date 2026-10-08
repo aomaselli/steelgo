@@ -1,0 +1,65 @@
+# Destino de produção — modelo
+#
+# Copie para `destino-producao.local` (que NÃO é versionado) e preencha.
+# Sem esse arquivo, ou sem identidade preenchida, 02-aplicar.sh RECUSA.
+# Essa recusa é o ponto: identidade insuficiente bloqueia a execução.
+#
+# Nenhum segredo entra aqui. Ref e identificadores de cluster não são
+# credenciais; a senha e as chaves ficam fora, na conexão (SUPABASE_DB_URL).
+
+# -----------------------------------------------------------------------------
+# ref do projeto Supabase de produção
+# -----------------------------------------------------------------------------
+# Confirmado em 08/10/2026 por três evidências independentes:
+#
+#   1. supabase/.temp/linked-project.json  -> {"ref":"lnzgddbnvrbjfvkzbmgf",
+#                                              "name":"steelgo"}
+#   2. bundle público de https://steelgobr.com.br -> lnzgddbnvrbjfvkzbmgf.supabase.co
+#   3. docs/fcg/procedimento-interrupcao-retomada.md declara que o `project_id`
+#      de supabase/config.toml NÃO é o projeto de produção
+#
+# Evidência negativa: o ref de supabase/config.toml não aparece em produção.
+ref=lnzgddbnvrbjfvkzbmgf
+
+# -----------------------------------------------------------------------------
+# identidade do cluster — PREENCHA ANTES DE APLICAR
+# -----------------------------------------------------------------------------
+# O ref vem da URL, que é texto de quem chama: não sobrevive a um erro de
+# digitação. A identidade vem de DENTRO do banco. É a diferença entre "alguém
+# disse que é" e "é".
+#
+# SÓ VALE IDENTIDADE QUE DISTINGA ESTE PROJETO DOS DEMAIS.
+# O OID do banco (`datid`) NÃO serve e não é mais aceito: medido em 08/10/2026,
+# dois clusters distintos tinham `datid=5`. Uma identidade que coincide entre
+# destinos diferentes confirmaria o destino errado — que é exatamente o risco
+# que este arquivo existe para eliminar.
+#
+# Preencha UM dos dois campos abaixo. O README, seção "Identidade", explica como
+# obter cada um e, principalmente, como VINCULÁ-LO ao projeto
+# lnzgddbnvrbjfvkzbmgf.
+
+# (A) PREFERIDO — system_identifier
+# Gravado pelo initdb; identifica um diretório de dados e não acompanha
+# recriação de contêiner nem renomeação. Obtenha com
+#
+#     ./02-aplicar.sh --capturar-identidade
+#
+# e CORROBORE lendo o mesmo valor pelo SQL editor do painel do projeto
+# lnzgddbnvrbjfvkzbmgf — uma sessão que, por construção, só alcança aquele
+# projeto. O valor igual nos dois lados é o que vincula a identidade ao ref.
+system_identifier=
+
+# (B) ALTERNATIVA VERIFICÁVEL — marcador plantado pelo painel
+# Use somente se o papel de aplicação não puder ler `pg_control_system()`.
+# NÃO é uma exigência menor: o marcador só pode ser criado por quem tem acesso
+# ao painel do projeto lnzgddbnvrbjfvkzbmgf, e é isso que o torna verificável.
+#
+# No SQL editor DAQUELE projeto, uma única vez:
+#
+#     create schema if not exists identidade_publicacao;
+#     comment on schema identidade_publicacao is
+#       'lnzgddbnvrbjfvkzbmgf:<um nonce que você gerou>';
+#
+# Depois cole abaixo o comentário inteiro, idêntico ao que você escreveu.
+# O script exige que ele comece pelo ref declarado acima.
+marcador_identidade=
