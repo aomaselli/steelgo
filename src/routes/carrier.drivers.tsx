@@ -4,6 +4,10 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Copy, FileCheck2, Plus, ShieldCheck, User as UserIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  listCarrierDriverInvitations,
+  type CarrierDriverInvitation,
+} from "@/lib/carrierDriverInvitations";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/lib/i18n";
 import { Button, Card, Input, Modal, Select } from "@/components/steel";
@@ -29,14 +33,6 @@ type DriverRow = {
   license_verification_status?: string | null;
 };
 
-type InvitationRow = {
-  id: string;
-  driver_id: string;
-  status: string;
-  invited_email?: string | null;
-  invited_phone?: string | null;
-  expires_at?: string | null;
-};
 
 type RequestRow = {
   id: string;
@@ -154,7 +150,7 @@ function DriversPage() {
     },
   });
 
-  const { data: invitations = [], error: invitationsError, status: invStatus, fetchStatus: invFetch } = useQuery<InvitationRow[]>({
+  const { data: invitations = [], error: invitationsError, status: invStatus, fetchStatus: invFetch } = useQuery<CarrierDriverInvitation[]>({
     queryKey: ["carrier-invitations", carrier?.id],
     enabled: !!carrier?.id,
     queryFn: async () => {
@@ -168,12 +164,9 @@ function DriversPage() {
       // A funcao devolve so as colunas que esta tela usa, para o dono ou membro
       // da empresa dona da transportadora. Ver
       // supabase/migrations/20261008120000_list_carrier_driver_invitations_rpc.sql
-      const { data, error } = await supabase.rpc(
-        "list_carrier_driver_invitations",
-        { p_carrier_id: carrier!.id },
-      );
+      const { data, error } = await listCarrierDriverInvitations(carrier!.id);
       if (error) throw error;
-      return (data ?? []) as InvitationRow[];
+      return data ?? [];
     },
   });
 

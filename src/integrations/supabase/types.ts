@@ -7996,6 +7996,20 @@ export type Database = {
         Returns: boolean
       }
       is_dispute_visible: { Args: { p_case_id: string }; Returns: boolean }
+      list_carrier_driver_invitations: {
+        Args: { p_carrier_id: string }
+        Returns: {
+          accepted_at: string
+          created_at: string
+          driver_id: string
+          expires_at: string
+          id: string
+          invited_email: string
+          invited_phone: string
+          revoked_at: string
+          status: string
+        }[]
+      }
       list_company_members: {
         Args: { p_company_id: string }
         Returns: {
