@@ -220,12 +220,24 @@ export function DriverTripPanel({
     }
   }
 
+  // O aviso de privacidade vale para TODA etapa, nao so para a primeira.
+  //
+  // Medido na instancia descartavel: o aviso foi republicado (0.4) com a viagem
+  // ja em en_route_to_pickup e o motorista reconhecendo a 0.3. A partir dai
+  // `tripTracker.start` nao liga mais o rastreador -- corretamente, porque o
+  // consentimento vigente nao foi dado -- e `captureOnce({reason:"command"})`
+  // passa a devolver null. A verificacao so existia no ramo de
+  // `en_route_to_pickup`, entao "Cheguei na coleta" seguia direto para
+  // `transition`, enfileirava um comando SEM posicao e o servidor o recusava com
+  // `location_required`. O motorista via "Comando recusado (location_required)",
+  // sem nenhuma indicacao do que fazer e sem caminho para reconhecer o aviso
+  // novo: a viagem ficava travada.
   function onNextStep(to: TripStatus) {
+    if (!privacy_notice.acknowledged) {
+      setNoticeOpen(true);
+      return;
+    }
     if (to === "en_route_to_pickup") {
-      if (!privacy_notice.acknowledged) {
-        setNoticeOpen(true);
-        return;
-      }
       setExplainer("trip_start"); // nada e lido ate "Continuar"
       return;
     }
@@ -236,6 +248,22 @@ export function DriverTripPanel({
     setBusy(true);
     try {
       const pos = await getCommandPosition();
+      // Sem posicao o servidor recusa com `location_required`, sempre. Enfileirar
+      // assim mesmo so trocava uma causa conhecida por uma recusa opaca, e ainda
+      // consumia um command_id. Melhor nao enfileirar e dizer o que falta.
+      if (pos.lat == null || pos.lng == null || pos.accuracy == null) {
+        if (!privacy_notice.acknowledged) {
+          setNoticeOpen(true);
+          toast.error(
+            "O aviso de privacidade mudou. Reconheça a versão vigente para o rastreamento voltar a funcionar.",
+          );
+        } else {
+          toast.error(
+            "Sem localização do aparelho. Abra o aplicativo em primeiro plano e permita o acesso à localização.",
+          );
+        }
+        return;
+      }
       const ctx = await newCaptureCtx(pos);
       await enqueueCommand({
         command_id: ctx.commandId,
