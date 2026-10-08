@@ -8,8 +8,11 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
-    // src/server/**/__tests__ usa node:test (runner nativo), nao vitest
-    exclude: ["node_modules/**", "src/server/**"],
+    // src/server/** JA FOI excluido daqui, com a nota de que usava node:test.
+    // Nao usava: o runner nativo nao resolve os imports relativos sem extensao
+    // daqueles arquivos, entao aqueles testes nao rodavam em lugar nenhum --
+    // nem no vitest, nem na CI, nem a mao. Agora rodam aqui.
+    exclude: ["node_modules/**"],
     restoreMocks: true,
   },
 });

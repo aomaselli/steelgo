@@ -18,6 +18,13 @@ export interface SenatranDriverRequest {
 
 export interface SenatranProvider {
   readonly name: "senatran";
+  /**
+   * `true` apenas em provider simulado. Esta na INTERFACE, nao so nas classes
+   * falsas, para que todo provider novo seja obrigado a se declarar -- quem
+   * esquecer nao compila. A fabrica recusa qualquer `simulated: true` nos
+   * modos de integracao real.
+   */
+  readonly simulated: boolean;
   validateDriver(
     input: SenatranDriverRequest,
   ): Promise<ProviderOutcome<DriverStatusResult>>;
@@ -32,6 +39,7 @@ export type FakeSenatranScenario =
 
 export class FakeSenatranProvider implements SenatranProvider {
   readonly name = "senatran" as const;
+  readonly simulated = true as const;
 
   private readonly scenario: FakeSenatranScenario;
 
