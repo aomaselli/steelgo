@@ -12,9 +12,49 @@ Esse SHA está fixado em `02-aplicar.sh`. Qualquer edição do arquivo muda o SH
 o script recusa — o que se aplica é exatamente o texto revisado na cabeça
 `364d54336ae2234ee2302f316394a6705dd26b03` do PR #4.
 
-> **A migration não vem desta alteração.** Ela vive no PR #4. Rode este
-> procedimento a partir de um checkout que a contenha. Sem o arquivo, o script
-> para e diz isso.
+> **A migration não vem desta alteração.** Ela vive no PR #4, e este
+> procedimento vive no PR #10. Ver **Checkout reproduzível** abaixo. Sem o
+> arquivo da migration, o script para e diz isso.
+
+## Checkout reproduzível
+
+O procedimento e a migration estão em alterações separadas, e nenhuma das duas
+foi mesclada. Para executar, monte uma árvore que contenha as duas, por SHA —
+não por nome de branch, que se move.
+
+| Peça | Origem | SHA |
+|---|---|---|
+| migration `20261008120000` | PR #4, `fix/driver-link-and-pod` | `364d54336ae2234ee2302f316394a6705dd26b03` |
+| procedimento + homologação | PR #10, `chore/procedimento-publicacao` | head do #10 (ver descrição do PR) |
+
+```bash
+MIG=364d54336ae2234ee2302f316394a6705dd26b03     # PR #4
+PROC=<head do PR #10>                            # git rev-parse origin/chore/procedimento-publicacao
+
+git fetch origin
+git checkout --detach "$MIG"                     # árvore com a migration
+git checkout "$PROC" -- scripts/banco/publicacao docs/homologacao
+```
+
+A ordem importa: o `checkout --detach` fixa a base na migration revisada, e o
+segundo comando sobrepõe só os caminhos do procedimento. Nada mais do #10 entra
+na árvore.
+
+### Conferir a árvore montada
+
+```bash
+git rev-parse HEAD                               # tem de ser o SHA do #4
+sed 's/\r$//' supabase/migrations/20261008120000_list_carrier_driver_invitations_rpc.sql \
+  | sha256sum                                    # tem de ser 93a99336…
+bash scripts/banco/publicacao/testes/publicacao.test.sh
+```
+
+A suíte de regressões roda o caso **D1** apenas quando a migration está
+presente na árvore — é o sinal de que a montagem deu certo. Sem ela, D1 aparece
+como *ignorado*, nunca como aprovado.
+
+Depois, `02-aplicar.sh` recusa qualquer conteúdo cujo sha256 não seja o
+revisado, então uma montagem errada não chega ao banco.
 
 ## O destino de produção
 
@@ -34,16 +74,23 @@ banco nenhum** e sem imprimir segredo algum:
 Evidência negativa: o ref de `supabase/config.toml` **não aparece** no bundle de
 produção (0 ocorrências; o de produção, 1).
 
-### `supabase/config.toml` não é produção — e é proibido
+### `iaabxrclxpsagdijkrcx` — negação permanente
 
-O `project_id` declarado lá é de outro projeto, **proibido inclusive para
-consulta**. Uma versão anterior deste procedimento o tomou por produção e
-chegou a exigir que a URL o mencionasse; estaria conduzindo o operador ao
-destino errado. Agora ele entra na **lista de negação**, lida do próprio
-`config.toml` (se o arquivo mudar, a negação acompanha):
+Esse projeto é **proibido inclusive para consulta**. A negação está escrita em
+`02-aplicar.sh`, no código, e **não depende de `supabase/config.toml`**: editar,
+mover ou apagar aquele arquivo não libera o destino.
 
 - `destino-producao.local` não pode declarar esse ref;
 - a URL não pode mencioná-lo.
+
+Além da permanente, nega-se também o que `config.toml` declarar — aquele id não
+é produção, seja ele qual for. Essa leitura **soma, nunca substitui**, e a
+ausência do arquivo não enfraquece a lista permanente.
+
+> Uma versão anterior derivava a negação **apenas** de `config.toml`: bastava
+> trocar uma linha daquele arquivo para o destino proibido deixar de ser negado.
+> A seção A de `testes/publicacao.test.sh` existe para impedir que isso volte —
+> ela troca e apaga o `project_id` e exige que o proibido continue recusado.
 
 ### Por que não se usa `scripts/banco/destino-autorizado.sh`
 
@@ -51,27 +98,77 @@ Aquele validador serve a destinos **descartáveis** e recusa o id de
 `config.toml` na barreira 0. Produção é outro destino, com outras barreiras — as
 deste diretório.
 
-## Identidade insuficiente bloqueia a execução
+## Identidade
 
 O ref vem da URL, que é texto de quem chama: não sobrevive a um erro de
-digitação. A identidade vem **de dentro do banco**.
+digitação. A identidade vem **de dentro do banco**, e tem de ser pinada em
+`destino-producao.local` (cópia de `destino-producao.exemplo`, não versionada)
+antes de aplicar.
 
-Antes de aplicar, preencha `destino-producao.local` (cópia de
-`destino-producao.exemplo`, não versionada) com ao menos um de:
+**Identidade insuficiente bloqueia a execução.** Sem identidade pinada, ou se a
+pinada não puder ser conferida no destino, o procedimento recusa. Não há caminho
+em que a aplicação siga sem identidade lida de dentro do banco.
 
-- `system_identifier` — gravado pelo `initdb`, identifica um diretório de dados;
-- `datid` — OID do banco, legível por qualquer papel.
+### O OID do banco não é identidade
+
+`datid` **não é mais aceito**. Medido em 08/10/2026, dois clusters distintos
+tinham `datid=5`:
+
+```
+simulacao   datid=5   system_identifier=7691806784564547622
+ensaio      datid=5   system_identifier=7690680126094364709
+```
+
+Uma identidade que coincide entre destinos diferentes confirmaria o destino
+errado — o oposto do que ela existe para fazer. O `datid` continua sendo
+impresso, rotulado como informativo, e não é lido de volta.
+
+### (A) Preferido: `system_identifier`
+
+Gravado pelo `initdb`; identifica um diretório de dados e não acompanha
+recriação de contêiner nem renomeação.
 
 ```bash
 ./02-aplicar.sh --capturar-identidade   # lê e imprime; não altera nada
 ```
 
-Confira o que aparecer **no painel do Supabase**, contra o projeto
-`lnzgddbnvrbjfvkzbmgf`, e só então cole no arquivo.
+**Origem confiável e vínculo com o projeto.** O valor impresso por esse comando
+vem da conexão que você está usando — e é justamente essa conexão que queremos
+provar. Por isso ele **não basta sozinho**: leia o mesmo valor por um segundo
+caminho que só alcança o projeto autorizado, o **SQL editor do painel do projeto
+`lnzgddbnvrbjfvkzbmgf`**:
 
-Sem identidade pinada, ou se a pinada não puder ser conferida no destino, o
-procedimento **recusa**. Não há caminho em que a aplicação siga sem identidade
-lida de dentro do banco.
+```sql
+select system_identifier from pg_control_system();
+```
+
+Aquela sessão é autenticada contra aquele projeto por construção — não há URL
+para digitar errado. **Os dois valores iguais é o que vincula a identidade ao
+ref.** Só então cole em `destino-producao.local`.
+
+### (B) Alternativa verificável: marcador plantado pelo painel
+
+Use **somente** se o papel de aplicação não puder ler `pg_control_system()` —
+o `--capturar-identidade` diz quando é o caso. Não é uma exigência menor, é
+outra forma de obter a mesma prova.
+
+No SQL editor **do projeto `lnzgddbnvrbjfvkzbmgf`**, uma única vez:
+
+```sql
+create schema if not exists identidade_publicacao;
+comment on schema identidade_publicacao is 'lnzgddbnvrbjfvkzbmgf:<um nonce que você gerou>';
+```
+
+Depois cole o comentário inteiro em `marcador_identidade`.
+
+**Por que é verificável:** o marcador só pode ter sido criado por quem tem
+acesso ao painel daquele projeto, e o nonce é seu. Se a conexão cair noutro
+lugar, o schema não existe ou o comentário difere, e o procedimento para. O
+script exige ainda que o marcador comece pelo ref declarado — um marcador que
+não nomeia o projeto não prova vínculo com ele.
+
+É um objeto novo e vazio, sem dado algum; para remover depois,
+`drop schema identidade_publicacao`.
 
 ## Ordem
 
@@ -105,7 +202,7 @@ Rodadas automaticamente por `02-aplicar.sh --aplicar`. Para rodar à parte:
 psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 \
   -v ref_esperado=lnzgddbnvrbjfvkzbmgf \
   -v identidade_esperada=<system_identifier ou vazio> \
-  -v datid_esperado=<datid ou vazio> \
+  -v marcador_esperado=<marcador do painel ou vazio> \
   -f 01-precondicoes.sql
 ```
 
@@ -197,33 +294,64 @@ O inverso, também recusado por `01`. Apague a linha
 (`delete from supabase_migrations.schema_migrations where version='20261008120000'`)
 e refaça a partir de `01`.
 
-## Ensaio executado
+## Regressões
 
-Nenhum passo foi executado em produção. O procedimento foi ensaiado nos destinos
-descartáveis, pelo validador, e as barreiras de shell com valores forjados.
+```bash
+bash scripts/banco/publicacao/testes/publicacao.test.sh
+```
 
-**Portão de identidade** (destino `ensaio`):
+Rodam na CI, no passo *Regressoes do procedimento de publicacao*. **Não
+conectam a banco nenhum** e não precisam de rede: cada caso monta uma árvore
+temporária com o seu próprio `config.toml` e para nas barreiras de shell,
+antes de qualquer `psql`.
 
-| Caso | Resultado |
-|---|---|
-| sem identidade pinada | bloqueou, saída 3 |
-| `system_identifier` errado | bloqueou, saída 3 |
-| `datid` errado | bloqueou, saída 3 |
-| ambos certos | passou, "2 sinais" |
-| só `datid`, certo | passou, "1 sinal" |
-
-**Barreiras de `02-aplicar.sh`** (nenhum caso conecta):
+**Seção A — negação permanente** (o coração da suíte: mexer em `config.toml`
+não pode liberar o proibido):
 
 | Caso | Resultado |
 |---|---|
-| sem `destino-producao.local` | recusou |
-| `ref` = `project_id` de `config.toml` | recusou |
-| sem identidade pinada | recusou |
-| URL cita o projeto proibido | recusou |
-| URL de outro projeto | recusou |
-| URL local | recusou |
-| migration adulterada (SHA diverge) | recusou |
-| tudo certo, `--conferir` | passou, nada enviado |
+| `config.toml` aponta para produção, destino declara o proibido | recusou |
+| `config.toml` trocado por outro id | recusou |
+| `config.toml` apagado | recusou |
+| `config.toml` declara o próprio proibido | recusou |
+| URL cita o proibido, `config.toml` trocado | recusou |
+| URL cita o proibido, `config.toml` apagado | recusou |
+| o id de `config.toml` também é negado (soma, não substitui) | recusou |
+
+**Seção B — identidade:** sem identidade pinada → recusou; `datid` presente no
+arquivo não é mais lido e não supre → recusou; marcador que não nomeia o
+projeto → recusou.
+
+**Seção C — demais barreiras:** sem `destino-producao.local`, URL de outro
+projeto, URL local, migration ausente, migration adulterada → todas recusaram.
+
+**Seção D — caminho feliz:** com a migration montada na árvore, `--conferir`
+passa e não envia nada. Sem ela, D1 é anunciado como *ignorado* — nunca como
+aprovado.
+
+Total: **15 casos, 15 aprovados**, D1 ignorado fora do checkout montado.
+
+### A suíte pega o defeito que a motivou
+
+Com a negação permanente removida de `02-aplicar.sh` — isto é, voltando a
+derivá-la só de `config.toml` — a suíte reprova:
+
+```
+passaram: 10   falharam: 5     (saída 1)
+```
+
+Falham A1, A2, A3, A5 e A6. Continuam passando A4 e A7, que são justamente os
+casos em que o próprio `config.toml` declara o id negado — a única situação que
+a versão antiga cobria.
+
+## Ensaio contra banco
+
+Nenhum passo foi executado em produção. Os passos de SQL foram ensaiados nos
+destinos descartáveis, pelo validador.
+
+**Portão de identidade** (destino `ensaio`): sem identidade pinada → bloqueou,
+saída 3; `system_identifier` errado → bloqueou, saída 3; `system_identifier`
+certo → passou.
 
 **Ciclo completo** no destino `ensaio`: `01` passou → aplicação `INSERT 0 1` em
 uma transação → `03` com 7/7 → `04` revertida (`DROP FUNCTION`, `DELETE 1`) →

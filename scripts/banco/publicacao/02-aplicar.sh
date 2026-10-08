@@ -70,28 +70,50 @@ esac
 # --- 1. destino declarado -----------------------------------------------------
 [ -r "$CONFIG" ] || erro "falta $CONFIG. Copie destino-producao.exemplo, preencha e tente de novo."
 
-ler() { sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*([^[:space:]#]*).*/\1/p" "$CONFIG" | head -1; }
+ler() { sed -nE "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*([^#]*[^[:space:]#]).*/\1/p" "$CONFIG" | head -1; }
 REF="$(ler ref)"
 SYSID="$(ler system_identifier)"
-DATID="$(ler datid)"
+MARCADOR="$(ler marcador_identidade)"
 
 [ -n "$REF" ] || erro "destino-producao.local nao declara 'ref'"
 
-# Lista de negacao. O id de supabase/config.toml entra por leitura, nao a mao:
-# se alguem trocar o arquivo, a negacao acompanha.
-NEGADO="$(sed -nE 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$CONFIG_TOML" | head -1)"
-[ -n "$NEGADO" ] || erro "nao consegui ler project_id de $CONFIG_TOML para montar a lista de negacao"
+# ---------------------------------------------------------------------------
+# NEGACAO PERMANENTE
+# ---------------------------------------------------------------------------
+# Este id fica negado AQUI, no codigo, e nao depende de supabase/config.toml.
+# Editar, mover ou apagar aquele arquivo nao libera este destino.
+#
+# Uma versao anterior derivava a negacao so de config.toml: bastava trocar uma
+# linha daquele arquivo para o destino proibido deixar de ser negado. A
+# regressao testes/publicacao.test.sh prova que agora nao basta.
+NEGADOS_PERMANENTES="iaabxrclxpsagdijkrcx"
 
-if [ "$REF" = "$NEGADO" ]; then
-  erro "destino-producao.local declara o ref de supabase/config.toml ($NEGADO), que NAO e producao e e proibido. Recusado."
+# Alem da lista permanente, nega-se tambem o que config.toml declarar: aquele id
+# nao e producao, seja ele qual for. Esta leitura SOMA, nunca substitui, e a
+# ausencia do arquivo nao enfraquece a lista permanente.
+NEGADO_CONFIG=""
+if [ -r "$CONFIG_TOML" ]; then
+  NEGADO_CONFIG="$(sed -nE 's/^[[:space:]]*project_id[[:space:]]*=[[:space:]]*"([^"]+)".*/\1/p' "$CONFIG_TOML" | head -1)"
 fi
+
+NEGADOS="$NEGADOS_PERMANENTES"
+case " $NEGADOS " in
+  *" $NEGADO_CONFIG "*) ;;
+  *) [ -n "$NEGADO_CONFIG" ] && NEGADOS="$NEGADOS $NEGADO_CONFIG" ;;
+esac
+
+for n in $NEGADOS; do
+  [ "$REF" = "$n" ] && erro "destino-producao.local declara um ref negado ($n). Esse projeto nao e producao e e proibido. Recusado."
+done
 
 # --- 2. a URL -----------------------------------------------------------------
 [ -n "${SUPABASE_DB_URL:-}" ] || erro "defina SUPABASE_DB_URL com a conexao de producao"
 
-case "$SUPABASE_DB_URL" in
-  *"$NEGADO"*) erro "a URL menciona o projeto proibido ($NEGADO). Recusado." ;;
-esac
+for n in $NEGADOS; do
+  case "$SUPABASE_DB_URL" in
+    *"$n"*) erro "a URL menciona um projeto negado ($n). Recusado." ;;
+  esac
+done
 case "$SUPABASE_DB_URL" in
   *"$REF"*) ;;
   *) erro "a URL nao menciona o projeto de producao declarado ($REF). Recusado." ;;
@@ -104,8 +126,7 @@ esac
 # --- 3. identidade ------------------------------------------------------------
 if [ "$MODO" = "--capturar-identidade" ]; then
   info "lendo a identidade do destino (somente leitura)..."
-  psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -At <<'SQL'
-select '  datid            = ' || (select oid::text from pg_database where datname = current_database());
+  psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -v ref="$REF" -At <<'SQL'
 select '  banco            = ' || current_database();
 select '  usuario          = ' || current_user;
 do $$
@@ -113,20 +134,46 @@ declare v text;
 begin
   begin
     select system_identifier::text into v from pg_control_system();
-    raise notice '  system_identifier= %', v;
+    raise notice '  system_identifier= %  <- PREFERIDO', v;
   exception when others then
     raise notice '  system_identifier= (sem permissao de leitura: %)', sqlstate;
+    raise notice '  use entao o marcador do painel; ver destino-producao.exemplo (B)';
   end;
 end $$;
+-- Marcador plantado pelo painel do projeto autorizado, se ja existir.
+select '  marcador         = ' || coalesce(
+  (select d.description from pg_namespace n
+     join pg_description d on d.objoid = n.oid and d.classoid = 'pg_namespace'::regclass
+    where n.nspname = 'identidade_publicacao'),
+  '(nenhum)');
+-- Informativo, NAO aceito como identidade: coincide entre clusters distintos.
+select '  datid            = ' || (select oid::text from pg_database where datname = current_database())
+    || '   (informativo; nao serve de identidade)';
 SQL
-  info "CONFIRA no painel do Supabase que isto e o projeto $REF, e so entao preencha destino-producao.local."
+  info "CONFIRA no painel do projeto $REF que estes valores correspondem a ele,"
+  info "e so entao preencha destino-producao.local."
   exit 0
 fi
 
-if [ -z "$SYSID" ] && [ -z "$DATID" ]; then
-  erro "identidade insuficiente: destino-producao.local nao tem system_identifier nem datid.
-         Rode ./02-aplicar.sh --capturar-identidade, confira no painel e preencha.
+# IDENTIDADE INSUFICIENTE BLOQUEIA.
+# `datid` nao e mais aceito: medido em 08/10/2026, dois clusters distintos
+# tinham datid=5. Identidade que coincide entre destinos diferentes confirmaria
+# o destino errado.
+if [ -z "$SYSID" ] && [ -z "$MARCADOR" ]; then
+  erro "identidade insuficiente: destino-producao.local nao tem system_identifier
+         nem marcador_identidade.
+         Rode ./02-aplicar.sh --capturar-identidade, corrobore no painel do
+         projeto $REF e preencha um dos dois. Ver README, secao Identidade.
          Sem identidade conferida de dentro do banco este procedimento nao executa."
+fi
+
+# O marcador so vale se amarrar ao ref declarado: e o que o liga ao projeto.
+if [ -n "$MARCADOR" ]; then
+  case "$MARCADOR" in
+    "$REF":*) ;;
+    *) erro "marcador_identidade nao comeca por '$REF:'. Um marcador que nao nomeia
+         o projeto nao prova vinculo com ele. Recusado." ;;
+  esac
 fi
 
 # --- 4. o conteudo ------------------------------------------------------------
@@ -172,8 +219,9 @@ trap 'rm -f "$COMBINADO"' EXIT
 
 info "migration : ${MIGRACAO#"$RAIZ/"}"
 info "sha256    : $SHA"
-info "destino   : projeto $REF  (proibido e recusado: $NEGADO)"
-info "identidade: system_identifier=${SYSID:-(nao pinado)}  datid=${DATID:-(nao pinado)}"
+info "destino   : projeto $REF"
+info "negados   : $NEGADOS"
+info "identidade: system_identifier=${SYSID:-(nao pinado)}  marcador=${MARCADOR:-(nao pinado)}"
 
 if [ "$MODO" = "--conferir" ]; then
   info "modo --conferir: nada foi enviado. Trecho do registro de historico:"
@@ -188,7 +236,7 @@ psql "$SUPABASE_DB_URL" \
   -v ON_ERROR_STOP=1 \
   -v ref_esperado="$REF" \
   -v identidade_esperada="$SYSID" \
-  -v datid_esperado="$DATID" \
+  -v marcador_esperado="$MARCADOR" \
   -f "$AQUI/01-precondicoes.sql"
 
 # --- 6. aplicacao -------------------------------------------------------------

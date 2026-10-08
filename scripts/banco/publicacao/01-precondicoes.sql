@@ -7,12 +7,16 @@
 -- Recebe de quem chama, por -v:
 --   ref_esperado          ref do projeto de producao
 --   identidade_esperada   system_identifier pinado, ou a string vazia
---   datid_esperado        OID do banco pinado, ou a string vazia
+--   marcador_esperado     marcador plantado pelo painel, ou a string vazia
 --
--- IDENTIDADE INSUFICIENTE BLOQUEIA. Se nenhuma das duas identidades foi pinada,
--- este script recusa. Se foi pinada e nao confere, recusa. Se foi pinada e o
--- banco nao deixa ler nenhuma delas, recusa. Nao ha caminho em que a aplicacao
--- siga sem identidade conferida de dentro do banco.
+-- IDENTIDADE INSUFICIENTE BLOQUEIA. Se nenhuma identidade foi pinada, recusa.
+-- Se foi pinada e nao confere, recusa. Se foi pinada e nao pode ser lida aqui,
+-- recusa. Nao ha caminho em que a aplicacao siga sem identidade conferida de
+-- dentro do banco.
+--
+-- O OID do banco NAO e aceito como identidade: medido em 08/10/2026, dois
+-- clusters distintos tinham datid=5. Identidade que coincide entre destinos
+-- diferentes confirmaria o destino errado. Ele aparece abaixo so como contexto.
 -- =============================================================================
 \set ON_ERROR_STOP on
 \pset format unaligned
@@ -23,33 +27,39 @@ select '  banco           = ' || current_database();
 select '  usuario         = ' || current_user;
 select '  versao          = ' || current_setting('server_version');
 select '  em recuperacao? = ' || pg_is_in_recovery()::text;
-select '  datid           = ' || (select oid::text from pg_database where datname = current_database());
+select '  datid           = ' || (select oid::text from pg_database where datname = current_database())
+    || '   (informativo; nao serve de identidade)';
 
 -- O psql NAO interpola variaveis dentro de blocos delimitados por $$. Por isso
 -- os valores entram antes, por uma tabela temporaria, e o bloco le dali. Passar
 -- `:'variavel'` direto no corpo do DO rende `syntax error at or near ":"`.
 create temporary table esperado as
 select nullif(btrim(:'identidade_esperada'), '') as sysid,
-       nullif(btrim(:'datid_esperado'), '')      as datid,
+       nullif(btrim(:'marcador_esperado'), '')   as marcador,
        nullif(btrim(:'ref_esperado'), '')        as ref;
 
 do $$
 declare
   v_esperado_sysid text := (select sysid from esperado);
-  v_esperado_datid text := (select datid from esperado);
+  v_esperado_marc  text := (select marcador from esperado);
+  v_esperado_ref   text := (select ref from esperado);
   v_sysid          text;
-  v_datid          text;
+  v_marc           text;
   v_conferidas     int := 0;
 begin
   if pg_is_in_recovery() then
     raise exception 'destino em recuperacao (replica): nao aplique migration aqui';
   end if;
 
-  if v_esperado_sysid is null and v_esperado_datid is null then
-    raise exception 'identidade insuficiente: nenhum system_identifier nem datid foi pinado em destino-producao.local. Rode 02-aplicar.sh --capturar-identidade, confira no painel e preencha.';
+  if v_esperado_sysid is null and v_esperado_marc is null then
+    raise exception 'identidade insuficiente: nem system_identifier nem marcador_identidade foi pinado em destino-producao.local. Rode 02-aplicar.sh --capturar-identidade, corrobore no painel do projeto autorizado e preencha um dos dois.';
   end if;
 
-  select oid::text into v_datid from pg_database where datname = current_database();
+  -- O marcador so vale se nomear o projeto esperado: e o que o vincula ao ref.
+  if v_esperado_marc is not null and v_esperado_ref is not null
+     and left(v_esperado_marc, length(v_esperado_ref) + 1) <> v_esperado_ref || ':' then
+    raise exception 'marcador pinado nao comeca por "%:": nao prova vinculo com o projeto', v_esperado_ref;
+  end if;
 
   begin
     select system_identifier::text into v_sysid from pg_control_system();
@@ -69,12 +79,18 @@ begin
     end if;
   end if;
 
-  if v_esperado_datid is not null then
-    if v_datid <> v_esperado_datid then
-      raise exception 'datid do destino (%) difere do pinado (%): PARE, voce nao esta onde pensa', v_datid, v_esperado_datid;
+  if v_esperado_marc is not null then
+    select d.description into v_marc
+      from pg_namespace n
+      join pg_description d on d.objoid = n.oid and d.classoid = 'pg_namespace'::regclass
+     where n.nspname = 'identidade_publicacao';
+    if v_marc is null then
+      raise exception 'marcador pinado mas ausente no destino: o schema identidade_publicacao nao existe ou nao tem comentario. Plante-o pelo painel do projeto autorizado, ou use system_identifier.';
+    elsif v_marc <> v_esperado_marc then
+      raise exception 'marcador do destino (%) difere do pinado (%): PARE, voce nao esta onde pensa', v_marc, v_esperado_marc;
     else
       v_conferidas := v_conferidas + 1;
-      raise notice '  datid confere';
+      raise notice '  marcador do painel confere';
     end if;
   end if;
 
