@@ -3,11 +3,15 @@
 -- retenção
 -- =============================================================================
 --
--- ATENÇÃO: esta migration AINDA NÃO FOI EXERCITADA contra banco nenhum. O
--- destino descartável `simulacao` está sem porta publicada e o validador recusa,
--- corretamente, na barreira 4. A bateria
--- `supabase/tests/nao-medidas/validation_documents_matriz.sql` existe para exercitá-la, e
--- esta migration não deve ser aplicada em lugar nenhum antes de a bateria passar.
+-- EXERCITADA em 09/10/2026 contra o destino descartável autorizado `simulacao`
+-- (projeto `fcgsint1001`, cluster 7691806784564547622), pelas seis barreiras de
+-- `scripts/banco/destino-autorizado.sh`, com `-1`. A bateria
+-- `supabase/tests/validation_documents_matriz.sql` aprovou 28 de 28 asserções;
+-- a medição da URL assinada contra o Storage, 11 de 11. Nenhum documento real:
+-- só caminhos de objeto e um PNG 1x1 sintético, removido ao final.
+--
+-- Segue sem aplicação remota. Produção depende da aprovação jurídica dos
+-- prazos de retenção, que nascem nulos de propósito — veja o fim do arquivo.
 --
 -- POR QUE NÃO HERDA AS PERMISSÕES DO COMPROVANTE DE VIAGEM
 --
