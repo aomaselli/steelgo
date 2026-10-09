@@ -7,10 +7,10 @@
 -- (projeto `fcgsint1001`, cluster 7691806784564547622), pelas seis barreiras de
 -- `scripts/banco/destino-autorizado.sh`, com `-1`. Medições:
 --
---   supabase/tests/validation_documents_matriz.sql ............ 31 de 31
---   scripts/homologacao/expurgo-integrado.mjs ................. 19 de 19
+--   supabase/tests/validation_documents_matriz.sql ............ 37 de 37
+--   scripts/homologacao/expurgo-integrado.mjs ................. 27 de 27
 --   scripts/homologacao/url-assinada-como-credencial.mjs ...... 11 de 11
---   src/server/documents (vitest) ............................. 33 de 33
+--   src/server/documents (vitest) ............................. 40 de 40
 --
 -- Nenhum documento real: caminhos de objeto e um PNG 1x1 sintético.
 --
@@ -107,6 +107,51 @@ create table if not exists public.validation_documents (
   constraint validation_documents_purpose_valid check (purpose in ('identity_validation')),
   constraint validation_documents_kind_valid   check (kind in ('cnh_front', 'cnh_back', 'selfie'))
 );
+
+-- ────────── distinguir expurgo que FALHOU de expurgo nao executado ─────────
+--
+-- `purged_at is null` permite nova tentativa, e e isso que o torna seguro. Mas
+-- SOZINHO ele nao diz se o expurgo falhou ou se a tarefa ainda nao rodou: os
+-- dois estados sao o mesmo nulo. Sem a distincao, um expurgo que falha sempre
+-- -- credencial vencida, por exemplo -- fica indistinguivel de um que nunca
+-- foi tentado, e ninguem nota.
+--
+-- As duas colunas nao guardam dado pessoal: um instante e um codigo de motivo
+-- de lista fechada. Com elas:
+--
+--   purged_at null, last_purge_attempt_at null ....... nunca tentado
+--   purged_at null, last_purge_attempt_at nao null ... TENTADO E FALHOU
+--   purged_at nao null ............................... concluido
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+     where table_schema = 'public' and table_name = 'validation_documents'
+       and column_name = 'last_purge_attempt_at'
+  ) then
+    alter table public.validation_documents
+      add column last_purge_attempt_at timestamptz,
+      -- Motivo de lista fechada, os mesmos de `purge.ts`. Texto livre aqui
+      -- viraria mensagem de fornecedor, que e o caminho mais curto para um
+      -- vazamento numa coluna que ninguem revisa.
+      add column last_purge_failure text,
+      add constraint validation_documents_purge_failure_valid check (
+        last_purge_failure is null
+        or last_purge_failure in ('REMOCAO_FALHOU', 'ARQUIVO_PERSISTE', 'CONFERENCIA_FALHOU')
+      ),
+      -- Falha registrada exige a hora da tentativa; e expurgo concluido nao
+      -- carrega falha pendente.
+      add constraint validation_documents_purge_coerente check (
+        (last_purge_failure is null or last_purge_attempt_at is not null)
+        and (purged_at is null or last_purge_failure is null)
+      );
+  end if;
+end $$;
+
+-- Indice parcial: o que se consulta e a LISTA DE FALHAS, nao a tabela toda.
+create index if not exists validation_documents_falha_de_expurgo_idx
+  on public.validation_documents (last_purge_attempt_at desc)
+  where purged_at is null and last_purge_attempt_at is not null;
 
 create index if not exists validation_documents_expurgo_idx
   on public.validation_documents (purged_at, validation_started_at, uploaded_at);

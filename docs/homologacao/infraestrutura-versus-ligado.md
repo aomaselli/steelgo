@@ -96,6 +96,72 @@ cada leitura, em vez de entregar credencial do Storage ao cliente. É a decisão
 de desenho que a tela de revisão administrativa vai obrigar a tomar, e ela não
 deve ser tomada por omissão.
 
+### Regras para a revisão documental
+
+Três regras, para não serem redescobertas depois.
+
+**1. Validade curta, e revalidação a cada emissão.** O teto é 120 s
+(`TTL_MAXIMO_SEGUNDOS`), o padrão 60 s, e pedido acima do teto é **erro**, não
+ajuste silencioso. A autorização é decidida por `authorizeDocumentAccess` a
+cada emissão — nunca uma vez por sessão e guardada. Se o consentimento for
+retirado entre duas emissões, a segunda é negada com `CONSENT_WITHDRAWN`.
+Fixado em teste.
+
+**2. Retirada impede NOVA emissão; não revoga a URL existente.** As duas
+afirmações são verdadeiras ao mesmo tempo, e omitir a segunda seria prometer
+uma revogação que não existe:
+
+- nenhuma emissão nova passa depois da retirada — decidido em função pura,
+  testado;
+- uma URL já entregue **continua funcionando até expirar** — medido, HTTP 200
+  depois da retirada.
+
+A janela de exposição é o teto de validade, e é por isso que ele é curto.
+
+**3. Retirada de consentimento NÃO é ordem automática de apagar documentos.**
+Esta é a mais fácil de errar na direção que parece zelosa. Apagar na hora
+destruiria prova de uma validação que talvez tenha base legal própria para ser
+guardada — execução de contrato, obrigação regulatória, defesa em processo. O
+que fazer depende de **duas coisas que não estão no ato de retirar**: a
+finalidade pela qual o documento foi coletado e a política de retenção
+aprovada.
+
+Enquanto o prazo não for aprovado, `avaliarExpurgo` **lança** em vez de apagar,
+e isso é proteção, não pendência. A retirada entra como fato registrado em
+`document_consents.withdrawn_at`, que impede novas emissões e alimenta a
+decisão de retenção — não a substitui.
+
+## Falha de expurgo: onde ela fica registrada
+
+`purged_at is null` permite nova tentativa, e é isso que torna o expurgo seguro
+de repetir. Mas **sozinho ele não distingue falha de tarefa ainda não
+executada** — os dois estados são o mesmo nulo. Um expurgo que falha sempre,
+por credencial vencida, ficaria indistinguível de um que nunca rodou.
+
+Por isso `validation_documents` carrega `last_purge_attempt_at` e
+`last_purge_failure`:
+
+| `purged_at` | `last_purge_attempt_at` | Estado |
+|---|---|---|
+| nulo | nulo | nunca tentado |
+| nulo | preenchido | **tentado e falhou** |
+| preenchido | qualquer | concluído |
+
+`last_purge_failure` é de **lista fechada** (`REMOCAO_FALHOU`,
+`ARQUIVO_PERSISTE`, `CONFERENCIA_FALHOU`), com `check` no banco. Texto livre
+ali viraria mensagem de fornecedor numa coluna que ninguém revisa. Dois outros
+`check` sustentam a coerência: falha exige a hora da tentativa, e expurgo
+concluído não carrega falha pendurada — foi este segundo que apanhou a porta
+`marcarExpurgado` incompleta na homologação integrada.
+
+Em paralelo, a falha vai para um **log operacional**, com lista fechada de
+campos: `documentId`, `motivo`, `tentativas`, `ocorridoEm`. O identificador é o
+do **registro** (`validation_documents.id`), nunca o caminho do objeto — que
+carrega o `subject_id` no segundo segmento — e nunca o titular, a espécie do
+documento ou mensagem de fornecedor. A guarda recusa a entrada que contenha
+caminho de objeto, CPF, URL, JWT ou segredo. Log operacional vai para serviço
+de terceiro, com retenção que não controlamos.
+
 ## Para sair daqui
 
 Na ordem em que as barreiras se sustentam:

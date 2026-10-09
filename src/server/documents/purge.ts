@@ -57,21 +57,102 @@ export interface PurgeableDocument extends StoredDocument {
   subjectId: string;
   purpose: DocumentPurpose;
   kind: DocumentKind;
+  /**
+   * `validation_documents.id` — a chave do REGISTRO, não da pessoa.
+   *
+   * É o identificador que vai para o log operacional. O caminho do objeto não
+   * serve: ele carrega o `subject_id` no segundo segmento, e log operacional
+   * vai para serviço de terceiro com retenção que não controlamos.
+   */
+  documentId: string;
+}
+
+/** Motivo da falha. Lista fechada, igual ao `check` do banco. */
+export type MotivoDeFalha = "REMOCAO_FALHOU" | "ARQUIVO_PERSISTE" | "CONFERENCIA_FALHOU";
+
+/**
+ * Entrada do log operacional de falha de expurgo.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * IDENTIFICADOR E MOTIVO, E MAIS NADA
+ *
+ * Lista FECHADA de campos, não "tudo menos o proibido": uma lista de proibidos
+ * esquece o campo que alguém acrescenta depois.
+ *
+ * Fora daqui, de propósito: caminho do objeto (carrega o `subject_id`),
+ * `subjectId`, espécie do documento, finalidade e qualquer mensagem de
+ * fornecedor. Saber QUE o expurgo do registro X falhou por `ARQUIVO_PERSISTE`
+ * é o que a operação precisa; de quem é o documento, não.
+ */
+export interface FalhaDeExpurgoParaLog {
+  /** `validation_documents.id`. Não identifica pessoa. */
+  documentId: string;
+  motivo: MotivoDeFalha;
+  tentativas: number;
+  ocorridoEm: string;
+}
+
+export class DadoPessoalEmLogDeExpurgoError extends Error {
+  constructor(campo: string, achado: string) {
+    super(
+      `Log operacional de expurgo recusou a entrada: "${campo}" contém ${achado}. ` +
+        `Este log vai para serviço de terceiro; identificador de registro e ` +
+        `motivo bastam, e nada além deles é permitido.`,
+    );
+    this.name = "DadoPessoalEmLogDeExpurgoError";
+  }
+}
+
+const PROIBIDOS_NO_LOG: Array<{ nome: string; re: RegExp }> = [
+  { nome: "caminho de objeto", re: /identity_validation\// },
+  { nome: "CPF", re: /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/ },
+  { nome: "JWT", re: /\beyJ[A-Za-z0-9_-]{8,}\./ },
+  { nome: "URL", re: /\bhttps?:\/\//i },
+  { nome: "dado embutido (data URI)", re: /\bdata:[a-z]+\/[a-z0-9.+-]+;base64,/i },
+  { nome: "chave ou segredo", re: /\b(bearer|secret|api[_-]?key|service[_-]?role)\b/i },
+];
+
+/**
+ * Confere a entrada antes de entregá-la ao log.
+ *
+ * Barreira, não validação de formulário: quem chama não precisa acertar,
+ * precisa não conseguir errar em silêncio.
+ */
+export function conferirFalhaParaLog(f: FalhaDeExpurgoParaLog): FalhaDeExpurgoParaLog {
+  for (const [campo, valor] of [
+    ["documentId", f.documentId],
+    ["motivo", f.motivo],
+    ["ocorridoEm", f.ocorridoEm],
+  ] as Array<[string, string]>) {
+    for (const { nome, re } of PROIBIDOS_NO_LOG) {
+      if (re.test(valor)) throw new DadoPessoalEmLogDeExpurgoError(campo, nome);
+    }
+  }
+  return { ...f };
 }
 
 /**
  * As dependências externas, injetadas.
  *
- * São quatro portas separadas de propósito. `remover` e `existe` em especial:
- * fundi-las numa só faria a conferência usar a resposta da remoção, que é o
- * erro que este módulo existe para não cometer.
+ * `remover` e `existe` são separadas de propósito: fundi-las faria a
+ * conferência usar a resposta da remoção, que é o erro que este módulo existe
+ * para não cometer.
  */
 export interface PurgePorts {
   /** Pede a remoção ao Storage. Pode lançar ou devolver falha. */
   remover(objectPath: string): Promise<void>;
   /** Consulta INDEPENDENTE: o objeto ainda está lá? */
   existe(objectPath: string): Promise<boolean>;
-  /** Marca o registro do documento como expurgado. */
+  /**
+   * Marca o registro do documento como expurgado.
+   *
+   * Tem de LIMPAR a falha pendente ao concluir: um registro com `purged_at`
+   * preenchido e `last_purge_failure` ainda apontando falha é um estado que
+   * não existe. O `check validation_documents_purge_coerente` recusa esse
+   * estado no banco — e foi ele que apanhou esta porta incompleta na
+   * homologação integrada, numa execução em que a primeira passada falhava e a
+   * segunda concluía.
+   */
   marcarExpurgado(objectPath: string, quando: Date): Promise<void>;
   /** Acrescenta a linha de trilha. Append-only no banco. */
   registrarTrilha(evento: {
@@ -85,6 +166,17 @@ export interface PurgePorts {
     reasonCode: string;
     occurredAt: string;
   }): Promise<void>;
+  /**
+   * Marca a TENTATIVA que falhou, no registro do documento.
+   *
+   * É o que faz `purged_at is null` deixar de ser ambíguo: com a hora da
+   * tentativa gravada, falha e tarefa-nunca-executada param de ser o mesmo
+   * nulo. Opcional porque uma esteira pode não ter o esquema atualizado — e
+   * nesse caso o log operacional continua sendo o único registro.
+   */
+  marcarTentativaFalha?(objectPath: string, quando: Date, motivo: MotivoDeFalha): Promise<void>;
+  /** Log operacional. Recebe só identificador e motivo. */
+  registrarFalhaOperacional?(f: FalhaDeExpurgoParaLog): void;
 }
 
 export type PurgeResult =
@@ -223,6 +315,25 @@ export async function expurgarDocumento(
       reason: veredito.reason,
       tentativas,
     };
+  }
+
+  // Esgotou as tentativas. A falha é registrada em DOIS lugares, com papéis
+  // diferentes: no registro do documento, para que `purged_at is null` deixe
+  // de ser ambíguo; e no log operacional, para que alguém veja sem consultar o
+  // banco. Nenhum dos dois recebe dado pessoal.
+  const ocorridoEm = now.toISOString();
+  if (ports.marcarTentativaFalha) {
+    await ports.marcarTentativaFalha(doc.objectPath, now, ultimaFalha.falha);
+  }
+  if (ports.registrarFalhaOperacional) {
+    ports.registrarFalhaOperacional(
+      conferirFalhaParaLog({
+        documentId: doc.documentId,
+        motivo: ultimaFalha.falha,
+        tentativas,
+        ocorridoEm,
+      }),
+    );
   }
 
   return {

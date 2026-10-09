@@ -244,7 +244,15 @@ async function main() {
   );
   reg(contarTrilha("upload") === 1, "P3. trilha de upload registrada");
 
+  // `documentId` vem do BANCO, nao inventado aqui: e a chave do registro, e
+  // e o unico identificador que entra no log operacional.
+  const documentId = sql(
+    `select id from public.validation_documents where object_path = '${CAMINHO}';`,
+  );
+  reg(/^[0-9a-f-]{36}$/.test(documentId), `P4. id do registro obtido do banco`);
+
   const doc = {
+    documentId,
     objectPath: CAMINHO,
     kind: "selfie",
     subjectId: TITULAR,
@@ -254,6 +262,8 @@ async function main() {
     purgedAt: null,
   };
   const politica = { biometricDays: 1, documentImageDays: 2, abandonedUploadHours: 1 };
+  /** Log operacional de falha. Identificador do registro e motivo, nada mais. */
+  const logOperacional = [];
 
   // Portas de verdade. `marcarExpurgado` e `registrarTrilha` passam pelo
   // validador, como todo o resto.
@@ -262,11 +272,28 @@ async function main() {
       remover: (p) => removerNoStorage(chaveParaRemover, p),
       existe: (p) => existeNoStorage(chave, p),
       marcarExpurgado: async (p, quando) => {
+        // Limpa a falha pendente no MESMO update. O
+        // `check validation_documents_purge_coerente` recusa registro com
+        // `purged_at` preenchido e `last_purge_failure` apontando falha --
+        // e foi ele que apanhou esta porta incompleta: a primeira passada
+        // falhava, a segunda concluia, e o banco barrou o estado impossivel.
         sql(
           `update public.validation_documents
-              set purged_at = '${quando.toISOString()}'
+              set purged_at = '${quando.toISOString()}',
+                  last_purge_failure = null
             where object_path = '${p}';`,
         );
+      },
+      marcarTentativaFalha: async (p, quando, motivo) => {
+        sql(
+          `update public.validation_documents
+              set last_purge_attempt_at = '${quando.toISOString()}',
+                  last_purge_failure = '${motivo}'
+            where object_path = '${p}';`,
+        );
+      },
+      registrarFalhaOperacional: (f) => {
+        logOperacional.push(f);
       },
       registrarTrilha: async (e) => {
         sql(
@@ -301,6 +328,38 @@ async function main() {
   reg(contarTrilha("purge") === 0, "F6. nenhuma linha `purge` na trilha");
   reg(contarTrilha("upload") === 1, "F7. a trilha de upload está preservada");
 
+  // A falha ficou registrada nos DOIS lugares, com papéis diferentes.
+  const tentativa = registroDoDocumento("last_purge_attempt_at");
+  const motivoNoBanco = registroDoDocumento("last_purge_failure");
+  reg(tentativa !== "NULO", `F8. a TENTATIVA ficou registrada no documento (${tentativa.slice(0, 19)})`);
+  reg(
+    motivoNoBanco === "REMOCAO_FALHOU",
+    `F9. o motivo ficou registrado: ${motivoNoBanco}`,
+  );
+  reg(
+    logOperacional.length === 1 && logOperacional[0].documentId === documentId,
+    "F10. o log operacional recebeu o identificador do REGISTRO",
+  );
+  const serializadoLog = JSON.stringify(logOperacional);
+  reg(
+    !serializadoLog.includes("identity_validation") && !serializadoLog.includes(TITULAR),
+    "F11. o log operacional não carrega caminho nem titular",
+  );
+
+  // E o ponto que motivou tudo isto: `purged_at` nulo sozinho não distingue
+  // falha de tarefa não executada. Agora distingue.
+  const classificacao = sql(
+    `select case
+              when purged_at is not null then 'concluido'
+              when last_purge_attempt_at is not null then 'tentado_e_falhou'
+              else 'nunca_tentado' end
+       from public.validation_documents where object_path = '${CAMINHO}';`,
+  );
+  reg(
+    classificacao === "tentado_e_falhou",
+    `F12. o estado é distinguível: ${classificacao} (não apenas purged_at nulo)`,
+  );
+
   // ─── 4. Sucesso aparente: DELETE de caminho que não existe ───────────────
   console.log("\n  -- o que a Storage API responde a DELETE de objeto ausente --");
   let respostaAusente;
@@ -322,6 +381,21 @@ async function main() {
   reg(registroDoDocumento("purged_at") !== "NULO", "N4. purged_at preenchido só agora");
   reg(contarTrilha("purge") === 1, "N5. exatamente uma linha `purge`");
   reg(contarTrilha("upload") === 1, "N6. a trilha SOBREVIVEU ao expurgo");
+
+  // Sem limpeza manual aqui: quem limpa a falha e a propria porta
+  // `marcarExpurgado`, porque o banco nao aceita o estado intermediario.
+  const classificacaoFinal = sql(
+    `select case
+              when purged_at is not null then 'concluido'
+              when last_purge_attempt_at is not null then 'tentado_e_falhou'
+              else 'nunca_tentado' end
+       from public.validation_documents where object_path = '${CAMINHO}';`,
+  );
+  reg(classificacaoFinal === "concluido", `N7. estado final: ${classificacaoFinal}`);
+  reg(
+    registroDoDocumento("last_purge_failure") === "NULO",
+    "N8. a falha anterior foi limpa ao concluir, sem passo manual",
+  );
 
   // ─── 6. Repetir é inofensivo ────────────────────────────────────────────
   console.log("\n  -- terceira passada: idempotência --");

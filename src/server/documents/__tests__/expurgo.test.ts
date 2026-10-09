@@ -12,6 +12,9 @@ import assert from "node:assert/strict";
 
 import {
   ATOR_DO_EXPURGO,
+  DadoPessoalEmLogDeExpurgoError,
+  conferirFalhaParaLog,
+  type FalhaDeExpurgoParaLog,
   type PurgePorts,
   type PurgeableDocument,
   expurgarDocumento,
@@ -30,6 +33,9 @@ const PRAZO_DE_TESTE: RetentionPolicy = {
 };
 
 const SELFIE_VENCIDA: PurgeableDocument = {
+  // `validation_documents.id`: a chave do REGISTRO, nao da pessoa. E o unico
+  // identificador que entra no log operacional.
+  documentId: "3f1b9c7e-0000-4000-8000-000000000001",
   objectPath: "identity_validation/sujeito-1/selfie-1.jpg",
   kind: "selfie",
   subjectId: "sujeito-1",
@@ -43,6 +49,8 @@ interface Registro {
   removeu: string[];
   marcou: string[];
   trilha: Array<{ action: string; objectPath: string; actorId: string; reasonCode: string }>;
+  tentativasFalhas: Array<{ objectPath: string; motivo: string }>;
+  logOperacional: FalhaDeExpurgoParaLog[];
 }
 
 function portas(
@@ -52,7 +60,13 @@ function portas(
     aoConferir?: (tentativa: number) => void;
   } = {},
 ): { ports: PurgePorts; reg: Registro } {
-  const reg: Registro = { removeu: [], marcou: [], trilha: [] };
+  const reg: Registro = {
+    removeu: [],
+    marcou: [],
+    trilha: [],
+    tentativasFalhas: [],
+    logOperacional: [],
+  };
   let tentativaRemocao = 0;
   let tentativaConferencia = 0;
   const ports: PurgePorts = {
@@ -76,6 +90,12 @@ function portas(
         actorId: e.actorId,
         reasonCode: e.reasonCode,
       });
+    },
+    async marcarTentativaFalha(p, _quando, motivo) {
+      reg.tentativasFalhas.push({ objectPath: p, motivo });
+    },
+    registrarFalhaOperacional(f) {
+      reg.logOperacional.push(f);
     },
   };
   return { ports, reg };
@@ -236,4 +256,91 @@ test("resumo sem pendente nao exige atencao", () => {
     { status: "dispensado", objectPath: "b", reason: "WITHIN_RETENTION" },
   ]);
   assert.equal(resumo.exigeAtencao, false);
+});
+
+// ──────────────── log operacional de falha de expurgo ──────────────────────
+
+test("falha registra tentativa no documento E no log operacional", async () => {
+  const { ports, reg } = portas({
+    aoRemover: () => {
+      throw new Error("HTTP 401 ao remover");
+    },
+  });
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA, 2);
+  assert.equal(r.status, "pendente");
+
+  // No documento: e o que faz `purged_at is null` deixar de ser ambiguo.
+  assert.equal(reg.tentativasFalhas.length, 1);
+  assert.equal(reg.tentativasFalhas[0].motivo, "REMOCAO_FALHOU");
+
+  // No log: identificador do REGISTRO e motivo, nada mais.
+  assert.equal(reg.logOperacional.length, 1);
+  const f = reg.logOperacional[0];
+  assert.equal(f.documentId, SELFIE_VENCIDA.documentId);
+  assert.equal(f.motivo, "REMOCAO_FALHOU");
+  assert.equal(f.tentativas, 2);
+  assert.deepEqual(
+    Object.keys(f).sort(),
+    ["documentId", "motivo", "ocorridoEm", "tentativas"],
+    "o log tem lista FECHADA de campos",
+  );
+});
+
+test("o log operacional nao carrega caminho de objeto nem titular", async () => {
+  const { ports, reg } = portas({ existeApos: () => true });
+  await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA);
+  const serializado = JSON.stringify(reg.logOperacional);
+  assert.ok(!serializado.includes("identity_validation"), "caminho nao entra");
+  assert.ok(!serializado.includes(SELFIE_VENCIDA.subjectId), "titular nao entra");
+  assert.ok(!serializado.includes("selfie"), "especie do documento nao entra");
+});
+
+test("sucesso nao registra falha em lugar nenhum", async () => {
+  const { ports, reg } = portas();
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA);
+  assert.equal(r.status, "expurgado");
+  assert.deepEqual(reg.tentativasFalhas, []);
+  assert.deepEqual(reg.logOperacional, []);
+});
+
+test("a guarda do log recusa dado pessoal", () => {
+  const base: FalhaDeExpurgoParaLog = {
+    documentId: "3f1b9c7e-0000-4000-8000-000000000001",
+    motivo: "ARQUIVO_PERSISTE",
+    tentativas: 1,
+    ocorridoEm: AGORA.toISOString(),
+  };
+  conferirFalhaParaLog(base);
+  const ruins: Array<[string, Partial<FalhaDeExpurgoParaLog>]> = [
+    ["caminho", { documentId: "identity_validation/sujeito-1/selfie-1.jpg" }],
+    ["CPF", { documentId: "257.744.350-16" }],
+    ["URL", { documentId: "https://exemplo.invalido/obj" }],
+    ["JWT", { documentId: "eyJhbGciOiJIUzI1NiJ9.corpo" }],
+    ["segredo", { documentId: "service_role-1" }],
+  ];
+  for (const [nome, mudanca] of ruins) {
+    assert.throws(
+      () => conferirFalhaParaLog({ ...base, ...mudanca }),
+      DadoPessoalEmLogDeExpurgoError,
+      `esperava recusa de ${nome}`,
+    );
+  }
+});
+
+test("as duas portas de falha sao OPCIONAIS", async () => {
+  // Uma esteira sem o esquema atualizado nao pode quebrar por isso: o log
+  // operacional segue sendo o registro, e a ausencia das portas nao lanca.
+  const { ports } = portas({
+    aoRemover: () => {
+      throw new Error("HTTP 503");
+    },
+  });
+  const semPortas: PurgePorts = {
+    remover: ports.remover,
+    existe: ports.existe,
+    marcarExpurgado: ports.marcarExpurgado,
+    registrarTrilha: ports.registrarTrilha,
+  };
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, semPortas, AGORA);
+  assert.equal(r.status, "pendente");
 });

@@ -340,3 +340,58 @@ test("trilha: evento limpo passa, e o log é ainda mais estreito", () => {
   assert.equal(log.action, "upload");
   assert.equal(log.purpose, "identity_validation");
 });
+
+// ─────────────── revalidar a autorizacao A CADA EMISSAO ────────────────────
+
+test("a autorizacao e revalidada a cada emissao, nao uma vez por sessao", () => {
+  // O pedido e o mesmo; o CONSENTIMENTO muda entre as duas emissoes. Se a
+  // autorizacao fosse decidida uma vez e guardada, a segunda emissao passaria.
+  const pedido = {
+    actorId: DONO,
+    actorRole: "driver" as const,
+    subjectId: DONO,
+    objectPurpose: "identity_validation" as const,
+    requestedPurpose: "identity_validation" as const,
+  };
+
+  const primeira = authorizeDocumentAccess(pedido, consentimentoVigente);
+  assert.equal(primeira.allowed, true);
+
+  const depoisDaRetirada = authorizeDocumentAccess(pedido, {
+    ...consentimentoVigente,
+    record: { ...consentimentoVigente.record!, withdrawnAt: "2026-10-09T00:00:00.000Z" },
+  });
+  assert.equal(depoisDaRetirada.allowed, false);
+  assert.equal(
+    depoisDaRetirada.allowed === false && depoisDaRetirada.reason,
+    "CONSENT_WITHDRAWN",
+  );
+});
+
+test("retirar consentimento impede NOVA emissao; nao alcanca URL ja emitida", () => {
+  // A funcao pura so decide EMISSAO. O que acontece com uma URL ja entregue
+  // nao esta ao alcance dela, e fingir o contrario seria pior que registrar o
+  // limite: medido em scripts/homologacao/url-assinada-como-credencial.mjs, a
+  // URL emitida continua servindo depois da retirada, e para de servir quando
+  // o OBJETO e apagado.
+  const retirado = {
+    ...consentimentoVigente,
+    record: { ...consentimentoVigente.record!, withdrawnAt: "2026-10-09T00:00:00.000Z" },
+  };
+  const d = authorizeDocumentAccess(
+    {
+      actorId: DONO,
+      actorRole: "driver",
+      subjectId: DONO,
+      objectPurpose: "identity_validation",
+      requestedPurpose: "identity_validation",
+    },
+    retirado,
+  );
+  assert.equal(d.allowed, false, "nenhuma emissao nova");
+
+  // O teto curto de validade e o que limita a janela de uma URL ja emitida.
+  // Nao e configuracao: pedido acima do teto e ERRO.
+  assert.equal(TTL_MAXIMO_SEGUNDOS, 120);
+  assert.throws(() => normalizarTtl(TTL_MAXIMO_SEGUNDOS + 1), TtlInvalidoError);
+});

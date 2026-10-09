@@ -460,6 +460,96 @@ begin
 end $$;
 
 -- ───────────────────────────────────────────────────────────────────────────
+select '== G. FALHA DE EXPURGO DISTINGUIVEL DE TAREFA NAO EXECUTADA';
+
+-- `purged_at is null` permite nova tentativa, e e isso que o torna seguro.
+-- Sozinho, ele nao diz se o expurgo falhou ou se a tarefa nunca rodou: os
+-- dois estados sao o mesmo nulo.
+insert into public.validation_documents
+  (subject_id, purpose, kind, object_path, validation_started_at)
+values (:TITULAR::uuid, 'identity_validation', 'selfie',
+        'identity_validation/' || :TITULAR || '/estado-de-expurgo.jpg', now());
+
+select pg_temp.reg(
+  (select last_purge_attempt_at is null and last_purge_failure is null
+     from public.validation_documents
+    where object_path like '%estado-de-expurgo.jpg'),
+  'G1. documento novo nasce sem tentativa e sem falha (nunca tentado)');
+
+do $$
+declare estado text;
+begin
+  update public.validation_documents
+     set last_purge_attempt_at = now(), last_purge_failure = 'ARQUIVO_PERSISTE'
+   where object_path like '%estado-de-expurgo.jpg';
+  select case
+           when purged_at is not null then 'concluido'
+           when last_purge_attempt_at is not null then 'tentado_e_falhou'
+           else 'nunca_tentado' end
+    into estado
+    from public.validation_documents where object_path like '%estado-de-expurgo.jpg';
+  perform pg_temp.reg(estado = 'tentado_e_falhou',
+    'G2. com a tentativa gravada o estado e distinguivel (' || estado || ')');
+end $$;
+
+-- Motivo fora da lista fechada e recusado. Texto livre aqui viraria mensagem
+-- de fornecedor numa coluna que ninguem revisa.
+do $$
+begin
+  begin
+    update public.validation_documents
+       set last_purge_failure = 'o storage devolveu 500 com a mensagem X'
+     where object_path like '%estado-de-expurgo.jpg';
+    perform pg_temp.reg(false, 'G3. motivo fora da lista fechada foi ACEITO');
+  exception when others then
+    perform pg_temp.reg(true, 'G3. motivo fora da lista fechada recusado');
+  end;
+end $$;
+
+-- Falha sem a hora da tentativa nao existe.
+do $$
+begin
+  begin
+    update public.validation_documents
+       set last_purge_attempt_at = null, last_purge_failure = 'REMOCAO_FALHOU'
+     where object_path like '%estado-de-expurgo.jpg';
+    perform pg_temp.reg(false, 'G4. falha SEM hora de tentativa foi ACEITA');
+  exception when others then
+    perform pg_temp.reg(true, 'G4. falha sem hora de tentativa recusada');
+  end;
+end $$;
+
+-- E expurgo concluido nao carrega falha pendurada. Foi este check que
+-- apanhou a porta `marcarExpurgado` incompleta na homologacao integrada.
+do $$
+begin
+  begin
+    update public.validation_documents
+       set purged_at = now()
+     where object_path like '%estado-de-expurgo.jpg';
+    perform pg_temp.reg(false, 'G5. concluido COM falha pendurada foi ACEITO');
+  exception when others then
+    perform pg_temp.reg(true, 'G5. concluido com falha pendurada recusado');
+  end;
+end $$;
+
+-- Caso positivo: concluir limpando a falha e aceito.
+do $$
+declare estado text;
+begin
+  update public.validation_documents
+     set purged_at = now(), last_purge_failure = null
+   where object_path like '%estado-de-expurgo.jpg';
+  select case when purged_at is not null then 'concluido' else 'outro' end
+    into estado
+    from public.validation_documents where object_path like '%estado-de-expurgo.jpg';
+  perform pg_temp.reg(estado = 'concluido',
+    'G6. concluir limpando a falha e aceito (' || estado || ')');
+exception when others then
+  perform pg_temp.reg(false, 'G6. concluir limpando a falha foi recusado: ' || left(sqlerrm, 40));
+end $$;
+
+-- ───────────────────────────────────────────────────────────────────────────
 select '== RESULTADO';
 select '  ' || linha from resultado order by ordem;
 select '  TOTAL OK=' || (select count(*) from resultado where linha like 'OK%')
