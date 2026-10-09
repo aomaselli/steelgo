@@ -193,14 +193,20 @@ values
   ('upload', :TITULAR::uuid, :TITULAR::uuid, 'driver', 'identity_validation',
    'selfie', 'identity_validation/' || :TITULAR || '/selfie-sintetica.jpg');
 
+-- Contagem POR CAMINHO, nao absoluta. A trilha e append-only: numa instancia
+-- que ja rodou qualquer coisa ela tem linhas, e `count(*) = 1` reprovava por
+-- isso -- nao por defeito algum. Foi o que aconteceu depois da homologacao
+-- integrada do expurgo, que deixa trilha de proposito.
 select pg_temp.reg(
-  (select count(*) from public.document_audit) = 1,
+  (select count(*) from public.document_audit
+    where object_path like '%selfie-sintetica.jpg') = 1,
   'C2. a linha de trilha existe, logo o trigger tem o que recusar');
 
 do $$
 begin
   begin
-    update public.document_audit set reason_code = 'x';
+    update public.document_audit set reason_code = 'x'
+     where object_path like '%selfie-sintetica.jpg';
     perform pg_temp.reg(false, 'C3. UPDATE na trilha foi ACEITO');
   exception when others then
     perform pg_temp.reg(true, 'C3. UPDATE na trilha recusado: ' || left(sqlerrm, 44));
@@ -210,11 +216,64 @@ end $$;
 do $$
 begin
   begin
-    delete from public.document_audit;
+    delete from public.document_audit
+     where object_path like '%selfie-sintetica.jpg';
     perform pg_temp.reg(false, 'C4. DELETE na trilha foi ACEITO');
   exception when others then
     perform pg_temp.reg(true, 'C4. DELETE na trilha recusado: ' || left(sqlerrm, 44));
   end;
+end $$;
+
+-- O ator que NAO e pessoa. O expurgo automatico nao tem usuario, e
+-- `actor_id` e `uuid not null`: a convencao e um UUID reservado de zeros com
+-- `actor_role = 'system'`. O check amarra as duas pontas -- e o que impede a
+-- convencao de virar comentario que alguem contraria sem perceber.
+do $$
+declare v_titular uuid;
+begin
+  v_titular := pg_temp.ator('titular');
+  begin
+    insert into public.document_audit
+      (action, subject_id, actor_id, actor_role, purpose, kind, object_path)
+    values ('purge', v_titular, v_titular, 'system', 'identity_validation',
+            'selfie', 'identity_validation/x/ator-de-sistema-com-pessoa.jpg');
+    perform pg_temp.reg(false, 'C5. papel de sistema com ator de PESSOA foi ACEITO');
+  exception when others then
+    perform pg_temp.reg(true, 'C5. papel de sistema com ator de pessoa recusado');
+  end;
+end $$;
+
+do $$
+declare v_titular uuid;
+begin
+  v_titular := pg_temp.ator('titular');
+  begin
+    insert into public.document_audit
+      (action, subject_id, actor_id, actor_role, purpose, kind, object_path)
+    values ('access', v_titular, '00000000-0000-0000-0000-000000000000', 'driver',
+            'identity_validation', 'selfie',
+            'identity_validation/x/pessoa-com-ator-reservado.jpg');
+    perform pg_temp.reg(false, 'C6. papel de pessoa com o UUID reservado foi ACEITO');
+  exception when others then
+    perform pg_temp.reg(true, 'C6. papel de pessoa com o UUID reservado recusado');
+  end;
+end $$;
+
+-- Caso positivo: sem ele, C5 e C6 poderiam passar por a tabela recusar tudo.
+do $$
+declare v_titular uuid; n int;
+begin
+  v_titular := pg_temp.ator('titular');
+  insert into public.document_audit
+    (action, subject_id, actor_id, actor_role, purpose, kind, object_path, reason_code)
+  values ('purge', v_titular, '00000000-0000-0000-0000-000000000000', 'system',
+          'identity_validation', 'selfie',
+          'identity_validation/x/expurgo-de-sistema.jpg', 'BIOMETRIC_EXPIRED');
+  select count(*) into n from public.document_audit
+   where object_path = 'identity_validation/x/expurgo-de-sistema.jpg';
+  perform pg_temp.reg(n = 1, 'C7. expurgo de sistema com o UUID reservado e aceito');
+exception when others then
+  perform pg_temp.reg(false, 'C7. expurgo de sistema foi recusado: ' || left(sqlerrm, 40));
 end $$;
 
 -- ───────────────────────────────────────────────────────────────────────────

@@ -5,10 +5,18 @@
 --
 -- EXERCITADA em 09/10/2026 contra o destino descartável autorizado `simulacao`
 -- (projeto `fcgsint1001`, cluster 7691806784564547622), pelas seis barreiras de
--- `scripts/banco/destino-autorizado.sh`, com `-1`. A bateria
--- `supabase/tests/validation_documents_matriz.sql` aprovou 28 de 28 asserções;
--- a medição da URL assinada contra o Storage, 11 de 11. Nenhum documento real:
--- só caminhos de objeto e um PNG 1x1 sintético, removido ao final.
+-- `scripts/banco/destino-autorizado.sh`, com `-1`. Medições:
+--
+--   supabase/tests/validation_documents_matriz.sql ............ 31 de 31
+--   scripts/homologacao/expurgo-integrado.mjs ................. 19 de 19
+--   scripts/homologacao/url-assinada-como-credencial.mjs ...... 11 de 11
+--   src/server/documents (vitest) ............................. 33 de 33
+--
+-- Nenhum documento real: caminhos de objeto e um PNG 1x1 sintético.
+--
+-- Infraestrutura homologada NÃO é funcionalidade ligada. Nada fora do próprio
+-- módulo referencia estas tabelas: não há tela, rota, RPC nem job agendado.
+-- Veja `docs/homologacao/infraestrutura-versus-ligado.md`.
 --
 -- Segue sem aplicação remota. Produção depende da aprovação jurídica dos
 -- prazos de retenção, que nascem nulos de propósito — veja o fim do arquivo.
@@ -124,6 +132,30 @@ comment on table public.document_audit is
   'Append-only. Uma linha por evento concluido. NUNCA guarda documento, '
   'imagem, biometria, URL assinada, token nem CPF -- e por nao guardar que ela '
   'pode sobreviver ao documento.';
+
+-- ─────────────────────── o ator que nao e pessoa ───────────────────────────
+--
+-- O expurgo automatico nao tem usuario. `actor_id` e `uuid not null`, e a
+-- primeira versao do executor tentou gravar o rotulo 'system:retention' --
+-- recusado pelo tipo, na homologacao integrada.
+--
+-- A convencao e um UUID reservado de zeros com `actor_role = 'system'`. Este
+-- check AMARRA as duas pontas, em vez de deixar a convencao no comentario:
+-- nenhuma pessoa recebe o papel de sistema, e nenhum evento de sistema aparece
+-- com ator de pessoa. Afrouxar `actor_id` para `text` perderia o tipo em toda
+-- a trilha; deixa-la nula tornaria 'quem agiu' opcional para todo evento.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'document_audit_ator_de_sistema'
+  ) then
+    alter table public.document_audit
+      add constraint document_audit_ator_de_sistema check (
+        (actor_role = 'system')
+          = (actor_id = '00000000-0000-0000-0000-000000000000'::uuid)
+      );
+  end if;
+end $$;
 
 create or replace function public.document_audit_block_mutation()
 returns trigger language plpgsql as $$
