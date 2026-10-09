@@ -1,0 +1,15 @@
+/* Home v5 — typography scope. Approved default: Geist (display/UI) + Geist Mono (IDs, figures).
+   To use the MVP brand font instead, set --home-font to var(--font-sans) and the weights to 600. */
+@import url("https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap");
+
+.home-v5 {
+  --home-font: "Geist", var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  --home-mono: "Geist Mono", var(--font-mono), ui-monospace, monospace;
+  --home-display-weight: 500;
+  --home-heading-weight: 500;
+  font-family: var(--home-font);
+  -webkit-font-smoothing: antialiased;
+  container-type: inline-size; /* enables the cqi-based clamps used in section padding/type */
+}
+.home-v5 .font-mono { font-family: var(--home-mono); }
+
