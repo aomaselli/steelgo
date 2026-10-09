@@ -31,7 +31,9 @@ import {
 } from "../mapa";
 import {
   SimuladorIndisponivelError,
+  TENTATIVAS_DE_EMISSAO,
   TokenSimuladoDeOutraOperacaoError,
+  pedirAutorizacaoSimulada,
   type AutorizacaoSimulada,
   envelopeParaCorpo,
   montarPrivacidadeDeDemonstracao,
@@ -275,48 +277,103 @@ test("J3. os parametros pedidos saem do corpo JA podado", () => {
 
 // ───────── K. token: repetir so aqui, e so em falha transitoria ─────────────
 
-test("K1. 5xx ao obter token repete; 4xx nao", async () => {
+test("K1. 5xx DEPOIS de possivel envio NAO repete, e bloqueia", async () => {
   process.env.NODE_ENV = "test";
   let chamadas = 0;
   const transitorio = (async () => {
     chamadas += 1;
-    if (chamadas < 3) return new Response("", { status: 502 });
-    return new Response("token-simulado", { status: 201 });
+    return new Response("", { status: 502 });
   }) as unknown as typeof fetch;
 
-  const a = await obterAutorizacaoSimulada({
+  const r502 = await pedirAutorizacaoSimulada({
     bearer: "b",
     cpfFicticio: "00000000000",
     operationId: "op-1",
     parametros: ["cpf"],
     timeoutMs: 1000,
-    tentativas: 3,
     fetchImpl: transitorio,
   });
-  assert.equal(a.simulada, true);
-  assert.equal(chamadas, 3);
 
-  let chamadas4xx = 0;
-  const definitivo = (async () => {
-    chamadas4xx += 1;
-    return new Response("", { status: 400 });
-  }) as unknown as typeof fetch;
-  await assert.rejects(
-    () =>
-      obterAutorizacaoSimulada({
-        bearer: "b",
-        cpfFicticio: "00000000000",
-        operationId: "op-1",
-        parametros: ["cpf"],
-        timeoutMs: 1000,
-        tentativas: 3,
-        fetchImpl: definitivo,
-      }),
-    SimuladorIndisponivelError,
+  assert.equal(r502.situacao, "desfecho_desconhecido");
+  assert.equal(chamadas, 1, "uma tentativa, e so");
+  assert.equal(
+    r502.situacao === "desfecho_desconhecido" && r502.repeticaoAutomaticaBloqueada,
+    true,
   );
-  assert.equal(chamadas4xx, 1, "recusa 4xx nao se repete");
+  assert.equal(r502.garanteAusenciaDeEmissao, false);
+  assert.equal(
+    r502.emissoesPossivelmenteOrfas,
+    1,
+    "a tentativa que saiu conta como possivel emissao orfa",
+  );
 });
 
+test("K1b. falha de rede tambem nao repete: nao da para provar que nada saiu", async () => {
+  // `fetch` lanca o mesmo TypeError para DNS (nada saiu) e para conexao
+  // interrompida no meio (pode ter saido). Sem distinguir, nao se repete.
+  let chamadas = 0;
+  const rede = (() => {
+    chamadas += 1;
+    throw Object.assign(new Error("getaddrinfo ENOTFOUND"), { name: "TypeError" });
+  }) as unknown as typeof fetch;
+
+  const rRede = await pedirAutorizacaoSimulada({
+    bearer: "b",
+    cpfFicticio: "00000000000",
+    operationId: "op-1",
+    parametros: ["cpf"],
+    timeoutMs: 1000,
+    fetchImpl: rede,
+  });
+
+  assert.equal(rRede.situacao, "desfecho_desconhecido");
+  assert.equal(chamadas, 1);
+  assert.equal(rRede.emissoesPossivelmenteOrfas, 1);
+  assert.equal(rRede.garanteAusenciaDeEmissao, false);
+});
+
+test("K1c. 4xx nao repete e tambem nao garante ausencia de emissao", async () => {
+  let chamadas = 0;
+  const definitivo = (async () => {
+    chamadas += 1;
+    return new Response("", { status: 400 });
+  }) as unknown as typeof fetch;
+
+  const r400 = await pedirAutorizacaoSimulada({
+    bearer: "b",
+    cpfFicticio: "00000000000",
+    operationId: "op-1",
+    parametros: ["cpf"],
+    timeoutMs: 1000,
+    fetchImpl: definitivo,
+  });
+
+  assert.equal(r400.situacao, "recusado");
+  assert.equal(chamadas, 1, "recusa explicita nao se repete");
+  assert.equal(r400.garanteAusenciaDeEmissao, false);
+});
+
+test("K1d. a politica e UMA tentativa, declarada em constante", () => {
+  assert.equal(TENTATIVAS_DE_EMISSAO, 1);
+});
+
+test("K1e. o sucesso nao reporta emissao orfa", async () => {
+  const ok = (async () =>
+    new Response("token-simulado", { status: 201 })) as unknown as typeof fetch;
+
+  const rOk = await pedirAutorizacaoSimulada({
+    bearer: "b",
+    cpfFicticio: "00000000000",
+    operationId: "op-1",
+    parametros: ["cpf"],
+    timeoutMs: 1000,
+    fetchImpl: ok,
+  });
+
+  assert.equal(rOk.situacao, "emitido");
+  assert.equal(rOk.emissoesPossivelmenteOrfas, 0);
+  assert.equal(rOk.tentativas, 1);
+});
 test("K2. o token vem em texto puro, nao em JSON", async () => {
   const texto = (async () =>
     new Response("eyJhbGciOiJSUzI1NiJ9.corpo.demo", {

@@ -137,15 +137,53 @@ export type ResultadoDaEmissao =
       detalhe: string;
       readonly garanteAusenciaDeEmissao: false;
       emissoesPossivelmenteOrfas: number;
-      /** Esgotou o limite. Repetir de novo é decisão de quem chama, não daqui. */
-      readonly limiteDeTentativasAtingido: true;
+      /**
+       * Sempre `true`. Repetir de novo é decisão de quem chama — com os olhos
+       * abertos para as emissões possivelmente órfãs —, nunca deste módulo.
+       */
+      readonly repeticaoAutomaticaBloqueada: true;
     };
 
 /** Teto rígido. Não há como pedir mais do que isto. */
-export const TENTATIVAS_MAXIMAS_DE_EMISSAO = 3;
+/**
+ * Tentativas automáticas de emissão: UMA.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * POR QUE NÃO HÁ TETO DE TRÊS, NEM DE DOIS
+ *
+ * Uma versão anterior repetia até três vezes em 5xx, com a ideia de que o
+ * teto limitava o risco. Limita — no máximo três emissões órfãs em vez de uma
+ * fila delas —, mas limitar risco não é o mesmo que tornar a repetição
+ * segura, e tratar as duas coisas como uma só foi o erro.
+ *
+ * Repetir só seria seguro com garantia do serviço: de que a emissão não
+ * aconteceu, ou de que repetir não emite de novo. O OpenAPI do simulador
+ * declara UMA resposta para este endpoint — 201 — e não documenta chave de
+ * idempotência, comportamento em repetição nem reconciliação.
+ *
+ * Restaria repetir no caso PROVADAMENTE anterior ao envio, onde dá para
+ * afirmar que nada foi emitido. Esse caso não é distinguível aqui: `fetch`
+ * lança o mesmo `TypeError` para falha de DNS (nada saiu) e para conexão
+ * interrompida no meio (pode ter saído). A versão anterior tinha um ramo para
+ * ele que, por isso, nunca executava — código morto que ainda por cima
+ * sugeria uma distinção que o módulo não consegue fazer.
+ *
+ * Então: uma tentativa. Repetir é decisão de quem chama, com os olhos abertos
+ * para as emissões possivelmente órfãs, e nunca deste módulo.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * E A GCC REAL É OUTRA COISA
+ *
+ * Isto aqui é o SIMULADOR, que existe só na demonstração. A GCC real é
+ * contratada, credenciada pela SENATRAN, e cada token que ela emite é
+ * registro de consentimento e ciência do titular, visível no Portal de
+ * Privacidade. Nada medido contra o simulador autoriza repetir contra ela, e
+ * nenhuma garantia que o simulador venha a publicar vale para ela.
+ */
+export const TENTATIVAS_DE_EMISSAO = 1;
 
 /**
- * Pede um token ao simulador oficial.
+ * Pede um token ao simulador oficial. UMA vez.
  *
  * `parametros` são os metadados que o token vai carregar — os mesmos nomes de
  * campo que a validação vai comparar. Nenhum valor pessoal entra: são nomes de
@@ -162,64 +200,48 @@ export async function pedirAutorizacaoSimulada(opcoes: {
   parametros: readonly string[];
   cnpjAnuente?: string | null;
   timeoutMs: number;
-  /** Teto de tentativas, limitado a `TENTATIVAS_MAXIMAS_DE_EMISSAO`. */
-  tentativas?: number;
   fetchImpl?: typeof fetch;
 }): Promise<ResultadoDaEmissao> {
   assertAmbienteDeDemonstracao();
 
-  const maximo = Math.min(
-    TENTATIVAS_MAXIMAS_DE_EMISSAO,
-    Math.max(1, opcoes.tentativas ?? 1),
-  );
+  try {
+    const autorizacao = await umaTentativa(opcoes);
+    return {
+      situacao: "emitido",
+      autorizacao,
+      tentativas: 1,
+      emissoesPossivelmenteOrfas: 0,
+    };
+  } catch (e) {
+    if (!(e instanceof SimuladorIndisponivelError)) throw e;
 
-  let tentativas = 0;
-  let orfas = 0;
-  let ultimo: SimuladorIndisponivelError | null = null;
-
-  while (tentativas < maximo) {
-    tentativas += 1;
-    try {
-      const autorizacao = await umaTentativa(opcoes);
-      return { situacao: "emitido", autorizacao, tentativas, emissoesPossivelmenteOrfas: orfas };
-    } catch (e) {
-      if (!(e instanceof SimuladorIndisponivelError)) throw e;
-      ultimo = e;
-
-      // Mesma classificação por FASE de `privacy.ts`, e pela mesma razão.
-      if (!e.possivelmenteEnviado) {
-        // Provado que nada saiu: aqui sim dá para afirmar que não houve
-        // emissão, e repetir é inofensivo.
-        continue;
-      }
-
-      // A requisição saiu. Pode ter emitido token e perdido a resposta.
-      orfas += 1;
-
-      if (e.httpStatus !== null && e.httpStatus >= 400 && e.httpStatus < 500) {
-        // Recusa explícita: a mesma requisição receberia a mesma recusa.
-        return {
-          situacao: "recusado",
-          httpStatus: e.httpStatus,
-          tentativas,
-          detalhe: e.message,
-          garanteAusenciaDeEmissao: false,
-          emissoesPossivelmenteOrfas: orfas,
-        };
-      }
-      // 5xx ou sem resposta: repete, dentro do teto.
+    if (e.httpStatus !== null && e.httpStatus >= 400 && e.httpStatus < 500) {
+      // Recusa explícita: há resposta, e a mesma requisição receberia a
+      // mesma recusa. Mas receber recusa não é prova de que nada foi
+      // registrado do outro lado — daí o literal abaixo.
+      return {
+        situacao: "recusado",
+        httpStatus: e.httpStatus,
+        tentativas: 1,
+        detalhe: e.message,
+        garanteAusenciaDeEmissao: false,
+        emissoesPossivelmenteOrfas: 1,
+      };
     }
-  }
 
-  return {
-    situacao: "desfecho_desconhecido",
-    httpStatus: ultimo?.httpStatus ?? null,
-    tentativas,
-    detalhe: ultimo?.message ?? "nenhuma tentativa executada",
-    garanteAusenciaDeEmissao: false,
-    emissoesPossivelmenteOrfas: orfas,
-    limiteDeTentativasAtingido: true,
-  };
+    // 5xx, timeout ou falha de rede: a requisição pode ter saído e emitido um
+    // token cuja resposta se perdeu. Desfecho desconhecido, repetição
+    // automática bloqueada, e nenhuma afirmação sobre ausência de efeito.
+    return {
+      situacao: "desfecho_desconhecido",
+      httpStatus: e.httpStatus,
+      tentativas: 1,
+      detalhe: e.message,
+      garanteAusenciaDeEmissao: false,
+      emissoesPossivelmenteOrfas: 1,
+      repeticaoAutomaticaBloqueada: true,
+    };
+  }
 }
 
 /**
@@ -236,19 +258,17 @@ export async function obterAutorizacaoSimulada(opcoes: {
   parametros: readonly string[];
   cnpjAnuente?: string | null;
   timeoutMs: number;
-  tentativas?: number;
   fetchImpl?: typeof fetch;
 }): Promise<AutorizacaoSimulada> {
   const r = await pedirAutorizacaoSimulada(opcoes);
   if (r.situacao === "emitido") return r.autorizacao;
   throw new SimuladorIndisponivelError(
     r.httpStatus,
-    `${r.detalhe} (tentativas: ${r.tentativas}; emissões possivelmente órfãs: ` +
-      `${r.emissoesPossivelmenteOrfas}; nada aqui afirma ausência de emissão)`,
-    r.emissoesPossivelmenteOrfas > 0,
+    `${r.detalhe} (emissões possivelmente órfãs: ${r.emissoesPossivelmenteOrfas}; ` +
+      `nada aqui afirma ausência de emissão)`,
+    true,
   );
 }
-
 async function umaTentativa(opcoes: {
   bearer: string;
   cpfFicticio: string;

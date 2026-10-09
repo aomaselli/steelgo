@@ -206,3 +206,51 @@ Nada do que a demonstração aceita, recusa ou devolve vale como contrato de
 produção sem confirmação formal — inclusive o token de GCC com assinatura
 `.demo`. As perguntas abertas estão em
 [`datavalid-questoes-ao-serpro.md`](./datavalid-questoes-ao-serpro.md).
+
+## Emissão de token: uma tentativa, e por quê
+
+O teto de três tentativas que esta implementação teve por um tempo **limitava
+o risco sem tornar a repetição segura** — são coisas diferentes, e tratá-las
+como uma só foi o erro. Hoje a política é **uma tentativa**, declarada em
+`TENTATIVAS_DE_EMISSAO`.
+
+Repetir só seria seguro com garantia do serviço: de que a emissão não
+aconteceu, ou de que repetir não emite de novo. O OpenAPI do simulador declara
+**uma** resposta para `POST /v5/gcc/token` — 201 — e não documenta chave de
+idempotência, comportamento em repetição nem reconciliação. Não há onde apoiar
+a garantia.
+
+Restaria repetir no caso **provadamente anterior ao envio**, onde daria para
+afirmar que nada foi emitido. Esse caso não é distinguível aqui: `fetch` lança
+o mesmo `TypeError` para falha de DNS (nada saiu) e para conexão interrompida
+no meio (pode ter saído). A versão anterior tinha um ramo para ele que, por
+isso, **nunca executava** — código morto que ainda sugeria uma distinção que o
+módulo não consegue fazer.
+
+Todo desfecho que não seja emissão carrega `garanteAusenciaDeEmissao: false` e
+`emissoesPossivelmenteOrfas`. O desconhecido carrega também
+`repeticaoAutomaticaBloqueada: true`. Repetir é decisão de quem chama, com os
+olhos abertos para as emissões possivelmente órfãs.
+
+**Se um dia o SERPRO publicar essa garantia**, o lugar de registrá-la é no
+comentário de `pedirAutorizacaoSimulada`, com a citação — e só então o `return`
+vira `continue`.
+
+### Isto vale para o SIMULADOR, não para a GCC real
+
+O simulador existe só na demonstração, e a própria documentação o marca assim.
+A GCC real é contratada, credenciada pela SENATRAN, e cada token que emite é
+registro de consentimento e ciência do titular, visível no Portal de
+Privacidade. **Nada medido contra o simulador autoriza repetir contra ela**, e
+nenhuma garantia que o simulador venha a publicar vale para ela.
+
+## A validade futura do cenário 6 é entrada sintética
+
+`FUTURA_SINTETICA` é calculada como hoje + 365 dias, na própria linha do
+harness. **Não vem do SERPRO, não está na massa oficial e não foi confirmada
+por ninguém.** Existe só para o bloco de habilitação passar do portão de
+vencimento, de modo que a única pergunta em aberto seja o impedimento.
+
+O dado real da massa é o da asserção 6.2 — `2025-04-03`, vencido. A asserção
+6.4 nomeia a data sintética no próprio texto, para que nenhuma leitura do
+relatório a tome por resultado da validação.

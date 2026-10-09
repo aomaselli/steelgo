@@ -53,7 +53,7 @@ const MASSA = process.env.DATAVALID_MASSA_OFICIAL;
  * público. Esperar é a resposta certa; repetir automaticamente seria
  * treinar a esteira a insistir contra um limite.
  */
-const PAUSA_ENTRE_CENARIOS_MS = 25_000;
+const PAUSA_ENTRE_CENARIOS_MS = 45_000;
 
 const resultados = [];
 function reg(ok, texto) {
@@ -226,8 +226,9 @@ async function main() {
       cpfFicticio: corpo.cpf,
       operationId,
       parametros,
+      // Uma tentativa. Repetir depois de a requisicao possivelmente sair nao
+      // e seguro, e teto de tentativas limita risco sem tornar seguro.
       timeoutMs: 30_000,
-      tentativas: 3,
     });
     if (emissao.situacao !== "emitido") {
       nota(
@@ -256,6 +257,12 @@ async function main() {
     return { emissao, resultado, operationId };
   }
 
+
+  /** Rotulo do desfecho, cobrindo o caso de a EMISSAO ter falhado. */
+  function desfecho(c) {
+    if (c.resultado) return c.resultado.situacao;
+    return `emissao ${c.emissao.situacao}` + (c.emissao.httpStatus ? ` (HTTP ${c.emissao.httpStatus})` : "");
+  }
   function mostrarBlocos(leitura, apenas) {
     console.log(`    rfb_existe = ${leitura.rfbExiste}   cnh_existe = ${leitura.cnhExiste}`);
     for (const [nome, b] of Object.entries(leitura.blocos)) {
@@ -289,7 +296,7 @@ async function main() {
   for (const o of base.omitidos) nota(`omitido ${o.campo} (${o.motivo})`);
 
   const c1 = await validar("biografico", base.corpo, base.omitidos);
-  reg(c1.resultado?.situacao === "respondido", `1.5 validacao respondida (${c1.resultado?.situacao})`);
+  reg(c1.resultado?.situacao === "respondido", `1.5 validacao respondida (${desfecho(c1)})`);
   let leitura1 = null;
   if (c1.resultado?.situacao === "respondido") {
     leitura1 = c1.resultado.leitura;
@@ -319,7 +326,7 @@ async function main() {
       },
     };
     const c2 = await validar("qrcode", corpoQr, omitidosQr);
-    reg(c2.resultado?.situacao === "respondido", `2.2 validacao respondida (${c2.resultado?.situacao})`);
+    reg(c2.resultado?.situacao === "respondido", `2.2 validacao respondida (${desfecho(c2)})`);
     if (c2.resultado?.situacao === "respondido") {
       mostrarBlocos(c2.resultado.leitura, ["qrcode"]);
       const b = c2.resultado.leitura.blocos.qrcode;
@@ -374,7 +381,7 @@ async function main() {
         `3.4 similaridade facial devolvida: ${JSON.stringify(b.similaridades.similaridade ?? b.valores.similaridade)}`,
       );
     } else {
-      reg(false, `3.2 validacao nao respondeu: ${c3.resultado?.situacao}`);
+      reg(false, `3.2 validacao nao respondeu: ${desfecho(c3)}`);
       nota(`detalhe: ${c3.resultado?.detalhe ?? "-"}`);
       nota("413 aqui seria limite de tamanho do gateway, nao defeito do adaptador");
     }
@@ -403,7 +410,7 @@ async function main() {
       "4.3 existencia segue verdadeira: existir na base e outra pergunta que comparar",
     );
   } else {
-    reg(false, `4.1 validacao nao respondeu: ${c4.resultado?.situacao}`);
+    reg(false, `4.1 validacao nao respondeu: ${desfecho(c4)}`);
     nota(`detalhe: ${c4.resultado?.detalhe ?? "-"}`);
   }
 
@@ -467,26 +474,38 @@ async function main() {
       `6.3 com a data real da massa, reprova por vencimento: ${comDataReal.status}/${comDataReal.reasonCode}`,
     );
 
-    // Validade futura: agora a ÚNICA pergunta em aberto é o impedimento.
-    const FUTURA = new Date(Date.now() + 365 * 86400000).toISOString().slice(0, 10);
+    // ──────────────────────────────────────────────────────────────────
+    // ENTRADA SINTÉTICA, inventada aqui para isolar a regra.
+    //
+    // Esta data NÃO vem do SERPRO, não está na massa oficial e não foi
+    // confirmada por ninguém: é hoje + 365 dias, calculada nesta linha. Só
+    // existe para que o bloco de habilitação passe do portão de vencimento
+    // e a ÚNICA pergunta em aberto seja o impedimento.
+    //
+    // O dado real da massa é o da asserção 6.2, e está vencido. Apresentar
+    // esta data como resultado da validação seria inventar um fato.
+    const FUTURA_SINTETICA = new Date(Date.now() + 365 * 86400000)
+      .toISOString()
+      .slice(0, 10);
     const entrada = {
       now: new Date(),
       identityVerified: true,
       licenseNumber: registro.cnh_numero_registro,
-      licenseExpiry: FUTURA,
+      licenseExpiry: FUTURA_SINTETICA,
       drivingLicenseSourceConfigured: true,
       driverStatus: {
         licenseValid: true,
         // Exatamente o que a resposta deu: não avaliado.
         hasImpediment: impedimentoLido,
-        licenseExpiresAt: FUTURA,
+        licenseExpiresAt: FUTURA_SINTETICA,
       },
     };
     const bloco = regras.avaliarHabilitacao(entrada);
     reg(
       bloco.status === "inconclusive" && bloco.reasonCode === "LICENSE_STATUS_UNCONFIRMED",
-      `6.4 com validade futura, o impedimento não avaliado deixa o bloco ` +
-        `${bloco.status}/${bloco.reasonCode}`,
+      `6.4 com validade futura SINTÉTICA (${FUTURA_SINTETICA}, inventada aqui, ` +
+        `não confirmada pelo SERPRO), o impedimento não avaliado deixa o ` +
+        `bloco ${bloco.status}/${bloco.reasonCode}`,
     );
 
     const composto = regras.compor([
@@ -509,7 +528,8 @@ async function main() {
     ]);
     reg(
       compostoOk.decision === "approved",
-      `6.6 controle positivo: com impedimento avaliado FALSO, aprova (${compostoOk.decision})`,
+      `6.6 controle positivo, ainda sobre a validade sintética: com ` +
+        `impedimento avaliado FALSO, aprova (${compostoOk.decision})`,
     );
   } else {
     reg(false, "6.1 sem a leitura do cenario 1 nao ha o que compor");
