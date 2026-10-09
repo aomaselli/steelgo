@@ -7,6 +7,13 @@ prova de vida como **pré-requisitos universais**, todos bloqueando tudo. Não
 são. Cada um entrega uma **capacidade** diferente, e algumas podem já estar
 cobertas pelo contrato que existir — ou nem ser necessárias.
 
+> **CORRIGIDO EM 09/10/2026, pela documentação oficial.** A versão anterior
+> deste documento continha um erro factual: tratava a GCC como alternativa a
+> um registro próprio de consentimento. Não é. Ver
+> [`datavalid-v5-matriz-capacidades.md`](./datavalid-v5-matriz-capacidades.md),
+> que é a referência a partir de agora; este arquivo ficou como mapa das
+> capacidades e das que seguem fora do Datavalid.
+>
 > **O que aqui é análise e o que é fato.** O código deste repositório é fato e
 > está citado. O que o contrato do Datavalid V5 efetivamente cobre **não é fato
 > conhecido por este documento** — ninguém aqui leu o contrato. Toda linha
@@ -49,10 +56,10 @@ contra o contrato**. Cada uma muda o plano se estiver errada.
 
 | # | Pergunta | Se a resposta for SIM | Se for NÃO |
 |---|---|---|---|
-| Q1 | O contrato inclui o módulo de **validação de CNH** do Datavalid? | **C5 está coberta.** Consulta Online SENATRAN deixa de ser necessária para o bloco B | é preciso uma fonte separada para C5 |
+| ~~Q1~~ | ~~O contrato inclui o módulo de validação de CNH?~~ **RESPONDIDA:** os campos de CNH estão no endpoint unificado, sem contrato separado. **Mas respondem por COMPARAÇÃO** — ver B3 na matriz; a cobertura não se encerra | — | — |
 | Q2 | O contrato inclui **biometria facial**? | C3 coberta | C3 precisa de outro fornecedor, e o bloco A fica incompleto |
-| Q3 | O Datavalid oferece **prova de vida**, ou só comparação facial? | C4 coberta | **C4 precisa de fornecedor próprio** — é a lacuna mais provável |
-| Q4 | A autorização por requisição (C1) é exigência **contratual**, ou basta o nosso registro de consentimento? | C1 depende de fornecedor e entra no caminho crítico | C1 vira implementação nossa, sem contrato novo |
+| ~~Q3~~ | ~~O Datavalid oferece prova de vida?~~ **RESPONDIDA: sim.** `biometria_facial.vivacidade = true`. **Nenhum fornecedor adicional é necessário** | — | — |
+| ~~Q4~~ | ~~A autorização por requisição (C1) é contratual, ou basta o nosso registro?~~ **RESPONDIDA: é obrigatória.** Portaria SENATRAN nº 139/2025; a GCC é entidade credenciada que registra, gerencia e audita os eventos de consentimento e ciência. Nosso registro interno **não substitui** | — | — |
 | Q5 | O credenciamento SENATRAN é exigido para **qual** módulo — identidade, CNH, ou ambos? | define o que destrava primeiro | — |
 
 **Q1 e Q3 são as que mais mudam o cronograma.** Q1 pode eliminar um contrato
@@ -64,11 +71,11 @@ inteiro; Q3 pode acrescentar um.
 
 | Capacidade | Fonte possível | Estado no código | Bloqueia |
 |---|---|---|---|
-| C1 autorização | GCC, ou registro próprio *(Q4)* | `FakeGCCProvider` embutido — **a fábrica recusa subir em modo real por causa dele** | A |
+| C1 autorização | **GCC credenciada pela SENATRAN — obrigatória, sem alternativa** | `FakeGCCProvider` embutido — **a fábrica recusa subir em modo real por causa dele** | A |
 | C2 cadastrais | Datavalid V5 | `DatavalidSerproProvider` é stub que recusa com `DATAVALID_NOT_IMPLEMENTED` | A |
 | C3 facial | Datavalid V5 *(Q2)* | idem C2 | A |
-| C4 prova de vida | **indefinido** *(Q3)* | não existe | A |
-| C5 CNH | módulo CNH do Datavalid *(Q1)* **ou** Consulta Online SENATRAN | `senatran: null`; o motor agora trata ausência como inconclusivo | B |
+| C4 prova de vida | **Datavalid V5** — `vivacidade: true` | não implementado; **não é lacuna de fornecedor** | A |
+| C5 CNH | Datavalid V5, **por comparação** | `senatran: null`; o motor trata ausência como inconclusivo. **B3 em aberto** | B |
 | C6 RNTRC | ANTT — canal indefinido | `carriers.antt_rntrc` é texto digitado, nada confere | C |
 | C7 veículo | indefinido | `trucks.plate` é texto digitado | D |
 | C8 apólice | seguradora; conferência manual é aceitável no início | `carriers.insurance_expiry`, `rctr_c_active`; PDF enviado, não conferido | E |
@@ -87,9 +94,12 @@ dentro do mesmo contrato do Datavalid. Se for não, é um contrato a mais no
 caminho crítico — e até lá a habilitação fica **inconclusiva**, que é o
 comportamento correto e já implementado, em vez de ser pulada em silêncio.
 
-**C4 é a lacuna com maior incerteza.** Sem prova de vida, o bloco A aceita foto
-de foto. Se Q3 for não, é seleção, contratação e homologação de um fornecedor
-que ainda não existe no plano — provavelmente o item mais longo.
+**C4 deixou de ser lacuna.** A prova de vida está no próprio Datavalid V5,
+pelo atributo `vivacidade` no objeto `biometria_facial`. O que resta é
+captura conforme os requisitos do fornecedor — não contratação.
+
+**A lacuna que sobrou é B3, e é de outra natureza:** não falta fornecedor,
+falta um retorno que diga a situação atual da habilitação. Ver a matriz.
 
 **C6, C7 e C8 não bloqueiam A nem B.** São os blocos C, D e E, da etapa 4, e
 começar manual com registro é melhor do que esperar automação.
@@ -98,11 +108,14 @@ começar manual com registro é melhor do que esperar automação.
 
 ## 5. Ordem que as respostas destravam
 
-1. **Q4** — se a autorização for nossa, C1 sai do caminho crítico hoje mesmo e
-   `sandbox` passa a poder subir.
-2. **Q1** — decide se existe um contrato a mais para o bloco B.
-3. **Q3** — decide se existe um fornecedor a mais, e provavelmente o mais lento.
-4. Q2 e Q5 refinam o escopo de A, mas não mudam o número de contratos.
+Q1, Q3 e Q4 estão respondidas pela documentação. O que destrava agora:
+
+1. **Contrato com uma GCC credenciada** — é o bloqueio real, e não tem
+   alternativa interna.
+2. **Endereço do template** — três variantes divergentes entre webinar, guia
+   e Swagger. Conferir a especificação oficial do ambiente contratado.
+3. **B3** — decidir se a sondagem de `situacao` por comparação atende, ou se
+   é preciso outra fonte para situação atual da habilitação.
 
 Nada disso bloqueia a **Etapa 1** (storage privado, acesso auditado,
 consentimento versionado, retenção), que não depende de fornecedor nenhum e é
