@@ -20,6 +20,13 @@ export interface GCCAuthorizationRequest {
 
 export interface GCCProvider {
   readonly name: "gcc";
+  /**
+   * `true` apenas em provider simulado. Esta na INTERFACE, nao so nas classes
+   * falsas, para que todo provider novo seja obrigado a se declarar -- quem
+   * esquecer nao compila. A fabrica recusa qualquer `simulated: true` nos
+   * modos de integracao real.
+   */
+  readonly simulated: boolean;
   createAuthorization(
     input: GCCAuthorizationRequest,
   ): Promise<ProviderOutcome<GCCAuthorization>>;
@@ -30,6 +37,7 @@ export type FakeGCCScenario = "granted" | "denied" | "unavailable" | "timeout";
 
 export class FakeGCCProvider implements GCCProvider {
   readonly name = "gcc" as const;
+  readonly simulated = true as const;
 
   private readonly scenario: FakeGCCScenario;
   private readonly now: () => Date;

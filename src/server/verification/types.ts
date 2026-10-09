@@ -56,7 +56,16 @@ export type InternalReasonCode =
   | "PROVIDER_RATE_LIMITED"
   | "PROVIDER_INVALID_REQUEST"
   | "ALREADY_APPROVED"
-  | "MANUAL_REVIEW_REQUIRED";
+  | "MANUAL_REVIEW_REQUIRED"
+  // Fonte obrigatória do bloco nao esta configurada. NAO e indisponibilidade:
+  // o provedor nem existe nesta instalacao. Resulta em inconclusivo, nunca
+  // em aprovacao -- era o buraco do `senatran === null`, que era pulado em
+  // silencio e deixava a decisao chegar a `approved` sem conferencia.
+  | "SOURCE_NOT_CONFIGURED"
+  // O bloco nao chegou a ser avaliado porque um bloco anterior nao concluiu.
+  // Nao diz nada sobre o motorista nem sobre a fonte: e consequencia. Por
+  // isso tem a MENOR prioridade no resumo -- senao esconde a causa real.
+  | "NOT_EVALUATED";
 
 export type MatchConfidence = "high" | "medium" | "low";
 export type FieldMatch = "match" | "mismatch" | "unavailable";
@@ -112,11 +121,47 @@ export interface DriverStatusResult {
   resultCode: string;
 }
 
+/**
+ * Blocos de validacao. Cada um responde a UMA pergunta e tem resultado
+ * proprio: aprovar identidade nao torna ninguem habilitado, e habilitado nao
+ * significa apto a uma viagem.
+ *
+ * `carrier`, `vehicle` e `insurance` estao declarados mas ainda nao sao
+ * avaliados -- entram na etapa 4. Declara-los agora evita que o composto
+ * precise mudar de forma depois.
+ */
+export type VerificationBlock =
+  | "identity"
+  | "driving_license"
+  | "carrier"
+  | "vehicle"
+  | "insurance";
+
+/**
+ * Resultado de UM bloco.
+ *
+ * `inconclusive` e o estado que faltava. Antes havia so aprovado, reprovado
+ * e erro de provedor, e a ausencia de fonte caia no vazio -- virava aprovado.
+ * Inconclusivo diz a verdade: nao sabemos. Nunca libera nada.
+ */
+export type BlockStatus = "approved" | "rejected" | "expired" | "inconclusive";
+
+export interface BlockOutcome {
+  block: VerificationBlock;
+  status: BlockStatus;
+  reasonCode: InternalReasonCode;
+}
+
 /** Único formato que chega ao browser. */
 export interface DriverVerificationPublicResult {
   status: DriverLicenseState;
   decision: DriverVerificationDecision;
   reasonCode: InternalReasonCode;
+  /**
+   * Resultado por bloco, preservado. O composto nunca e mais permissivo que
+   * o bloco mais fraco, e quem le consegue dizer O QUE foi verificado.
+   */
+  blocks: BlockOutcome[];
 }
 
 export interface DriverVerificationResult extends DriverVerificationPublicResult {

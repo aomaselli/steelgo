@@ -5,10 +5,11 @@
  * substituído por uma implementação em memória e os providers pelos fakes.
  * Relógio fixo mantém a regra de vencimento determinística.
  *
- * Runner: node:test (nativo). Sem dependência nova no projeto.
+ * Runner: vitest, o mesmo da suíte do projeto — é o que garante que estes
+ * testes de fato rodem na CI.
  */
 
-import test from "node:test";
+import { test } from "vitest";
 import assert from "node:assert/strict";
 
 import {
@@ -100,8 +101,12 @@ function makeService(opts: {
     repository,
     gcc: new FakeGCCProvider(opts.gcc ?? "granted", () => NOW),
     datavalid: new FakeDatavalidProvider(opts.datavalid ?? "match_high"),
+    // Fonte de habilitacao presente por padrao. Sem ela nada e aprovado --
+    // e esse e o ponto: "skip" existe para exercitar justamente a ausencia.
     senatran:
-      opts.senatran && opts.senatran !== "skip" ? new FakeSenatranProvider(opts.senatran) : null,
+      (opts.senatran ?? "valid") === "skip"
+        ? null
+        : new FakeSenatranProvider((opts.senatran ?? "valid") as FakeSenatranScenario),
     clock: fixedClock,
   });
   return { service, repository };

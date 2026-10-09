@@ -77,6 +77,11 @@ export const verifyDriverFn = createServerFn({ method: "POST" })
         status: result.status,
         decision: result.decision,
         reasonCode: result.reasonCode,
+        // Blocos tambem vao ao browser: a tela precisa poder dizer que a
+        // identidade foi aprovada E a habilitacao ficou inconclusiva, em vez
+        // de um veredito unico que esconde a diferenca. So codigos internos,
+        // nunca codigo de provedor externo.
+        blocks: result.blocks,
       };
     } catch (err) {
       if (err instanceof VerificationAuthorizationError) throw new Error("Forbidden");

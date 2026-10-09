@@ -28,6 +28,13 @@ export interface DatavalidIdentityRequest {
 
 export interface DatavalidProvider {
   readonly name: "datavalid";
+  /**
+   * `true` apenas em provider simulado. Esta na INTERFACE, nao so nas classes
+   * falsas, para que todo provider novo seja obrigado a se declarar -- quem
+   * esquecer nao compila. A fabrica recusa qualquer `simulated: true` nos
+   * modos de integracao real.
+   */
+  readonly simulated: boolean;
   validateIdentity(
     input: DatavalidIdentityRequest,
   ): Promise<ProviderOutcome<IdentityValidationResult>>;
@@ -47,6 +54,7 @@ export type FakeDatavalidScenario =
 
 export class FakeDatavalidProvider implements DatavalidProvider {
   readonly name = "datavalid" as const;
+  readonly simulated = true as const;
 
   private readonly scenario: FakeDatavalidScenario;
 
@@ -119,6 +127,7 @@ export interface DatavalidSerproConfig {
  */
 export class DatavalidSerproProvider implements DatavalidProvider {
   readonly name = "datavalid" as const;
+  readonly simulated = false as const;
 
   private readonly config: DatavalidSerproConfig;
 
