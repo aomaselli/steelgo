@@ -258,6 +258,37 @@ test("só o 422 tem evidência documentada de não processamento", () => {
   }
 });
 
+test("422 NAO garante ausencia de cobranca nem de efeito externo", () => {
+  // "Nao processada" fala da VALIDACAO. O faturamento conta requisicoes, e
+  // nenhuma descricao de erro afirma isencao; o token da GCC ja foi emitido
+  // para a operacao e nao volta a valer.
+  const e = evidenciaDeProcessamento({ httpStatus: 422, possivelmenteEnviado: true });
+  assert.equal(e.processado, "nao_processado");
+  assert.equal(
+    e.processado === "nao_processado" && e.garanteAusenciaDeEfeitoExterno,
+    false,
+    "nenhuma evidencia pode afirmar ausencia de efeito externo",
+  );
+  assert.equal(
+    e.processado === "nao_processado" && /cobran|efeitos externos/.test(e.fonte),
+    true,
+    "a fonte precisa registrar o limite da afirmacao",
+  );
+});
+
+test("nenhuma evidencia de nao processamento garante ausencia de efeito externo", () => {
+  const casos = [
+    { httpStatus: 422, possivelmenteEnviado: true },
+    { httpStatus: null, possivelmenteEnviado: false },
+  ];
+  for (const c of casos) {
+    const e = evidenciaDeProcessamento(c);
+    if (e.processado === "nao_processado") {
+      assert.equal(e.garanteAusenciaDeEfeitoExterno, false);
+    }
+  }
+});
+
 test("não ter saído é a única afirmação de não processamento que fazemos sozinhos", () => {
   const e = evidenciaDeProcessamento({ httpStatus: null, possivelmenteEnviado: false });
   assert.equal(e.processado, "nao_processado");

@@ -120,9 +120,34 @@ export type SendPhase = "nao_enviado" | "recusa_explicita" | "desfecho_desconhec
  *
  * Aqui só se afirma `nao_processado` quando a documentação do endpoint diz
  * isso, com a citação junto. Todo o resto é `desconhecido`.
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * O QUE `nao_processado` NÃO DIZ
+ *
+ * Diz que a VALIDAÇÃO não foi processada. Não diz nada sobre:
+ *
+ *   - cobrança. O faturamento do Datavalid conta requisições, e nenhuma
+ *     descrição de erro afirma isenção. `x-apim-bill-data` vem no cabeçalho
+ *     da resposta, não na descrição do status;
+ *   - o token da GCC. Ele é emitido por operação, antes da chamada, e a
+ *     recusa do Datavalid não o devolve nem o reabilita;
+ *   - registro no Portal de Privacidade do Cidadão, ou qualquer outro
+ *     efeito do lado do fornecedor.
+ *
+ * Por isso o campo se chama `processado`, e não `semEfeito`. Uma recusa
+ * ainda pode ter custado requisição e consumido consentimento.
  */
 export type EvidenciaDeProcessamento =
-  | { processado: "nao_processado"; fonte: string }
+  | {
+      processado: "nao_processado";
+      fonte: string;
+      /**
+       * Sempre `false`. A documentação não afirma ausência de cobrança nem
+       * de outros efeitos externos, e presumir isso seria o mesmo erro de
+       * antes, noutro campo.
+       */
+      garanteAusenciaDeEfeitoExterno: false;
+    }
   | { processado: "desconhecido"; motivo: string };
 
 /**
@@ -148,7 +173,12 @@ export type EvidenciaDeProcessamento =
 const EVIDENCIA_POR_STATUS: Record<number, EvidenciaDeProcessamento> = {
   422: {
     processado: "nao_processado",
-    fonte: "Referência da API, POST /v5/pessoa-fisica/validacao, 422: \"A requisição não pode ser processada\"",
+    fonte:
+      'Referência da API, POST /v5/pessoa-fisica/validacao, 422: "A requisição ' +
+      "não pode ser processada pois há alguma inconsistência com base no corpo " +
+      'da requisição recebida". Afirma o não processamento da VALIDAÇÃO; nada ' +
+      "diz sobre cobrança, consumo do token da GCC ou outros efeitos externos.",
+    garanteAusenciaDeEfeitoExterno: false,
   },
 };
 
@@ -157,7 +187,13 @@ export function evidenciaDeProcessamento(input: {
   possivelmenteEnviado: boolean;
 }): EvidenciaDeProcessamento {
   if (!input.possivelmenteEnviado) {
-    return { processado: "nao_processado", fonte: "não houve envio (constatado no nosso lado)" };
+    return {
+      processado: "nao_processado",
+      fonte: "não houve envio (constatado no nosso lado, não pelo fornecedor)",
+      // Mesmo aqui: o token da GCC já foi emitido para esta operação e não
+      // volta a valer por a requisição não ter saído.
+      garanteAusenciaDeEfeitoExterno: false,
+    };
   }
   if (input.httpStatus !== null && EVIDENCIA_POR_STATUS[input.httpStatus]) {
     return EVIDENCIA_POR_STATUS[input.httpStatus];
