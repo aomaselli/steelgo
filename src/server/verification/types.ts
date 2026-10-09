@@ -65,7 +65,13 @@ export type InternalReasonCode =
   // O bloco nao chegou a ser avaliado porque um bloco anterior nao concluiu.
   // Nao diz nada sobre o motorista nem sobre a fonte: e consequencia. Por
   // isso tem a MENOR prioridade no resumo -- senao esconde a causa real.
-  | "NOT_EVALUATED";
+  | "NOT_EVALUATED"
+  // Impedimento confirmado na habilitacao. Reprova: nao e indisponibilidade
+  // nem falta de dado, e um fato desfavoravel confirmado pela base.
+  | "LICENSE_IMPEDIMENT"
+  // A base NAO confirmou o valor declarado, e nao diz qual e o correto.
+  // Inconclusivo, nunca aprovacao.
+  | "LICENSE_STATUS_UNCONFIRMED";
 
 export type MatchConfidence = "high" | "medium" | "low";
 export type FieldMatch = "match" | "mismatch" | "unavailable";
@@ -113,10 +119,28 @@ export interface IdentityValidationResult {
 }
 
 export interface DriverStatusResult {
+  /**
+   * INTERPRETADO pelo provider, não copiado de um booleano da API.
+   *
+   * No Datavalid V5 não existe retorno que diga "a CNH está regular". Os
+   * booleanos dizem apenas que o valor ENVIADO confere com a base.
+   * Transformar isso em `licenseValid` é trabalho do provider, com as regras
+   * de `datavalid/semantics.ts` — nunca uma atribuição direta.
+   */
   licenseValid: boolean;
   licenseExpiresAt: string | null;
   category: string | null;
   restrictions: string[];
+  /**
+   * Impedimento na habilitação. `null` é inconclusivo, e inconclusivo NÃO
+   * aprova.
+   *
+   * O exemplo oficial do Datavalid envia `possui_impedimento: true` e recebe
+   * `true` de volta: a resposta confirma que HÁ impedimento. Ler aquele
+   * booleano como aprovação seria exatamente ao contrário — é o motivo de
+   * este campo existir separado de `licenseValid`.
+   */
+  hasImpediment: boolean | null;
   providerReference: string;
   resultCode: string;
 }
