@@ -93,26 +93,116 @@ export function montarPrivacidade(
 
 // ─────────────────────────────── retry ─────────────────────────────────────
 
+/**
+ * Em que FASE a tentativa parou. É isto que decide se repetir é seguro — não
+ * o código HTTP isolado.
+ *
+ *   nao_enviado          provado que a requisição não chegou a sair. Nada foi
+ *                        processado do outro lado.
+ *   recusa_explicita     o gateway respondeu uma recusa definitiva, antes do
+ *                        processamento. Há resposta; não há dúvida.
+ *   desfecho_desconhecido  timeout, conexão interrompida, ou erro de servidor
+ *                        depois de a requisição possivelmente ter sido
+ *                        entregue. NÃO SABEMOS se foi processada.
+ */
+export type SendPhase = "nao_enviado" | "recusa_explicita" | "desfecho_desconhecido";
+
 export type RetryDecision =
-  | { retry: false; reason: "NOT_RETRYABLE" }
-  | { retry: true; requiresNewGccToken: true; reason: "UNKNOWN_OUTCOME" | "GATEWAY" };
+  | {
+      retry: true;
+      /** Sempre `true`: a documentação não autoriza reenviar o mesmo token. */
+      requiresNewGccToken: true;
+      reason: "NAO_ENVIADO" | "RECUSA_COM_ORIENTACAO_DE_REPETIR";
+    }
+  | {
+      retry: false;
+      reason: "RECUSA_DEFINITIVA";
+    }
+  | {
+      retry: false;
+      reason: "DESFECHO_DESCONHECIDO";
+      /**
+       * Repetição automática fica BLOQUEADA até existir mecanismo documentado
+       * de reconciliação ou orientação do fornecedor.
+       */
+      requerReconciliacao: true;
+      registrarResultadoDesconhecido: true;
+    };
 
 /**
- * Decide se vale repetir, e com o quê.
+ * Classifica a fase a partir do que de fato aconteceu.
  *
- * Quando vale repetir, `requiresNewGccToken` é SEMPRE `true` — não há ramo que
- * autorize reenviar o mesmo token, porque a documentação não autoriza. O tipo
- * é literal `true` de propósito: não existe como escrever o contrário sem
- * mexer aqui e encarar este comentário.
- *
- * 502 é o único caso em que a própria documentação manda repetir
- * (Referência da API: "Bad Gateway — efetue uma nova requisição").
+ * `enviou` é a informação que o código HTTP sozinho não dá: houve ou não
+ * houve entrega da requisição. Quem chama precisa saber disso — um `fetch`
+ * que falhou em DNS ou em connect não enviou; um que falhou em leitura de
+ * resposta pode ter enviado.
  */
-export function decidirRetry(httpStatus: number | null): RetryDecision {
-  if (httpStatus === 502 || httpStatus === 503 || httpStatus === null) {
-    return { retry: true, requiresNewGccToken: true, reason: httpStatus === 502 ? "GATEWAY" : "UNKNOWN_OUTCOME" };
+export function classificarFase(input: {
+  httpStatus: number | null;
+  /** `false` só quando é POSSÍVEL PROVAR que nada saiu. Na dúvida, `true`. */
+  possivelmenteEnviado: boolean;
+}): SendPhase {
+  if (!input.possivelmenteEnviado) return "nao_enviado";
+
+  // Recusa do gateway ANTES do processamento: há resposta e ela é definitiva.
+  // 429 entra aqui porque também não foi processada — a diferença é que vem
+  // com orientação de repetir.
+  if (input.httpStatus !== null && input.httpStatus >= 400 && input.httpStatus < 500) {
+    return "recusa_explicita";
   }
-  return { retry: false, reason: "NOT_RETRYABLE" };
+
+  // 5xx, timeout e conexão interrompida: a requisição pode ter chegado ao
+  // backend. 502 é explicitamente "problema ENTRE o gateway e o backend" —
+  // ou seja, pode ter passado.
+  return "desfecho_desconhecido";
+}
+
+/**
+ * Decide se repetir é seguro.
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * O PONTO DIFÍCIL: DESFECHO DESCONHECIDO NÃO SE RESOLVE COM TOKEN NOVO
+ *
+ * Uma versão anterior desta função repetia em 502, 503 e timeout, confiando
+ * em obter um token novo. Estava errada, por dois motivos:
+ *
+ *  1. token novo evita reutilizar consentimento — não evita que o SERPRO
+ *     processe DUAS VEZES. São problemas diferentes;
+ *  2. nossa chave de idempotência é NOSSA. O endpoint de validação não
+ *     documenta chave de idempotência nem mecanismo de reconciliação, e
+ *     `x-request-trace-id` é rastreamento, não deduplicação.
+ *
+ * Por isso, desfecho desconhecido não repete sozinho: registra resultado
+ * desconhecido e espera reconciliação documentada ou orientação do
+ * fornecedor. Uma validação cobrada e contada duas vezes contra o
+ * consentimento do titular é pior que uma que demora.
+ */
+export function decidirRetry(input: {
+  httpStatus: number | null;
+  possivelmenteEnviado: boolean;
+}): RetryDecision {
+  const fase = classificarFase(input);
+
+  if (fase === "nao_enviado") {
+    // Nada saiu. Repetir é seguro quanto a duplicidade externa; ainda assim,
+    // token novo, porque a documentação não autoriza reenviar o anterior.
+    return { retry: true, requiresNewGccToken: true, reason: "NAO_ENVIADO" };
+  }
+
+  if (fase === "recusa_explicita") {
+    // 429 é recusa que vem com orientação de repetir, e não foi processada.
+    if (input.httpStatus === 429) {
+      return { retry: true, requiresNewGccToken: true, reason: "RECUSA_COM_ORIENTACAO_DE_REPETIR" };
+    }
+    return { retry: false, reason: "RECUSA_DEFINITIVA" };
+  }
+
+  return {
+    retry: false,
+    reason: "DESFECHO_DESCONHECIDO",
+    requerReconciliacao: true,
+    registrarResultadoDesconhecido: true,
+  };
 }
 
 /**
@@ -120,6 +210,12 @@ export function decidirRetry(httpStatus: number | null): RetryDecision {
  *
  * Ancorada no identificador que nós geramos, nunca no token: o token muda a
  * cada tentativa, e ancorar nele faria cada retry parecer uma operação nova.
+ *
+ * O QUE ELA NÃO GARANTE. Ela evita que NÓS gravemos ou cobremos duas vezes.
+ * Ela NÃO garante processamento único no SERPRO: é chave local, o endpoint de
+ * validação não documenta chave de idempotência, e nada do nosso lado alcança
+ * o que já foi processado do outro. Apresentá-la como garantia de
+ * processamento único seria falso.
  */
 export function chaveDeIdempotencia(subjectRef: string, operationId: string): string {
   return `${subjectRef}:${operationId}`;

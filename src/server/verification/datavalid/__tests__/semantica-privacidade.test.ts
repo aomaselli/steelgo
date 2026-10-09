@@ -22,6 +22,7 @@ import {
 import {
   assertSemToken,
   chaveDeIdempotencia,
+  classificarFase,
   decidirRetry,
   montarPrivacidade,
   privacidadeParaLog,
@@ -213,17 +214,52 @@ test("privacidade: token de OUTRA operação é recusado", () => {
   );
 });
 
-test("retry: quando vale repetir, exige token GCC NOVO — sempre", () => {
-  // A documentação proíbe reutilizar entre validações distintas e é silente
-  // sobre o retry. Diante do silêncio, falha fechado.
-  for (const status of [502, 503, null]) {
-    const d = decidirRetry(status);
-    assert.equal(d.retry, true, `status ${status} deveria permitir repetir`);
+test("fase 1 — falha comprovadamente ANTES do envio: repete, com token novo", () => {
+  // Nada saiu, então não há duplicidade possível do outro lado.
+  for (const httpStatus of [null, 0 as number | null]) {
+    const d = decidirRetry({ httpStatus, possivelmenteEnviado: false });
+    assert.equal(d.retry, true);
     assert.equal(d.retry && d.requiresNewGccToken, true);
+    assert.equal(d.reason, "NAO_ENVIADO");
   }
-  for (const status of [400, 401, 403, 422]) {
-    assert.equal(decidirRetry(status).retry, false, `status ${status} não deveria repetir`);
+  assert.equal(classificarFase({ httpStatus: null, possivelmenteEnviado: false }), "nao_enviado");
+});
+
+test("fase 2 — recusa explícita do fornecedor: NÃO repete", () => {
+  // Há resposta, e ela é definitiva. Repetir só gasta requisição.
+  for (const httpStatus of [400, 401, 403, 404, 413, 422]) {
+    const d = decidirRetry({ httpStatus, possivelmenteEnviado: true });
+    assert.equal(d.retry, false, `status ${httpStatus} não deveria repetir`);
+    assert.equal(d.reason, "RECUSA_DEFINITIVA");
   }
+  // 429 é recusa que vem com orientação de repetir, e não foi processada.
+  const d429 = decidirRetry({ httpStatus: 429, possivelmenteEnviado: true });
+  assert.equal(d429.retry, true);
+  assert.equal(d429.retry && d429.requiresNewGccToken, true);
+});
+
+test("fase 3 — timeout ou conexão interrompida após possível envio: NÃO repete sozinho", () => {
+  // O caso que mais importa. Token novo não resolve duplicidade externa: são
+  // problemas diferentes, e o endpoint não documenta reconciliação.
+  const casos: Array<number | null> = [500, 502, 503, 504, null];
+  for (const httpStatus of casos) {
+    const d = decidirRetry({ httpStatus, possivelmenteEnviado: true });
+    assert.equal(d.retry, false, `status ${httpStatus} NÃO pode repetir automaticamente`);
+    assert.equal(d.reason, "DESFECHO_DESCONHECIDO");
+    assert.equal(!d.retry && d.reason === "DESFECHO_DESCONHECIDO" && d.requerReconciliacao, true);
+    assert.equal(
+      !d.retry && d.reason === "DESFECHO_DESCONHECIDO" && d.registrarResultadoDesconhecido,
+      true,
+    );
+    assert.equal(classificarFase({ httpStatus, possivelmenteEnviado: true }), "desfecho_desconhecido");
+  }
+});
+
+test("na dúvida sobre o envio, a fase é a mais conservadora", () => {
+  // Mesmo erro de rede: se não se pode PROVAR que nada saiu, trata-se como
+  // desfecho desconhecido, não como "não enviado".
+  assert.equal(classificarFase({ httpStatus: null, possivelmenteEnviado: true }), "desfecho_desconhecido");
+  assert.equal(decidirRetry({ httpStatus: null, possivelmenteEnviado: true }).retry, false);
 });
 
 test("idempotência ancora no NOSSO identificador, não no token", () => {
@@ -234,6 +270,19 @@ test("idempotência ancora no NOSSO identificador, não no token", () => {
   // que permite repetir com token novo sem parecer operação nova.
   assert.notEqual(chaveDeIdempotencia("driver-1", "op-2"), a);
   assert.equal(a.includes("hash-gcc"), false);
+});
+
+test("idempotência local NÃO é garantia de processamento único no SERPRO", () => {
+  // Ela evita que NÓS gravemos ou cobremos duas vezes. Nada do nosso lado
+  // alcança o que já foi processado do outro. O desenho reconhece isso ao
+  // recusar repetição automática em desfecho desconhecido.
+  const d = decidirRetry({ httpStatus: 502, possivelmenteEnviado: true });
+  assert.equal(d.retry, false);
+  assert.equal(
+    !d.retry && d.reason === "DESFECHO_DESCONHECIDO" && d.requerReconciliacao,
+    true,
+    "ter chave local nao autoriza repetir: a duplicidade seria externa",
+  );
 });
 
 // ═════════════════════ 5. o token nunca vai para log ═══════════════════════
