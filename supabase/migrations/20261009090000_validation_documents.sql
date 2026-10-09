@@ -6,7 +6,7 @@
 -- ATENÇÃO: esta migration AINDA NÃO FOI EXERCITADA contra banco nenhum. O
 -- destino descartável `simulacao` está sem porta publicada e o validador recusa,
 -- corretamente, na barreira 4. A bateria
--- `supabase/tests/validation_documents_matriz.sql` existe para exercitá-la, e
+-- `supabase/tests/nao-medidas/validation_documents_matriz.sql` existe para exercitá-la, e
 -- esta migration não deve ser aplicada em lugar nenhum antes de a bateria passar.
 --
 -- POR QUE NÃO HERDA AS PERMISSÕES DO COMPROVANTE DE VIAGEM
