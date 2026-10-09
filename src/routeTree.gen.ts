@@ -9,17 +9,26 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TransportadorasRouteImport } from './routes/transportadoras'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TecnologiaRouteImport } from './routes/tecnologia'
+import { Route as SuporteRouteImport } from './routes/suporte'
+import { Route as SolucoesRouteImport } from './routes/solucoes'
+import { Route as SobreRouteImport } from './routes/sobre'
 import { Route as ShipperRouteImport } from './routes/shipper'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as RecursosRouteImport } from './routes/recursos'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as IndustriasRouteImport } from './routes/industrias'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as EsgRouteImport } from './routes/esg'
 import { Route as DriverRouteImport } from './routes/driver'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CarrierRouteImport } from './routes/carrier'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -27,9 +36,35 @@ import { Route as ShipperIndexRouteImport } from './routes/shipper.index'
 import { Route as DriverIndexRouteImport } from './routes/driver.index'
 import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as TransportadorasViagensRouteImport } from './routes/transportadoras_.viagens'
+import { Route as TransportadorasHomologacaoRouteImport } from './routes/transportadoras_.homologacao'
+import { Route as TecnologiaSteelCargoPassportRouteImport } from './routes/tecnologia_.steel-cargo-passport'
+import { Route as TecnologiaOpenApiEcosystemRouteImport } from './routes/tecnologia_.open-api-ecosystem'
+import { Route as TecnologiaDriverAppRouteImport } from './routes/tecnologia_.driver-app'
+import { Route as TecnologiaComplianceSuiteRouteImport } from './routes/tecnologia_.compliance-suite'
+import { Route as TecnologiaAiOrchestrationEngineRouteImport } from './routes/tecnologia_.ai-orchestration-engine'
+import { Route as SuporteCanaisRouteImport } from './routes/suporte_.canais'
+import { Route as SuporteAjudaRouteImport } from './routes/suporte_.ajuda'
+import { Route as SolucoesSteelgoPlatformRouteImport } from './routes/solucoes_.steelgo-platform'
+import { Route as SolucoesSteelgoPayRouteImport } from './routes/solucoes_.steelgo-pay'
+import { Route as SolucoesSteelgoNetworkRouteImport } from './routes/solucoes_.steelgo-network'
+import { Route as SolucoesManagedLogisticsRouteImport } from './routes/solucoes_.managed-logistics'
+import { Route as SolucoesControlTowerRouteImport } from './routes/solucoes_.control-tower'
+import { Route as SobreVisaoRouteImport } from './routes/sobre_.visao'
+import { Route as SobrePilaresRouteImport } from './routes/sobre_.pilares'
 import { Route as ShipperSettingsRouteImport } from './routes/shipper.settings'
 import { Route as ShipperPaymentsRouteImport } from './routes/shipper.payments'
 import { Route as ShipperEsgRouteImport } from './routes/shipper.esg'
+import { Route as RecursosIntegracoesRouteImport } from './routes/recursos_.integracoes'
+import { Route as RecursosGuiasRouteImport } from './routes/recursos_.guias'
+import { Route as IndustriasVarejoRouteImport } from './routes/industrias_.varejo'
+import { Route as IndustriasSiderurgicasRouteImport } from './routes/industrias_.siderurgicas'
+import { Route as IndustriasIndustriaRouteImport } from './routes/industrias_.industria'
+import { Route as IndustriasDistribuidoresRouteImport } from './routes/industrias_.distribuidores'
+import { Route as EsgSteelgoGreenRouteImport } from './routes/esg_.steelgo-green'
+import { Route as EsgIndicadoresRouteImport } from './routes/esg_.indicadores'
+import { Route as EsgEficienciaRouteImport } from './routes/esg_.eficiencia'
+import { Route as EsgCalculadoraRouteImport } from './routes/esg_.calculadora'
 import { Route as DriverReturnReceiptRouteImport } from './routes/driver.return-receipt'
 import { Route as DriverProfileRouteImport } from './routes/driver.profile'
 import { Route as DriverPodRouteImport } from './routes/driver.pod'
@@ -39,6 +74,7 @@ import { Route as DriverExceptionRouteImport } from './routes/driver.exception'
 import { Route as DriverDocsRouteImport } from './routes/driver.docs'
 import { Route as DriverDeliveryCompleteRouteImport } from './routes/driver.delivery-complete'
 import { Route as DriverCheckpointRouteImport } from './routes/driver.checkpoint'
+import { Route as ContatoComercialRouteImport } from './routes/contato_.comercial'
 import { Route as CarrierVehiclesRouteImport } from './routes/carrier.vehicles'
 import { Route as CarrierSettingsRouteImport } from './routes/carrier.settings'
 import { Route as CarrierScoreRouteImport } from './routes/carrier.score'
@@ -82,9 +118,34 @@ import { Route as AdminOperationsGovernanceRouteImport } from './routes/admin.op
 import { Route as AdminOperationsIdRouteImport } from './routes/admin.operations.$id'
 import { Route as AdminDisputesIdRouteImport } from './routes/admin.disputes.$id'
 
+const TransportadorasRoute = TransportadorasRouteImport.update({
+  id: '/transportadoras',
+  path: '/transportadoras',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TecnologiaRoute = TecnologiaRouteImport.update({
+  id: '/tecnologia',
+  path: '/tecnologia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuporteRoute = SuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesRoute = SolucoesRouteImport.update({
+  id: '/solucoes',
+  path: '/solucoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShipperRoute = ShipperRouteImport.update({
@@ -102,6 +163,11 @@ const RegisterRoute = RegisterRouteImport.update({
   path: '/register',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecursosRoute = RecursosRouteImport.update({
+  id: '/recursos',
+  path: '/recursos',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -117,9 +183,19 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const IndustriasRoute = IndustriasRouteImport.update({
+  id: '/industrias',
+  path: '/industrias',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   id: '/forgot-password',
   path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgRoute = EsgRouteImport.update({
+  id: '/esg',
+  path: '/esg',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DriverRoute = DriverRouteImport.update({
@@ -135,6 +211,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const CookiesRoute = CookiesRouteImport.update({
   id: '/cookies',
   path: '/cookies',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CarrierRoute = CarrierRouteImport.update({
@@ -172,6 +253,92 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
+const TransportadorasViagensRoute = TransportadorasViagensRouteImport.update({
+  id: '/transportadoras_/viagens',
+  path: '/transportadoras/viagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransportadorasHomologacaoRoute =
+  TransportadorasHomologacaoRouteImport.update({
+    id: '/transportadoras_/homologacao',
+    path: '/transportadoras/homologacao',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaSteelCargoPassportRoute =
+  TecnologiaSteelCargoPassportRouteImport.update({
+    id: '/tecnologia_/steel-cargo-passport',
+    path: '/tecnologia/steel-cargo-passport',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaOpenApiEcosystemRoute =
+  TecnologiaOpenApiEcosystemRouteImport.update({
+    id: '/tecnologia_/open-api-ecosystem',
+    path: '/tecnologia/open-api-ecosystem',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaDriverAppRoute = TecnologiaDriverAppRouteImport.update({
+  id: '/tecnologia_/driver-app',
+  path: '/tecnologia/driver-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TecnologiaComplianceSuiteRoute =
+  TecnologiaComplianceSuiteRouteImport.update({
+    id: '/tecnologia_/compliance-suite',
+    path: '/tecnologia/compliance-suite',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaAiOrchestrationEngineRoute =
+  TecnologiaAiOrchestrationEngineRouteImport.update({
+    id: '/tecnologia_/ai-orchestration-engine',
+    path: '/tecnologia/ai-orchestration-engine',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SuporteCanaisRoute = SuporteCanaisRouteImport.update({
+  id: '/suporte_/canais',
+  path: '/suporte/canais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuporteAjudaRoute = SuporteAjudaRouteImport.update({
+  id: '/suporte_/ajuda',
+  path: '/suporte/ajuda',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesSteelgoPlatformRoute = SolucoesSteelgoPlatformRouteImport.update({
+  id: '/solucoes_/steelgo-platform',
+  path: '/solucoes/steelgo-platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesSteelgoPayRoute = SolucoesSteelgoPayRouteImport.update({
+  id: '/solucoes_/steelgo-pay',
+  path: '/solucoes/steelgo-pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesSteelgoNetworkRoute = SolucoesSteelgoNetworkRouteImport.update({
+  id: '/solucoes_/steelgo-network',
+  path: '/solucoes/steelgo-network',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesManagedLogisticsRoute =
+  SolucoesManagedLogisticsRouteImport.update({
+    id: '/solucoes_/managed-logistics',
+    path: '/solucoes/managed-logistics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SolucoesControlTowerRoute = SolucoesControlTowerRouteImport.update({
+  id: '/solucoes_/control-tower',
+  path: '/solucoes/control-tower',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreVisaoRoute = SobreVisaoRouteImport.update({
+  id: '/sobre_/visao',
+  path: '/sobre/visao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobrePilaresRoute = SobrePilaresRouteImport.update({
+  id: '/sobre_/pilares',
+  path: '/sobre/pilares',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ShipperSettingsRoute = ShipperSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -186,6 +353,57 @@ const ShipperEsgRoute = ShipperEsgRouteImport.update({
   id: '/esg',
   path: '/esg',
   getParentRoute: () => ShipperRoute,
+} as any)
+const RecursosIntegracoesRoute = RecursosIntegracoesRouteImport.update({
+  id: '/recursos_/integracoes',
+  path: '/recursos/integracoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecursosGuiasRoute = RecursosGuiasRouteImport.update({
+  id: '/recursos_/guias',
+  path: '/recursos/guias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriasVarejoRoute = IndustriasVarejoRouteImport.update({
+  id: '/industrias_/varejo',
+  path: '/industrias/varejo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriasSiderurgicasRoute = IndustriasSiderurgicasRouteImport.update({
+  id: '/industrias_/siderurgicas',
+  path: '/industrias/siderurgicas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriasIndustriaRoute = IndustriasIndustriaRouteImport.update({
+  id: '/industrias_/industria',
+  path: '/industrias/industria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriasDistribuidoresRoute =
+  IndustriasDistribuidoresRouteImport.update({
+    id: '/industrias_/distribuidores',
+    path: '/industrias/distribuidores',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const EsgSteelgoGreenRoute = EsgSteelgoGreenRouteImport.update({
+  id: '/esg_/steelgo-green',
+  path: '/esg/steelgo-green',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgIndicadoresRoute = EsgIndicadoresRouteImport.update({
+  id: '/esg_/indicadores',
+  path: '/esg/indicadores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgEficienciaRoute = EsgEficienciaRouteImport.update({
+  id: '/esg_/eficiencia',
+  path: '/esg/eficiencia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgCalculadoraRoute = EsgCalculadoraRouteImport.update({
+  id: '/esg_/calculadora',
+  path: '/esg/calculadora',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const DriverReturnReceiptRoute = DriverReturnReceiptRouteImport.update({
   id: '/return-receipt',
@@ -231,6 +449,11 @@ const DriverCheckpointRoute = DriverCheckpointRouteImport.update({
   id: '/checkpoint',
   path: '/checkpoint',
   getParentRoute: () => DriverRoute,
+} as any)
+const ContatoComercialRoute = ContatoComercialRouteImport.update({
+  id: '/contato_/comercial',
+  path: '/contato/comercial',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CarrierVehiclesRoute = CarrierVehiclesRouteImport.update({
   id: '/vehicles',
@@ -449,17 +672,26 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/carrier': typeof CarrierRouteWithChildren
+  '/contato': typeof ContatoRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRouteWithChildren
+  '/esg': typeof EsgRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/industrias': typeof IndustriasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/recursos': typeof RecursosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/shipper': typeof ShipperRouteWithChildren
+  '/sobre': typeof SobreRoute
+  '/solucoes': typeof SolucoesRoute
+  '/suporte': typeof SuporteRoute
+  '/tecnologia': typeof TecnologiaRoute
   '/terms': typeof TermsRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
@@ -480,6 +712,7 @@ export interface FileRoutesByFullPath {
   '/carrier/score': typeof CarrierScoreRoute
   '/carrier/settings': typeof CarrierSettingsRoute
   '/carrier/vehicles': typeof CarrierVehiclesRoute
+  '/contato/comercial': typeof ContatoComercialRoute
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
@@ -489,9 +722,35 @@ export interface FileRoutesByFullPath {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/esg/calculadora': typeof EsgCalculadoraRoute
+  '/esg/eficiencia': typeof EsgEficienciaRoute
+  '/esg/indicadores': typeof EsgIndicadoresRoute
+  '/esg/steelgo-green': typeof EsgSteelgoGreenRoute
+  '/industrias/distribuidores': typeof IndustriasDistribuidoresRoute
+  '/industrias/industria': typeof IndustriasIndustriaRoute
+  '/industrias/siderurgicas': typeof IndustriasSiderurgicasRoute
+  '/industrias/varejo': typeof IndustriasVarejoRoute
+  '/recursos/guias': typeof RecursosGuiasRoute
+  '/recursos/integracoes': typeof RecursosIntegracoesRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/shipper/settings': typeof ShipperSettingsRoute
+  '/sobre/pilares': typeof SobrePilaresRoute
+  '/sobre/visao': typeof SobreVisaoRoute
+  '/solucoes/control-tower': typeof SolucoesControlTowerRoute
+  '/solucoes/managed-logistics': typeof SolucoesManagedLogisticsRoute
+  '/solucoes/steelgo-network': typeof SolucoesSteelgoNetworkRoute
+  '/solucoes/steelgo-pay': typeof SolucoesSteelgoPayRoute
+  '/solucoes/steelgo-platform': typeof SolucoesSteelgoPlatformRoute
+  '/suporte/ajuda': typeof SuporteAjudaRoute
+  '/suporte/canais': typeof SuporteCanaisRoute
+  '/tecnologia/ai-orchestration-engine': typeof TecnologiaAiOrchestrationEngineRoute
+  '/tecnologia/compliance-suite': typeof TecnologiaComplianceSuiteRoute
+  '/tecnologia/driver-app': typeof TecnologiaDriverAppRoute
+  '/tecnologia/open-api-ecosystem': typeof TecnologiaOpenApiEcosystemRoute
+  '/tecnologia/steel-cargo-passport': typeof TecnologiaSteelCargoPassportRoute
+  '/transportadoras/homologacao': typeof TransportadorasHomologacaoRoute
+  '/transportadoras/viagens': typeof TransportadorasViagensRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
@@ -521,15 +780,24 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/contato': typeof ContatoRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
+  '/esg': typeof EsgRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/industrias': typeof IndustriasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/recursos': typeof RecursosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/sobre': typeof SobreRoute
+  '/solucoes': typeof SolucoesRoute
+  '/suporte': typeof SuporteRoute
+  '/tecnologia': typeof TecnologiaRoute
   '/terms': typeof TermsRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
@@ -550,6 +818,7 @@ export interface FileRoutesByTo {
   '/carrier/score': typeof CarrierScoreRoute
   '/carrier/settings': typeof CarrierSettingsRoute
   '/carrier/vehicles': typeof CarrierVehiclesRoute
+  '/contato/comercial': typeof ContatoComercialRoute
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
@@ -559,9 +828,35 @@ export interface FileRoutesByTo {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/esg/calculadora': typeof EsgCalculadoraRoute
+  '/esg/eficiencia': typeof EsgEficienciaRoute
+  '/esg/indicadores': typeof EsgIndicadoresRoute
+  '/esg/steelgo-green': typeof EsgSteelgoGreenRoute
+  '/industrias/distribuidores': typeof IndustriasDistribuidoresRoute
+  '/industrias/industria': typeof IndustriasIndustriaRoute
+  '/industrias/siderurgicas': typeof IndustriasSiderurgicasRoute
+  '/industrias/varejo': typeof IndustriasVarejoRoute
+  '/recursos/guias': typeof RecursosGuiasRoute
+  '/recursos/integracoes': typeof RecursosIntegracoesRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/shipper/settings': typeof ShipperSettingsRoute
+  '/sobre/pilares': typeof SobrePilaresRoute
+  '/sobre/visao': typeof SobreVisaoRoute
+  '/solucoes/control-tower': typeof SolucoesControlTowerRoute
+  '/solucoes/managed-logistics': typeof SolucoesManagedLogisticsRoute
+  '/solucoes/steelgo-network': typeof SolucoesSteelgoNetworkRoute
+  '/solucoes/steelgo-pay': typeof SolucoesSteelgoPayRoute
+  '/solucoes/steelgo-platform': typeof SolucoesSteelgoPlatformRoute
+  '/suporte/ajuda': typeof SuporteAjudaRoute
+  '/suporte/canais': typeof SuporteCanaisRoute
+  '/tecnologia/ai-orchestration-engine': typeof TecnologiaAiOrchestrationEngineRoute
+  '/tecnologia/compliance-suite': typeof TecnologiaComplianceSuiteRoute
+  '/tecnologia/driver-app': typeof TecnologiaDriverAppRoute
+  '/tecnologia/open-api-ecosystem': typeof TecnologiaOpenApiEcosystemRoute
+  '/tecnologia/steel-cargo-passport': typeof TecnologiaSteelCargoPassportRoute
+  '/transportadoras/homologacao': typeof TransportadorasHomologacaoRoute
+  '/transportadoras/viagens': typeof TransportadorasViagensRoute
   '/admin': typeof AdminIndexRoute
   '/carrier': typeof CarrierIndexRoute
   '/driver': typeof DriverIndexRoute
@@ -594,17 +889,26 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/carrier': typeof CarrierRouteWithChildren
+  '/contato': typeof ContatoRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
   '/driver': typeof DriverRouteWithChildren
+  '/esg': typeof EsgRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/industrias': typeof IndustriasRoute
   '/login': typeof LoginRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/recursos': typeof RecursosRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/shipper': typeof ShipperRouteWithChildren
+  '/sobre': typeof SobreRoute
+  '/solucoes': typeof SolucoesRoute
+  '/suporte': typeof SuporteRoute
+  '/tecnologia': typeof TecnologiaRoute
   '/terms': typeof TermsRoute
+  '/transportadoras': typeof TransportadorasRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/carriers': typeof AdminCarriersRoute
   '/admin/contracts': typeof AdminContractsRoute
@@ -625,6 +929,7 @@ export interface FileRoutesById {
   '/carrier/score': typeof CarrierScoreRoute
   '/carrier/settings': typeof CarrierSettingsRoute
   '/carrier/vehicles': typeof CarrierVehiclesRoute
+  '/contato_/comercial': typeof ContatoComercialRoute
   '/driver/checkpoint': typeof DriverCheckpointRoute
   '/driver/delivery-complete': typeof DriverDeliveryCompleteRoute
   '/driver/docs': typeof DriverDocsRoute
@@ -634,9 +939,35 @@ export interface FileRoutesById {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/esg_/calculadora': typeof EsgCalculadoraRoute
+  '/esg_/eficiencia': typeof EsgEficienciaRoute
+  '/esg_/indicadores': typeof EsgIndicadoresRoute
+  '/esg_/steelgo-green': typeof EsgSteelgoGreenRoute
+  '/industrias_/distribuidores': typeof IndustriasDistribuidoresRoute
+  '/industrias_/industria': typeof IndustriasIndustriaRoute
+  '/industrias_/siderurgicas': typeof IndustriasSiderurgicasRoute
+  '/industrias_/varejo': typeof IndustriasVarejoRoute
+  '/recursos_/guias': typeof RecursosGuiasRoute
+  '/recursos_/integracoes': typeof RecursosIntegracoesRoute
   '/shipper/esg': typeof ShipperEsgRoute
   '/shipper/payments': typeof ShipperPaymentsRoute
   '/shipper/settings': typeof ShipperSettingsRoute
+  '/sobre_/pilares': typeof SobrePilaresRoute
+  '/sobre_/visao': typeof SobreVisaoRoute
+  '/solucoes_/control-tower': typeof SolucoesControlTowerRoute
+  '/solucoes_/managed-logistics': typeof SolucoesManagedLogisticsRoute
+  '/solucoes_/steelgo-network': typeof SolucoesSteelgoNetworkRoute
+  '/solucoes_/steelgo-pay': typeof SolucoesSteelgoPayRoute
+  '/solucoes_/steelgo-platform': typeof SolucoesSteelgoPlatformRoute
+  '/suporte_/ajuda': typeof SuporteAjudaRoute
+  '/suporte_/canais': typeof SuporteCanaisRoute
+  '/tecnologia_/ai-orchestration-engine': typeof TecnologiaAiOrchestrationEngineRoute
+  '/tecnologia_/compliance-suite': typeof TecnologiaComplianceSuiteRoute
+  '/tecnologia_/driver-app': typeof TecnologiaDriverAppRoute
+  '/tecnologia_/open-api-ecosystem': typeof TecnologiaOpenApiEcosystemRoute
+  '/tecnologia_/steel-cargo-passport': typeof TecnologiaSteelCargoPassportRoute
+  '/transportadoras_/homologacao': typeof TransportadorasHomologacaoRoute
+  '/transportadoras_/viagens': typeof TransportadorasViagensRoute
   '/admin/': typeof AdminIndexRoute
   '/carrier/': typeof CarrierIndexRoute
   '/driver/': typeof DriverIndexRoute
@@ -670,17 +1001,26 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/carrier'
+    | '/contato'
     | '/cookies'
     | '/dashboard'
     | '/driver'
+    | '/esg'
     | '/forgot-password'
+    | '/industrias'
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/recursos'
     | '/register'
     | '/reset-password'
     | '/shipper'
+    | '/sobre'
+    | '/solucoes'
+    | '/suporte'
+    | '/tecnologia'
     | '/terms'
+    | '/transportadoras'
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
@@ -701,6 +1041,7 @@ export interface FileRouteTypes {
     | '/carrier/score'
     | '/carrier/settings'
     | '/carrier/vehicles'
+    | '/contato/comercial'
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
@@ -710,9 +1051,35 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/esg/calculadora'
+    | '/esg/eficiencia'
+    | '/esg/indicadores'
+    | '/esg/steelgo-green'
+    | '/industrias/distribuidores'
+    | '/industrias/industria'
+    | '/industrias/siderurgicas'
+    | '/industrias/varejo'
+    | '/recursos/guias'
+    | '/recursos/integracoes'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/shipper/settings'
+    | '/sobre/pilares'
+    | '/sobre/visao'
+    | '/solucoes/control-tower'
+    | '/solucoes/managed-logistics'
+    | '/solucoes/steelgo-network'
+    | '/solucoes/steelgo-pay'
+    | '/solucoes/steelgo-platform'
+    | '/suporte/ajuda'
+    | '/suporte/canais'
+    | '/tecnologia/ai-orchestration-engine'
+    | '/tecnologia/compliance-suite'
+    | '/tecnologia/driver-app'
+    | '/tecnologia/open-api-ecosystem'
+    | '/tecnologia/steel-cargo-passport'
+    | '/transportadoras/homologacao'
+    | '/transportadoras/viagens'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
@@ -742,15 +1109,24 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/contato'
     | '/cookies'
     | '/dashboard'
+    | '/esg'
     | '/forgot-password'
+    | '/industrias'
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/recursos'
     | '/register'
     | '/reset-password'
+    | '/sobre'
+    | '/solucoes'
+    | '/suporte'
+    | '/tecnologia'
     | '/terms'
+    | '/transportadoras'
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
@@ -771,6 +1147,7 @@ export interface FileRouteTypes {
     | '/carrier/score'
     | '/carrier/settings'
     | '/carrier/vehicles'
+    | '/contato/comercial'
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
@@ -780,9 +1157,35 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/esg/calculadora'
+    | '/esg/eficiencia'
+    | '/esg/indicadores'
+    | '/esg/steelgo-green'
+    | '/industrias/distribuidores'
+    | '/industrias/industria'
+    | '/industrias/siderurgicas'
+    | '/industrias/varejo'
+    | '/recursos/guias'
+    | '/recursos/integracoes'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/shipper/settings'
+    | '/sobre/pilares'
+    | '/sobre/visao'
+    | '/solucoes/control-tower'
+    | '/solucoes/managed-logistics'
+    | '/solucoes/steelgo-network'
+    | '/solucoes/steelgo-pay'
+    | '/solucoes/steelgo-platform'
+    | '/suporte/ajuda'
+    | '/suporte/canais'
+    | '/tecnologia/ai-orchestration-engine'
+    | '/tecnologia/compliance-suite'
+    | '/tecnologia/driver-app'
+    | '/tecnologia/open-api-ecosystem'
+    | '/tecnologia/steel-cargo-passport'
+    | '/transportadoras/homologacao'
+    | '/transportadoras/viagens'
     | '/admin'
     | '/carrier'
     | '/driver'
@@ -814,17 +1217,26 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/carrier'
+    | '/contato'
     | '/cookies'
     | '/dashboard'
     | '/driver'
+    | '/esg'
     | '/forgot-password'
+    | '/industrias'
     | '/login'
     | '/onboarding'
     | '/privacy'
+    | '/recursos'
     | '/register'
     | '/reset-password'
     | '/shipper'
+    | '/sobre'
+    | '/solucoes'
+    | '/suporte'
+    | '/tecnologia'
     | '/terms'
+    | '/transportadoras'
     | '/admin/audit'
     | '/admin/carriers'
     | '/admin/contracts'
@@ -845,6 +1257,7 @@ export interface FileRouteTypes {
     | '/carrier/score'
     | '/carrier/settings'
     | '/carrier/vehicles'
+    | '/contato_/comercial'
     | '/driver/checkpoint'
     | '/driver/delivery-complete'
     | '/driver/docs'
@@ -854,9 +1267,35 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/esg_/calculadora'
+    | '/esg_/eficiencia'
+    | '/esg_/indicadores'
+    | '/esg_/steelgo-green'
+    | '/industrias_/distribuidores'
+    | '/industrias_/industria'
+    | '/industrias_/siderurgicas'
+    | '/industrias_/varejo'
+    | '/recursos_/guias'
+    | '/recursos_/integracoes'
     | '/shipper/esg'
     | '/shipper/payments'
     | '/shipper/settings'
+    | '/sobre_/pilares'
+    | '/sobre_/visao'
+    | '/solucoes_/control-tower'
+    | '/solucoes_/managed-logistics'
+    | '/solucoes_/steelgo-network'
+    | '/solucoes_/steelgo-pay'
+    | '/solucoes_/steelgo-platform'
+    | '/suporte_/ajuda'
+    | '/suporte_/canais'
+    | '/tecnologia_/ai-orchestration-engine'
+    | '/tecnologia_/compliance-suite'
+    | '/tecnologia_/driver-app'
+    | '/tecnologia_/open-api-ecosystem'
+    | '/tecnologia_/steel-cargo-passport'
+    | '/transportadoras_/homologacao'
+    | '/transportadoras_/viagens'
     | '/admin/'
     | '/carrier/'
     | '/driver/'
@@ -889,27 +1328,98 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   CarrierRoute: typeof CarrierRouteWithChildren
+  ContatoRoute: typeof ContatoRoute
   CookiesRoute: typeof CookiesRoute
   DashboardRoute: typeof DashboardRoute
   DriverRoute: typeof DriverRouteWithChildren
+  EsgRoute: typeof EsgRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  IndustriasRoute: typeof IndustriasRoute
   LoginRoute: typeof LoginRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
+  RecursosRoute: typeof RecursosRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ShipperRoute: typeof ShipperRouteWithChildren
+  SobreRoute: typeof SobreRoute
+  SolucoesRoute: typeof SolucoesRoute
+  SuporteRoute: typeof SuporteRoute
+  TecnologiaRoute: typeof TecnologiaRoute
   TermsRoute: typeof TermsRoute
+  TransportadorasRoute: typeof TransportadorasRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
+  ContatoComercialRoute: typeof ContatoComercialRoute
+  EsgCalculadoraRoute: typeof EsgCalculadoraRoute
+  EsgEficienciaRoute: typeof EsgEficienciaRoute
+  EsgIndicadoresRoute: typeof EsgIndicadoresRoute
+  EsgSteelgoGreenRoute: typeof EsgSteelgoGreenRoute
+  IndustriasDistribuidoresRoute: typeof IndustriasDistribuidoresRoute
+  IndustriasIndustriaRoute: typeof IndustriasIndustriaRoute
+  IndustriasSiderurgicasRoute: typeof IndustriasSiderurgicasRoute
+  IndustriasVarejoRoute: typeof IndustriasVarejoRoute
+  RecursosGuiasRoute: typeof RecursosGuiasRoute
+  RecursosIntegracoesRoute: typeof RecursosIntegracoesRoute
+  SobrePilaresRoute: typeof SobrePilaresRoute
+  SobreVisaoRoute: typeof SobreVisaoRoute
+  SolucoesControlTowerRoute: typeof SolucoesControlTowerRoute
+  SolucoesManagedLogisticsRoute: typeof SolucoesManagedLogisticsRoute
+  SolucoesSteelgoNetworkRoute: typeof SolucoesSteelgoNetworkRoute
+  SolucoesSteelgoPayRoute: typeof SolucoesSteelgoPayRoute
+  SolucoesSteelgoPlatformRoute: typeof SolucoesSteelgoPlatformRoute
+  SuporteAjudaRoute: typeof SuporteAjudaRoute
+  SuporteCanaisRoute: typeof SuporteCanaisRoute
+  TecnologiaAiOrchestrationEngineRoute: typeof TecnologiaAiOrchestrationEngineRoute
+  TecnologiaComplianceSuiteRoute: typeof TecnologiaComplianceSuiteRoute
+  TecnologiaDriverAppRoute: typeof TecnologiaDriverAppRoute
+  TecnologiaOpenApiEcosystemRoute: typeof TecnologiaOpenApiEcosystemRoute
+  TecnologiaSteelCargoPassportRoute: typeof TecnologiaSteelCargoPassportRoute
+  TransportadorasHomologacaoRoute: typeof TransportadorasHomologacaoRoute
+  TransportadorasViagensRoute: typeof TransportadorasViagensRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/transportadoras': {
+      id: '/transportadoras'
+      path: '/transportadoras'
+      fullPath: '/transportadoras'
+      preLoaderRoute: typeof TransportadorasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia': {
+      id: '/tecnologia'
+      path: '/tecnologia'
+      fullPath: '/tecnologia'
+      preLoaderRoute: typeof TecnologiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte': {
+      id: '/suporte'
+      path: '/suporte'
+      fullPath: '/suporte'
+      preLoaderRoute: typeof SuporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes': {
+      id: '/solucoes'
+      path: '/solucoes'
+      fullPath: '/solucoes'
+      preLoaderRoute: typeof SolucoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/shipper': {
@@ -933,6 +1443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recursos': {
+      id: '/recursos'
+      path: '/recursos'
+      fullPath: '/recursos'
+      preLoaderRoute: typeof RecursosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -954,11 +1471,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/industrias': {
+      id: '/industrias'
+      path: '/industrias'
+      fullPath: '/industrias'
+      preLoaderRoute: typeof IndustriasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/forgot-password': {
       id: '/forgot-password'
       path: '/forgot-password'
       fullPath: '/forgot-password'
       preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg': {
+      id: '/esg'
+      path: '/esg'
+      fullPath: '/esg'
+      preLoaderRoute: typeof EsgRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/driver': {
@@ -980,6 +1511,13 @@ declare module '@tanstack/react-router' {
       path: '/cookies'
       fullPath: '/cookies'
       preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/carrier': {
@@ -1031,6 +1569,118 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/transportadoras_/viagens': {
+      id: '/transportadoras_/viagens'
+      path: '/transportadoras/viagens'
+      fullPath: '/transportadoras/viagens'
+      preLoaderRoute: typeof TransportadorasViagensRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transportadoras_/homologacao': {
+      id: '/transportadoras_/homologacao'
+      path: '/transportadoras/homologacao'
+      fullPath: '/transportadoras/homologacao'
+      preLoaderRoute: typeof TransportadorasHomologacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/steel-cargo-passport': {
+      id: '/tecnologia_/steel-cargo-passport'
+      path: '/tecnologia/steel-cargo-passport'
+      fullPath: '/tecnologia/steel-cargo-passport'
+      preLoaderRoute: typeof TecnologiaSteelCargoPassportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/open-api-ecosystem': {
+      id: '/tecnologia_/open-api-ecosystem'
+      path: '/tecnologia/open-api-ecosystem'
+      fullPath: '/tecnologia/open-api-ecosystem'
+      preLoaderRoute: typeof TecnologiaOpenApiEcosystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/driver-app': {
+      id: '/tecnologia_/driver-app'
+      path: '/tecnologia/driver-app'
+      fullPath: '/tecnologia/driver-app'
+      preLoaderRoute: typeof TecnologiaDriverAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/compliance-suite': {
+      id: '/tecnologia_/compliance-suite'
+      path: '/tecnologia/compliance-suite'
+      fullPath: '/tecnologia/compliance-suite'
+      preLoaderRoute: typeof TecnologiaComplianceSuiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/ai-orchestration-engine': {
+      id: '/tecnologia_/ai-orchestration-engine'
+      path: '/tecnologia/ai-orchestration-engine'
+      fullPath: '/tecnologia/ai-orchestration-engine'
+      preLoaderRoute: typeof TecnologiaAiOrchestrationEngineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte_/canais': {
+      id: '/suporte_/canais'
+      path: '/suporte/canais'
+      fullPath: '/suporte/canais'
+      preLoaderRoute: typeof SuporteCanaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte_/ajuda': {
+      id: '/suporte_/ajuda'
+      path: '/suporte/ajuda'
+      fullPath: '/suporte/ajuda'
+      preLoaderRoute: typeof SuporteAjudaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-platform': {
+      id: '/solucoes_/steelgo-platform'
+      path: '/solucoes/steelgo-platform'
+      fullPath: '/solucoes/steelgo-platform'
+      preLoaderRoute: typeof SolucoesSteelgoPlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-pay': {
+      id: '/solucoes_/steelgo-pay'
+      path: '/solucoes/steelgo-pay'
+      fullPath: '/solucoes/steelgo-pay'
+      preLoaderRoute: typeof SolucoesSteelgoPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-network': {
+      id: '/solucoes_/steelgo-network'
+      path: '/solucoes/steelgo-network'
+      fullPath: '/solucoes/steelgo-network'
+      preLoaderRoute: typeof SolucoesSteelgoNetworkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/managed-logistics': {
+      id: '/solucoes_/managed-logistics'
+      path: '/solucoes/managed-logistics'
+      fullPath: '/solucoes/managed-logistics'
+      preLoaderRoute: typeof SolucoesManagedLogisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/control-tower': {
+      id: '/solucoes_/control-tower'
+      path: '/solucoes/control-tower'
+      fullPath: '/solucoes/control-tower'
+      preLoaderRoute: typeof SolucoesControlTowerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre_/visao': {
+      id: '/sobre_/visao'
+      path: '/sobre/visao'
+      fullPath: '/sobre/visao'
+      preLoaderRoute: typeof SobreVisaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre_/pilares': {
+      id: '/sobre_/pilares'
+      path: '/sobre/pilares'
+      fullPath: '/sobre/pilares'
+      preLoaderRoute: typeof SobrePilaresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/shipper/settings': {
       id: '/shipper/settings'
       path: '/settings'
@@ -1051,6 +1701,76 @@ declare module '@tanstack/react-router' {
       fullPath: '/shipper/esg'
       preLoaderRoute: typeof ShipperEsgRouteImport
       parentRoute: typeof ShipperRoute
+    }
+    '/recursos_/integracoes': {
+      id: '/recursos_/integracoes'
+      path: '/recursos/integracoes'
+      fullPath: '/recursos/integracoes'
+      preLoaderRoute: typeof RecursosIntegracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recursos_/guias': {
+      id: '/recursos_/guias'
+      path: '/recursos/guias'
+      fullPath: '/recursos/guias'
+      preLoaderRoute: typeof RecursosGuiasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/varejo': {
+      id: '/industrias_/varejo'
+      path: '/industrias/varejo'
+      fullPath: '/industrias/varejo'
+      preLoaderRoute: typeof IndustriasVarejoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/siderurgicas': {
+      id: '/industrias_/siderurgicas'
+      path: '/industrias/siderurgicas'
+      fullPath: '/industrias/siderurgicas'
+      preLoaderRoute: typeof IndustriasSiderurgicasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/industria': {
+      id: '/industrias_/industria'
+      path: '/industrias/industria'
+      fullPath: '/industrias/industria'
+      preLoaderRoute: typeof IndustriasIndustriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/distribuidores': {
+      id: '/industrias_/distribuidores'
+      path: '/industrias/distribuidores'
+      fullPath: '/industrias/distribuidores'
+      preLoaderRoute: typeof IndustriasDistribuidoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/steelgo-green': {
+      id: '/esg_/steelgo-green'
+      path: '/esg/steelgo-green'
+      fullPath: '/esg/steelgo-green'
+      preLoaderRoute: typeof EsgSteelgoGreenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/indicadores': {
+      id: '/esg_/indicadores'
+      path: '/esg/indicadores'
+      fullPath: '/esg/indicadores'
+      preLoaderRoute: typeof EsgIndicadoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/eficiencia': {
+      id: '/esg_/eficiencia'
+      path: '/esg/eficiencia'
+      fullPath: '/esg/eficiencia'
+      preLoaderRoute: typeof EsgEficienciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/calculadora': {
+      id: '/esg_/calculadora'
+      path: '/esg/calculadora'
+      fullPath: '/esg/calculadora'
+      preLoaderRoute: typeof EsgCalculadoraRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/driver/return-receipt': {
       id: '/driver/return-receipt'
@@ -1114,6 +1834,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/driver/checkpoint'
       preLoaderRoute: typeof DriverCheckpointRouteImport
       parentRoute: typeof DriverRoute
+    }
+    '/contato_/comercial': {
+      id: '/contato_/comercial'
+      path: '/contato/comercial'
+      fullPath: '/contato/comercial'
+      preLoaderRoute: typeof ContatoComercialRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/carrier/vehicles': {
       id: '/carrier/vehicles'
@@ -1565,18 +2292,54 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   CarrierRoute: CarrierRouteWithChildren,
+  ContatoRoute: ContatoRoute,
   CookiesRoute: CookiesRoute,
   DashboardRoute: DashboardRoute,
   DriverRoute: DriverRouteWithChildren,
+  EsgRoute: EsgRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  IndustriasRoute: IndustriasRoute,
   LoginRoute: LoginRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,
+  RecursosRoute: RecursosRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ShipperRoute: ShipperRouteWithChildren,
+  SobreRoute: SobreRoute,
+  SolucoesRoute: SolucoesRoute,
+  SuporteRoute: SuporteRoute,
+  TecnologiaRoute: TecnologiaRoute,
   TermsRoute: TermsRoute,
+  TransportadorasRoute: TransportadorasRoute,
   AuthCallbackRoute: AuthCallbackRoute,
+  ContatoComercialRoute: ContatoComercialRoute,
+  EsgCalculadoraRoute: EsgCalculadoraRoute,
+  EsgEficienciaRoute: EsgEficienciaRoute,
+  EsgIndicadoresRoute: EsgIndicadoresRoute,
+  EsgSteelgoGreenRoute: EsgSteelgoGreenRoute,
+  IndustriasDistribuidoresRoute: IndustriasDistribuidoresRoute,
+  IndustriasIndustriaRoute: IndustriasIndustriaRoute,
+  IndustriasSiderurgicasRoute: IndustriasSiderurgicasRoute,
+  IndustriasVarejoRoute: IndustriasVarejoRoute,
+  RecursosGuiasRoute: RecursosGuiasRoute,
+  RecursosIntegracoesRoute: RecursosIntegracoesRoute,
+  SobrePilaresRoute: SobrePilaresRoute,
+  SobreVisaoRoute: SobreVisaoRoute,
+  SolucoesControlTowerRoute: SolucoesControlTowerRoute,
+  SolucoesManagedLogisticsRoute: SolucoesManagedLogisticsRoute,
+  SolucoesSteelgoNetworkRoute: SolucoesSteelgoNetworkRoute,
+  SolucoesSteelgoPayRoute: SolucoesSteelgoPayRoute,
+  SolucoesSteelgoPlatformRoute: SolucoesSteelgoPlatformRoute,
+  SuporteAjudaRoute: SuporteAjudaRoute,
+  SuporteCanaisRoute: SuporteCanaisRoute,
+  TecnologiaAiOrchestrationEngineRoute: TecnologiaAiOrchestrationEngineRoute,
+  TecnologiaComplianceSuiteRoute: TecnologiaComplianceSuiteRoute,
+  TecnologiaDriverAppRoute: TecnologiaDriverAppRoute,
+  TecnologiaOpenApiEcosystemRoute: TecnologiaOpenApiEcosystemRoute,
+  TecnologiaSteelCargoPassportRoute: TecnologiaSteelCargoPassportRoute,
+  TransportadorasHomologacaoRoute: TransportadorasHomologacaoRoute,
+  TransportadorasViagensRoute: TransportadorasViagensRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

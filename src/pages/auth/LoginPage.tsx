@@ -1,3 +1,5 @@
+import { useHydrated } from "@/lib/useHydrated";
+import { useAuthCopy } from "@/lib/i18n.auth";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +11,6 @@ import { Capacitor } from "@capacitor/core";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { roleHome } from "@/lib/redirects";
-import { useHydrated } from "@/lib/useHydrated";
 import { BrandLogo } from "@/components/brand/BrandLogo";
 
 /**
@@ -98,6 +99,7 @@ const VALUE_PROPS = [
 
 export function LoginPage() {
   const hydrated = useHydrated();
+  const tr = useAuthCopy();
   const {
     signIn,
     isAuthenticated,
@@ -194,8 +196,8 @@ export function LoginPage() {
   // permite tentar de novo - nunca um segundo clique silencioso.
   useEffect(() => {
     if (isAuthenticated && bootstrapError)
-      setAuthError(`Não foi possível carregar seu perfil: ${bootstrapError}`);
-  }, [isAuthenticated, bootstrapError]);
+      setAuthError(`${tr("Não foi possível carregar seu perfil:")} ${bootstrapError}`);
+  }, [isAuthenticated, bootstrapError, tr]);
 
   const onGoogle = async () => {
     setAuthError(null);
@@ -230,8 +232,8 @@ export function LoginPage() {
                 <Icon size={20} className="text-white" />
               </div>
               <div>
-                <div className="text-sm font-semibold text-[#E6EDF3]">{title}</div>
-                <div className="text-xs text-[#8B949E] mt-0.5">{desc}</div>
+                <div className="text-sm font-semibold text-[#E6EDF3]">{tr(title)}</div>
+                <div className="text-xs text-[#8B949E] mt-0.5">{tr(desc)}</div>
               </div>
             </div>
           ))}
@@ -245,16 +247,12 @@ export function LoginPage() {
             <BrandLogo surface="dark" className="h-9 w-auto" />
           </Link>
 
-          <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">Bem-vindo de volta</h2>
-          <p className="text-sm text-[#8B949E] mb-8">Entre na sua conta para continuar</p>
+          <h2 className="font-bold text-2xl text-[#E6EDF3] mb-1">{tr("Bem-vindo de volta")}</h2>
+          <p className="text-sm text-[#8B949E] mb-8">{tr("Entre na sua conta para continuar")}</p>
 
-          {/* method="post": se um envio nativo escapar (antes da hidratação,
-              ou se o botão for reabilitado por engano), os campos vão no CORPO
-              da requisição, nunca na barra de endereço. O padrão do HTML e GET,
-              e era por isso que a senha aparecia em /login?...&password=... */}
           <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <div>
-              <label className="block text-sm text-[#C9D1D9] mb-1.5">Email</label>
+              <label className="block text-sm text-[#C9D1D9] mb-1.5">{tr("Email")}</label>
               <div className="relative">
                 <Mail
                   size={16}
@@ -274,7 +272,7 @@ export function LoginPage() {
                       autoCorrect="off"
                       spellCheck={false}
                       enterKeyHint="next"
-                      placeholder="seu@email.com.br"
+                      placeholder={tr("seu@email.com.br")}
                       value={field.value ?? ""}
                       onInput={(event) => {
                         const nextValue = event.currentTarget.value;
@@ -290,11 +288,11 @@ export function LoginPage() {
                   )}
                 />
               </div>
-              {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email.message}</p>}
+              {errors.email && <p className="text-xs text-red-400 mt-1">{tr(errors.email.message)}</p>}
             </div>
 
             <div>
-              <label className="block text-sm text-[#C9D1D9] mb-1.5">Senha</label>
+              <label className="block text-sm text-[#C9D1D9] mb-1.5">{tr("Senha")}</label>
               <div className="relative">
                 <Lock
                   size={16}
@@ -338,7 +336,7 @@ export function LoginPage() {
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>
+                <p className="text-xs text-red-400 mt-1">{tr(errors.password.message)}</p>
               )}
             </div>
 
@@ -348,27 +346,21 @@ export function LoginPage() {
                   type="checkbox"
                   {...register("remember")}
                   className="w-4 h-4 rounded border-[#29405F] bg-[#21262D] accent-[#1B6CB8]"
-                />
-                Lembrar de mim
-              </label>
-              <Link to="/forgot-password" className="text-sm text-[#3B89D4] hover:underline">
-                Esqueci minha senha
-              </Link>
+                />{tr("Lembrar de mim")}</label>
+              <Link to="/forgot-password" className="text-sm text-[#3B89D4] hover:underline">{tr("Esqueci minha senha")}</Link>
             </div>
 
-            {/* Desabilitado ate hidratar: fecha o clique E o Enter, porque o
-                envio implicito por Enter exige um botao de envio habilitado. */}
             <button
               type="submit"
               disabled={!hydrated || loading}
               className="w-full h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors"
             >
-              {!hydrated ? "Carregando..." : loading ? "Entrando..." : "Entrar"}
+              {!hydrated ? tr("Carregando...") : loading ? tr("Entrando...") : tr("Entrar")}
             </button>
 
             {authError && (
               <div className="text-sm text-red-400 bg-red-900/20 border border-red-700/30 rounded-[8px] px-3 py-2">
-                {authError}
+                {tr(authError ?? undefined)}
                 {isAuthenticated && bootstrapError && (
                   <button
                     type="button"
@@ -377,9 +369,7 @@ export function LoginPage() {
                       void retryBootstrap();
                     }}
                     className="ml-2 underline"
-                  >
-                    Tentar de novo
-                  </button>
+                  >{tr("Tentar de novo")}</button>
                 )}
               </div>
             )}
@@ -387,7 +377,7 @@ export function LoginPage() {
 
           <div className="flex items-center gap-3 my-6">
             <div className="flex-1 h-px bg-[#29405F]" />
-            <span className="text-xs text-[#484F58]">ou</span>
+            <span className="text-xs text-[#484F58]">{tr("ou")}</span>
             <div className="flex-1 h-px bg-[#29405F]" />
           </div>
 
@@ -396,15 +386,11 @@ export function LoginPage() {
             onClick={() => void onGoogle()}
             className="w-full h-11 bg-[#21262D] hover:bg-[#29405F] border border-[#29405F] text-[#E6EDF3] text-sm font-medium rounded-[8px] flex items-center justify-center gap-2 transition-colors"
           >
-            <GoogleIcon />
-            Continuar com Google
-          </button>
+            <GoogleIcon />{tr("Continuar com Google")}</button>
 
           {import.meta.env.DEV && DEV_ACCOUNTS.length > 0 && (
             <>
-              <div className="text-xs text-[#484F58] text-center my-4">
-                — Acesso rápido (dev only) —
-              </div>
+              <div className="text-xs text-[#484F58] text-center my-4">{tr("— Acesso rápido (dev only) —")}</div>
               <div className="grid grid-cols-3 gap-2">
                 {DEV_ACCOUNTS.map((acc) => {
                   const busy = devLoading === acc.role;
@@ -421,7 +407,7 @@ export function LoginPage() {
                       ) : (
                         <>
                           <span>{acc.emoji}</span>
-                          <span>{acc.label}</span>
+                          <span>{tr(acc.label)}</span>
                         </>
                       )}
                     </button>
@@ -432,10 +418,8 @@ export function LoginPage() {
           )}
 
           <p className="text-sm text-[#8B949E] text-center mt-8">
-            Não tem uma conta?{" "}
-            <Link to="/register" className="text-sm text-[#3B89D4] font-medium hover:underline">
-              Cadastre-se
-            </Link>
+            {tr("Não tem uma conta?")}{" "}
+            <Link to="/register" className="text-sm text-[#3B89D4] font-medium hover:underline">{tr("Cadastre-se")}</Link>
           </p>
         </div>
       </div>
