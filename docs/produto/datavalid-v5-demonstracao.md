@@ -147,3 +147,62 @@ comparações verdadeiras e similaridades 1 — esperado, porque os dados enviad
 vêm da própria massa da base.
 
 Nada disso aprova cadastro real nem libera viagem.
+
+## Homologação estendida — 35 de 35
+
+Medida em 09/10/2026 por `scripts/homologacao/datavalid-demonstracao.mjs`.
+
+| Cenário | Resultado medido |
+|---|---|
+| Biográfico e habilitação | `rfb_existe`/`cnh_existe` verdadeiros, comparações verdadeiras, similaridades 1 |
+| QR Code da CNH | 16 campos **decodificados** (nome, filiação, categoria, RENACH, local e UF de emissão) além das comparações |
+| Biometria facial com prova de vida | `vivacidade: "REAL"`, `disponivel: true`, `similaridade: 0.001`, `probabilidade: "Baixíssima probabilidade"` |
+| Negativo | `nome_similaridade` caiu de 1 para 0,333; `data_nascimento` comparou falso |
+| Ausente | `rfb_existe: false`, `cnh_existe: false`, blocos vazios |
+| Composição | impedimento não avaliado → `manual_review/LICENSE_STATUS_UNCONFIRMED` |
+
+### Prova de vida e identidade são perguntas diferentes
+
+A biometria da massa passa na prova de vida (`REAL`) e **falha** na
+correspondência facial (`0.001`). Ler as duas como uma só aprovaria quem está
+vivo diante da câmera sem conferir se é quem diz ser — ou reprovaria por
+vivacidade quem só tem foto de má qualidade. O leitor por bloco mantém as duas
+separadas, e `vivacidade`/`probabilidade` chegam em `valores`, não num balde
+de "não classificado".
+
+### O impedimento não avaliado não aprova
+
+Confirmado contra a resposta real e o motor de regras do #12: sem
+`possui_impedimento` na resposta, `avaliarHabilitacao` devolve
+`inconclusive/LICENSE_STATUS_UNCONFIRMED`, e `compor` com identidade
+**aprovada** ainda assim devolve `manual_review`. Controle positivo: com
+impedimento avaliado como falso, aprova.
+
+Duas observações que vieram junto:
+
+- **As cinco CNHs da massa oficial estão vencidas** (2022 a 2025). Com a data
+  real, o bloco reprova por `LICENSE_EXPIRED` antes de chegar ao impedimento —
+  correto, mas impede isolar a pergunta. O cenário usa validade futura
+  declarada, e afirma antes que a da massa está vencida.
+- O bearer público é **compartilhado e limitado por taxa**. Chamadas seguidas
+  recebem 429. Esperar é a resposta; repetir automaticamente seria treinar a
+  esteira a insistir contra um limite.
+
+### Um 422 que era defeito nosso
+
+Numa execução o QR Code recebeu **422**. A hipótese fácil era "QR Code sozinho
+não vale"; duas sondas contra o serviço mostraram que sozinho vale (200). O
+que não valia era o descasamento: `parametrosDoCorpo` descia no objeto
+`qrcode` e produzia `qrcode.formato`, `qrcode.base64` — nomes que não existem
+no vocabulário. O token saía sem autorizar `qrcode`, e a requisição o enviava.
+A recusa do serviço estava certa.
+
+`qrcode` e as biometrias são **folhas** do vocabulário: valem pelo nome
+inteiro, e descer neles quebra tanto o consentimento quanto o corpo.
+
+### O que não vira regra de produção
+
+Nada do que a demonstração aceita, recusa ou devolve vale como contrato de
+produção sem confirmação formal — inclusive o token de GCC com assinatura
+`.demo`. As perguntas abertas estão em
+[`datavalid-questoes-ao-serpro.md`](./datavalid-questoes-ao-serpro.md).

@@ -130,6 +130,16 @@ export interface BlocoLido {
   similaridades: Record<string, number>;
   /** Campos decodificados (QR code). */
   decodificados: Record<string, unknown>;
+  /**
+   * Escalares que não são comparação, similaridade nem decodificação.
+   *
+   * `biometria_facial` devolve `vivacidade` e `probabilidade` aqui, e são
+   * RESULTADO, não ruído: a primeira versão os jogava em `naoClassificados`,
+   * que é onde vai o que não se entendeu. Perder a prova de vida num balde de
+   * "não classificado" só aparece quando alguém lê a saída com atenção — e
+   * apareceu.
+   */
+  valores: Record<string, string | number | boolean | null>;
   /** Campos que vieram e não se encaixam em nenhuma das formas acima. */
   naoClassificados: string[];
 }
@@ -152,6 +162,7 @@ function lerBloco(bruto: unknown): BlocoLido {
     comparacoes: {},
     similaridades: {},
     decodificados: {},
+    valores: {},
     naoClassificados: [],
   };
   if (bruto === undefined || bruto === null) return vazio;
@@ -162,17 +173,24 @@ function lerBloco(bruto: unknown): BlocoLido {
     comparacoes: {},
     similaridades: {},
     decodificados: {},
+    valores: {},
     naoClassificados: [],
   };
 
   const classificar = (nome: string, v: unknown, podeDescer: boolean) => {
     if (typeof v === "boolean") b.comparacoes[nome] = v;
     else if (typeof v === "number" && /similaridade/.test(nome)) b.similaridades[nome] = v;
-    else if (/decodificado/.test(nome)) b.decodificados[nome] = v;
+    else if (/decodificad[oa]/.test(nome)) b.decodificados[nome] = v;
     else if (podeDescer && v !== null && typeof v === "object" && !Array.isArray(v)) {
       for (const [sub, sv] of Object.entries(v as Record<string, unknown>)) {
         classificar(`${nome}.${sub}`, sv, false);
       }
+    }
+    // Escalar que nao e comparacao nem similaridade ainda e RESULTADO:
+    // `vivacidade` e `probabilidade` chegam assim. Mandar para
+    // `naoClassificados` seria perde-los.
+    else if (v === null || typeof v === "string" || typeof v === "number") {
+      b.valores[nome] = v;
     } else b.naoClassificados.push(nome);
   };
 

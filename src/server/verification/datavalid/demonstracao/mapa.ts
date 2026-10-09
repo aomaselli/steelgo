@@ -239,7 +239,8 @@ export interface CampoOmitido {
     | "SEM_TABELA_OFICIAL"
     | "CODIGO_FORA_DA_TABELA"
     | "AUSENTE_NA_MASSA"
-    | "SEM_PARAMETRO_DE_CONSENTIMENTO";
+    | "SEM_PARAMETRO_DE_CONSENTIMENTO"
+    | "FORMATO_NAO_RECONHECIDO";
   detalhe: string;
 }
 
@@ -422,6 +423,34 @@ export function mapearRegistro(
   return { corpo: { cpf: r.cpf, validacao: podados }, omitidos };
 }
 
+/**
+ * Objetos da requisição que são FOLHAS no vocabulário de consentimento.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * O QUE ISTO CONSERTA
+ *
+ * `cnh` e `endereco` são objetos cujos campos aparecem no vocabulário um a um
+ * (`cnh.situacao`, `endereco.cep`). `qrcode` e as biometrias também são
+ * objetos na requisição — `{ formato, base64, essencial }` — mas no
+ * vocabulário aparecem com o NOME INTEIRO, sem desdobramento.
+ *
+ * A primeira versão descia em todos igualmente e produzia `qrcode.formato`,
+ * `qrcode.base64`… nenhum dos quais existe no vocabulário. O resultado era um
+ * token que NÃO autorizava `qrcode`, seguido de uma requisição que o enviava
+ * — e o serviço devolvia **HTTP 422**, recusando com razão.
+ *
+ * Levei esse 422 por engano a uma hipótese de "QR Code sozinho não vale";
+ * duas sondas contra o serviço mostraram que sozinho vale (200), e que o que
+ * não valia era o descasamento entre o consentimento e o enviado. A recusa do
+ * serviço estava certa; o defeito era meu.
+ */
+const FOLHAS_DO_VOCABULARIO: ReadonlySet<string> = new Set([
+  "qrcode",
+  "biometria_facial",
+  "biometria_facial_de_referencia",
+  "biometria_digital",
+]);
+
 /** Nome do campo no vocabulário de consentimento: `cnh.situacao`, `nome`, … */
 export function nomeDeConsentimento(caminho: readonly string[]): string {
   // O bloco `rfb` não tem prefixo no vocabulário, e seus campos simplesmente
@@ -442,6 +471,20 @@ function podarForaDoConsentimento(
 ): Record<string, unknown> {
   const saida: Record<string, unknown> = {};
   for (const [chave, valor] of Object.entries(validacao)) {
+    // Folha do vocabulario: o objeto inteiro vale pelo nome dele. Descer
+    // aqui destruiria `{ formato, base64 }` e produziria consentimento com
+    // nomes que nao existem.
+    if (FOLHAS_DO_VOCABULARIO.has(chave)) {
+      if (PARAMETROS_DE_CONSENTIMENTO.has(chave)) saida[chave] = valor;
+      else
+        omitidos.push({
+          campo: chave,
+          codigo: "",
+          motivo: "SEM_PARAMETRO_DE_CONSENTIMENTO",
+          detalhe: `"${chave}" nao esta no vocabulario de consentimento da GCC.`,
+        });
+      continue;
+    }
     if (valor && typeof valor === "object" && !Array.isArray(valor)) {
       const interno: Record<string, unknown> = {};
       for (const [sub, v] of Object.entries(valor as Record<string, unknown>)) {
@@ -484,6 +527,10 @@ function podarForaDoConsentimento(
 export function parametrosDoCorpo(validacao: Record<string, unknown>): string[] {
   const nomes = new Set<string>(["cpf"]);
   for (const [chave, valor] of Object.entries(validacao)) {
+    if (FOLHAS_DO_VOCABULARIO.has(chave)) {
+      if (PARAMETROS_DE_CONSENTIMENTO.has(chave)) nomes.add(chave);
+      continue;
+    }
     if (valor && typeof valor === "object" && !Array.isArray(valor)) {
       for (const sub of Object.keys(valor as Record<string, unknown>)) {
         const n = nomeDeConsentimento([chave, sub]);
@@ -497,17 +544,105 @@ export function parametrosDoCorpo(validacao: Record<string, unknown>): string[] 
   return [...nomes].sort();
 }
 
+// ─────────────────── imagens: formato lido, não suposto ───────────────────
+
 /**
- * Os campos de imagem e biometria da massa NÃO entram no mapeamento acima.
+ * O formato da imagem NÃO vem declarado na massa.
  *
- * `biometria_face` tem ~2 MB de base64 por registro, e enviá-la exigiria
- * declarar formato e, para prova de vida, uma segunda imagem de referência. O
- * recorte desta demonstração é biográfico e de habilitação; biometria entra
- * quando houver decisão sobre prova de vida, e aí com teste próprio. Deixar o
- * campo de fora é melhor que mandá-lo com formato chutado.
+ * A requisição exige `formato` — `JPG`, `PNG` ou `PDF` para a face, e esses
+ * mais `RAW` para o QR Code. A massa traz só o base64. Declarar "PNG porque
+ * geralmente é" seria a mesma falha das tabelas de código, noutro campo: um
+ * formato errado não falha de imediato — o serviço tenta decodificar e devolve
+ * um resultado que ninguém sabe interpretar.
+ *
+ * Então o formato é LIDO dos primeiros bytes. Número mágico não é suposição:
+ * é o que o arquivo diz de si mesmo. Os três campos da massa oficial
+ * (`biometria_face`, `polegar_direito`, `qrcode`) se identificam como PNG.
  */
-export const BIOMETRIA_FORA_DO_RECORTE = [
-  "biometria_face",
-  "polegar_direito",
-  "qrcode",
-] as const;
+const NUMEROS_MAGICOS: ReadonlyArray<{ hex: string; formato: "JPG" | "PNG" | "PDF" }> = [
+  { hex: "ffd8ff", formato: "JPG" },
+  { hex: "89504e47", formato: "PNG" },
+  { hex: "25504446", formato: "PDF" },
+];
+
+export class FormatoNaoReconhecidoError extends Error {
+  readonly campo: string;
+  constructor(campo: string, primeirosBytes: string) {
+    super(
+      `Formato de "${campo}" não reconhecido pelos primeiros bytes ` +
+        `(${primeirosBytes}). A requisição exige \`formato\`, e declará-lo por ` +
+        `convenção seria chutar.`,
+    );
+    this.name = "FormatoNaoReconhecidoError";
+    this.campo = campo;
+  }
+}
+
+/** Lê o formato dos primeiros bytes do base64. `null` quando não reconhece. */
+export function detectarFormato(base64: string): "JPG" | "PNG" | "PDF" | null {
+  const cabecalho = primeirosBytesEmHex(base64.slice(0, 24));
+  for (const { hex, formato } of NUMEROS_MAGICOS) {
+    if (cabecalho.startsWith(hex)) return formato;
+  }
+  return null;
+}
+
+/** Decodifica base64 sem depender de `Buffer` nem de `atob`. */
+function primeirosBytesEmHex(b64: string): string {
+  const alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  let bits = "";
+  for (const c of b64) {
+    const i = alfabeto.indexOf(c);
+    if (i < 0) continue;
+    bits += i.toString(2).padStart(6, "0");
+  }
+  let hex = "";
+  for (let i = 0; i + 8 <= bits.length; i += 8) {
+    hex += parseInt(bits.slice(i, i + 8), 2)
+      .toString(16)
+      .padStart(2, "0");
+  }
+  return hex;
+}
+
+/** Anexo de imagem, já com o formato lido do conteúdo. */
+export interface AnexoDeImagem {
+  formato: "JPG" | "PNG" | "PDF";
+  base64: string;
+}
+
+/**
+ * Prepara um anexo, recusando o que não se consegue identificar.
+ *
+ * `estrito` tem o mesmo papel do mapeamento: lança, ou devolve `null` e
+ * registra. Em nenhum dos dois declara formato por convenção.
+ */
+export function prepararAnexo(
+  campo: string,
+  base64: string | undefined,
+  omitidos: CampoOmitido[],
+  { estrito = true }: { estrito?: boolean } = {},
+): AnexoDeImagem | null {
+  if (!base64) {
+    omitidos.push({
+      campo,
+      codigo: "",
+      motivo: "AUSENTE_NA_MASSA",
+      detalhe: "o registro não traz este campo",
+    });
+    return null;
+  }
+  const formato = detectarFormato(base64);
+  if (!formato) {
+    const erro = new FormatoNaoReconhecidoError(campo, base64.slice(0, 12) + "…");
+    if (estrito) throw erro;
+    omitidos.push({
+      campo,
+      codigo: "",
+      motivo: "FORMATO_NAO_RECONHECIDO",
+      detalhe: erro.message,
+    });
+    return null;
+  }
+  return { formato, base64 };
+}

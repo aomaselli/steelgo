@@ -65,15 +65,84 @@ export class TokenSimuladoDeOutraOperacaoError extends Error {
 
 export class SimuladorIndisponivelError extends Error {
   readonly httpStatus: number | null;
-  constructor(httpStatus: number | null, detalhe: string) {
+  /**
+   * A requisição pode ter saído?
+   *
+   * É a informação que o status HTTP sozinho não dá, e a única que separa
+   * "provado que nada foi emitido" de "não sabemos". Na dúvida, `true`.
+   */
+  readonly possivelmenteEnviado: boolean;
+  constructor(httpStatus: number | null, detalhe: string, possivelmenteEnviado = true) {
     super(
-      `Simulador de GCC do ambiente de demonstração não emitiu token ` +
+      `Simulador de GCC do ambiente de demonstração não devolveu token ` +
         `(HTTP ${httpStatus ?? "sem resposta"}): ${detalhe}`,
     );
     this.name = "SimuladorIndisponivelError";
     this.httpStatus = httpStatus;
+    this.possivelmenteEnviado = possivelmenteEnviado;
   }
 }
+
+/**
+ * Resultado de pedir um token.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * EMITIR TOKEN É UMA OPERAÇÃO COM EFEITOS, E REPETIR NÃO É DE GRAÇA
+ *
+ * Uma versão anterior desta função repetia em 5xx com a justificativa de que
+ * "emitir token não é validar: nada é submetido à base, nada é cobrado, e
+ * token não usado simplesmente expira". Era o MESMO erro que `privacy.ts`
+ * existe para não cometer — afirmar ausência de efeito sem ter onde apoiar a
+ * afirmação.
+ *
+ * O que de fato se sabe: a GCC registra a emissão, a Portaria 139/2025 trata
+ * o token como registro de consentimento e ciência, e o titular acompanha as
+ * consultas no Portal de Privacidade. Um 502 depois de a requisição sair pode
+ * significar que o token FOI emitido e a resposta se perdeu. Nenhuma
+ * documentação diz o contrário, e é só isso que basta para não afirmar nada.
+ *
+ * Então: repetir continua permitido, porque sem token não há validação — mas
+ * com limite rígido, e registrando que pode haver emissão órfã. O que some é
+ * a afirmação de que não há efeito.
+ */
+export type ResultadoDaEmissao =
+  | {
+      situacao: "emitido";
+      autorizacao: AutorizacaoSimulada;
+      tentativas: number;
+      /**
+       * Tentativas anteriores cujo desfecho é desconhecido — cada uma pode ter
+       * emitido um token que ninguém usou. Zero é o caso comum; acima de zero
+       * é informação para conciliação, não ruído.
+       */
+      emissoesPossivelmenteOrfas: number;
+    }
+  | {
+      situacao: "recusado";
+      httpStatus: number;
+      tentativas: number;
+      detalhe: string;
+      /**
+       * Sempre `false`. Recusa explícita diz que NÃO RECEBEMOS token; não diz
+       * que nenhum foi emitido, nem que nada foi registrado do outro lado. A
+       * documentação do simulador não afirma isso em nenhum status.
+       */
+      readonly garanteAusenciaDeEmissao: false;
+      emissoesPossivelmenteOrfas: number;
+    }
+  | {
+      situacao: "desfecho_desconhecido";
+      httpStatus: number | null;
+      tentativas: number;
+      detalhe: string;
+      readonly garanteAusenciaDeEmissao: false;
+      emissoesPossivelmenteOrfas: number;
+      /** Esgotou o limite. Repetir de novo é decisão de quem chama, não daqui. */
+      readonly limiteDeTentativasAtingido: true;
+    };
+
+/** Teto rígido. Não há como pedir mais do que isto. */
+export const TENTATIVAS_MAXIMAS_DE_EMISSAO = 3;
 
 /**
  * Pede um token ao simulador oficial.
@@ -81,8 +150,11 @@ export class SimuladorIndisponivelError extends Error {
  * `parametros` são os metadados que o token vai carregar — os mesmos nomes de
  * campo que a validação vai comparar. Nenhum valor pessoal entra: são nomes de
  * campo, não conteúdo.
+ *
+ * Não lança nos desfechos previstos: devolve-os. Quem chama precisa VER o
+ * desfecho desconhecido para registrá-lo, e exceção convida a engolir.
  */
-export async function obterAutorizacaoSimulada(opcoes: {
+export async function pedirAutorizacaoSimulada(opcoes: {
   bearer: string;
   cpfFicticio: string;
   operationId: string;
@@ -90,42 +162,91 @@ export async function obterAutorizacaoSimulada(opcoes: {
   parametros: readonly string[];
   cnpjAnuente?: string | null;
   timeoutMs: number;
-  /**
-   * Tentativas de OBTER O TOKEN, não de validar.
-   *
-   * ──────────────────────────────────────────────────────────────────────────
-   * POR QUE AQUI SE PODE REPETIR, E NA VALIDAÇÃO NÃO
-   *
-   * O risco que `decidirRetry` protege, em `../privacy.ts`, é o SERPRO
-   * processar duas vezes a mesma validação. Emitir token não é validação:
-   * nada foi submetido à base, nada é cobrado por validação, e um token
-   * emitido e não usado simplesmente expira. Repetir aqui não duplica nada.
-   *
-   * Só vale para 5xx e falha de rede. Recusa 4xx é definitiva e não repete —
-   * a mesma requisição receberia a mesma recusa. A primeira versão desta
-   * função não distinguia os dois casos: um 502 transitório do gateway
-   * derrubava a homologação como se fosse recusa, e foi assim que isto
-   * apareceu.
-   */
+  /** Teto de tentativas, limitado a `TENTATIVAS_MAXIMAS_DE_EMISSAO`. */
+  tentativas?: number;
+  fetchImpl?: typeof fetch;
+}): Promise<ResultadoDaEmissao> {
+  assertAmbienteDeDemonstracao();
+
+  const maximo = Math.min(
+    TENTATIVAS_MAXIMAS_DE_EMISSAO,
+    Math.max(1, opcoes.tentativas ?? 1),
+  );
+
+  let tentativas = 0;
+  let orfas = 0;
+  let ultimo: SimuladorIndisponivelError | null = null;
+
+  while (tentativas < maximo) {
+    tentativas += 1;
+    try {
+      const autorizacao = await umaTentativa(opcoes);
+      return { situacao: "emitido", autorizacao, tentativas, emissoesPossivelmenteOrfas: orfas };
+    } catch (e) {
+      if (!(e instanceof SimuladorIndisponivelError)) throw e;
+      ultimo = e;
+
+      // Mesma classificação por FASE de `privacy.ts`, e pela mesma razão.
+      if (!e.possivelmenteEnviado) {
+        // Provado que nada saiu: aqui sim dá para afirmar que não houve
+        // emissão, e repetir é inofensivo.
+        continue;
+      }
+
+      // A requisição saiu. Pode ter emitido token e perdido a resposta.
+      orfas += 1;
+
+      if (e.httpStatus !== null && e.httpStatus >= 400 && e.httpStatus < 500) {
+        // Recusa explícita: a mesma requisição receberia a mesma recusa.
+        return {
+          situacao: "recusado",
+          httpStatus: e.httpStatus,
+          tentativas,
+          detalhe: e.message,
+          garanteAusenciaDeEmissao: false,
+          emissoesPossivelmenteOrfas: orfas,
+        };
+      }
+      // 5xx ou sem resposta: repete, dentro do teto.
+    }
+  }
+
+  return {
+    situacao: "desfecho_desconhecido",
+    httpStatus: ultimo?.httpStatus ?? null,
+    tentativas,
+    detalhe: ultimo?.message ?? "nenhuma tentativa executada",
+    garanteAusenciaDeEmissao: false,
+    emissoesPossivelmenteOrfas: orfas,
+    limiteDeTentativasAtingido: true,
+  };
+}
+
+/**
+ * Atalho que lança quando não se obtém token.
+ *
+ * Existe para quem só quer o caminho feliz. O desfecho desconhecido vira
+ * exceção, e com ele a contagem de emissões possivelmente órfãs — por isso
+ * `pedirAutorizacaoSimulada` é a função a usar quando o desfecho importa.
+ */
+export async function obterAutorizacaoSimulada(opcoes: {
+  bearer: string;
+  cpfFicticio: string;
+  operationId: string;
+  parametros: readonly string[];
+  cnpjAnuente?: string | null;
+  timeoutMs: number;
   tentativas?: number;
   fetchImpl?: typeof fetch;
 }): Promise<AutorizacaoSimulada> {
-  assertAmbienteDeDemonstracao();
-
-  const maximo = Math.max(1, opcoes.tentativas ?? 1);
-  let ultimo: SimuladorIndisponivelError | null = null;
-
-  for (let n = 1; n <= maximo; n += 1) {
-    try {
-      return await umaTentativa(opcoes);
-    } catch (e) {
-      if (!(e instanceof SimuladorIndisponivelError)) throw e;
-      const transitorio = e.httpStatus === null || e.httpStatus >= 500;
-      if (!transitorio) throw e;
-      ultimo = e;
-    }
-  }
-  throw ultimo ?? new SimuladorIndisponivelError(null, "nenhuma tentativa executada");
+  const r = await pedirAutorizacaoSimulada(opcoes);
+  if (r.situacao === "emitido") return r.autorizacao;
+  throw new SimuladorIndisponivelError(
+    r.httpStatus,
+    `${r.detalhe} (tentativas: ${r.tentativas}; emissões possivelmente órfãs: ` +
+      `${r.emissoesPossivelmenteOrfas}; nada aqui afirma ausência de emissão)`,
+    r.emissoesPossivelmenteOrfas > 0,
+  );
 }
 
 async function umaTentativa(opcoes: {
@@ -142,8 +263,19 @@ async function umaTentativa(opcoes: {
   const controle = new AbortController();
   const relogio = setTimeout(() => controle.abort(), opcoes.timeoutMs);
 
+  // Vira `true` no instante em que o `fetch` começa: dali em diante não se
+  // pode mais afirmar que nada saiu. Só o corpo serializado antes dele é
+  // seguramente anterior ao envio.
+  let possivelmenteEnviado = false;
+
   let resposta: Response;
   try {
+    const corpo = JSON.stringify({
+      cpf: opcoes.cpfFicticio,
+      anuente: opcoes.cnpjAnuente ?? undefined,
+      parametros: opcoes.parametros,
+    });
+    possivelmenteEnviado = true;
     resposta = await f(url, {
       method: "POST",
       headers: {
@@ -155,15 +287,15 @@ async function umaTentativa(opcoes: {
         // execução ponta a ponta recebeu.
         Accept: "text/plain",
       },
-      body: JSON.stringify({
-        cpf: opcoes.cpfFicticio,
-        anuente: opcoes.cnpjAnuente ?? undefined,
-        parametros: opcoes.parametros,
-      }),
+      body: corpo,
       signal: controle.signal,
     });
   } catch (e) {
-    throw new SimuladorIndisponivelError(null, e instanceof Error ? e.message : String(e));
+    throw new SimuladorIndisponivelError(
+      null,
+      e instanceof Error ? e.message : String(e),
+      possivelmenteEnviado,
+    );
   } finally {
     clearTimeout(relogio);
   }
