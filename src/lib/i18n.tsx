@@ -1,3 +1,4 @@
+import { HOME_I18N } from "./i18n.home";
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export type Language = "pt" | "en" | "es";
@@ -58,6 +59,7 @@ export const HOMEPAGE_NAV_COPY = {
 
 const translations = {
   pt: {
+    home: HOME_I18N.pt,
     driverMap: {
       loading: "Carregando mapa…",
       awaitingPosition: "Sua posição aparece aqui quando o rastreamento começar.",
@@ -712,6 +714,7 @@ const translations = {
     },
   },
   en: {
+    home: HOME_I18N.en,
     driverMap: {
       loading: "Loading map…",
       awaitingPosition: "Your position appears here once tracking starts.",
@@ -1364,6 +1367,7 @@ const translations = {
     },
   },
   es: {
+    home: HOME_I18N.es,
     driverMap: {
       loading: "Cargando mapa…",
       awaitingPosition: "Tu posición aparece aquí cuando empiece el seguimiento.",
