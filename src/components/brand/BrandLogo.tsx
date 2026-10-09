@@ -13,6 +13,7 @@
 type BrandLogoProps = {
   surface?: "light" | "dark";
   markOnly?: boolean;
+  tight?: boolean;
   className?: string;
 };
 
@@ -42,7 +43,7 @@ function Mark({ blue, green }: { blue: string; green: string }) {
   );
 }
 
-export function BrandLogo({ surface = "light", markOnly = false, className = "" }: BrandLogoProps) {
+export function BrandLogo({ surface = "light", markOnly = false, tight = false, className = "" }: BrandLogoProps) {
   const c = COLORS[surface];
   if (markOnly) {
     return (
@@ -61,8 +62,8 @@ export function BrandLogo({ surface = "light", markOnly = false, className = "" 
   }
   return (
     <svg
-      viewBox="0 0 170 40"
-      width="170"
+      viewBox={tight ? "0 0 136 40" : "0 0 170 40"}
+      width={tight ? 136 : 170}
       height="40"
       role="img"
       aria-label="SteelGo"

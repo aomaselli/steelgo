@@ -1,3 +1,5 @@
+import { useHydrated } from "@/lib/useHydrated";
+import { useAuthCopy } from "@/lib/i18n.auth";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +25,6 @@ import {
   Factory,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { useHydrated } from "@/lib/useHydrated";
 import { useLanguage } from "@/lib/i18n";
 import { maskCPF, maskCNPJ, maskPhone, onlyDigits, UFS } from "@/lib/masks";
 import type { UserRole } from "@/types/database";
@@ -58,6 +59,7 @@ type CompanyData = z.infer<typeof companyBase>;
 
 // ───── Page ─────
 export function RegisterPage({ initialRole }: { initialRole?: Role }) {
+  const tr = useAuthCopy();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<Role | null>(initialRole ?? null);
@@ -126,7 +128,7 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
     if (pendingCompany && role !== "driver") {
       const { error: rpcError } = await supabase.rpc("complete_company_registration");
       if (rpcError) {
-        setAuthError(`Conta criada, mas o cadastro da empresa falhou: ${rpcError.message}`);
+        setAuthError(`${tr("Conta criada, mas o cadastro da empresa falhou:")} ${rpcError.message}`);
         setSubmitting(false);
         return;
       }
@@ -168,7 +170,7 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
               if (personal) void handleFinish(personal, d);
             }}
             submitting={submitting}
-            authError={authError}
+            authError={tr(authError ?? undefined)}
           />
         )}
       </div>
@@ -178,6 +180,7 @@ export function RegisterPage({ initialRole }: { initialRole?: Role }) {
 
 // ───── Stepper ─────
 function Stepper({ step, role }: { step: number; role: Role | null }) {
+  const tr = useAuthCopy();
   const totalSteps = role === "driver" ? 2 : 3;
   return (
     <div className="max-w-sm mx-auto mt-8 mb-10 px-6">
@@ -223,7 +226,7 @@ function Stepper({ step, role }: { step: number; role: Role | null }) {
       <div className="flex justify-between mt-2">
         {STEP_NAMES.slice(0, totalSteps).map((n) => (
           <div key={n} className="text-xs text-[#8B949E] text-center flex-1">
-            {n}
+            {tr(n)}
           </div>
         ))}
       </div>
@@ -271,12 +274,11 @@ function StepRole({
   onSelect: (r: Role) => void;
   onNext: () => void;
 }) {
+  const tr = useAuthCopy();
   return (
     <div>
-      <h1 className="text-2xl font-bold text-[#E6EDF3] text-center mb-2">Quem é você?</h1>
-      <p className="text-sm text-[#8B949E] text-center mb-8">
-        Escolha como vai usar a SteelGo
-      </p>
+      <h1 className="text-2xl font-bold text-[#E6EDF3] text-center mb-2">{tr("Quem é você?")}</h1>
+      <p className="text-sm text-[#8B949E] text-center mb-8">{tr("Escolha como vai usar a SteelGo")}</p>
       <div className="flex flex-col gap-4">
         {ROLE_CARDS.map((c) => {
           const selected = role === c.key;
@@ -302,15 +304,15 @@ function StepRole({
                 <c.Icon size={22} color={selected ? "#3B89D4" : "#484F58"} />
               </div>
               <div className="flex-1">
-                <div className="font-bold text-[#E6EDF3] text-base">{c.title}</div>
-                <div className="text-sm text-[#8B949E] mt-1">{c.desc}</div>
+                <div className="font-bold text-[#E6EDF3] text-base">{tr(c.title)}</div>
+                <div className="text-sm text-[#8B949E] mt-1">{tr(c.desc)}</div>
                 <div className="flex gap-1 flex-wrap mt-3">
                   {c.pills.map((p) => (
                     <span
                       key={p}
                       className="text-[10px] bg-[#21262D] border border-[#30363D] text-[#8B949E] rounded-full px-2 py-0.5"
                     >
-                      {p}
+                      {tr(p)}
                     </span>
                   ))}
                 </div>
@@ -327,9 +329,7 @@ function StepRole({
         onClick={onNext}
         disabled={!role}
         className="w-full h-11 mt-8 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-[8px] transition-colors"
-      >
-        Próximo →
-      </button>
+      >{tr("Próximo →")}</button>
     </div>
   );
 }
@@ -357,6 +357,7 @@ function StepPersonal({
   authError: string | null;
 }) {
   const [showPwd, setShowPwd] = useState(false);
+  const tr = useAuthCopy();
   const { language } = useLanguage();
   const consentText =
     language === "es"
@@ -380,13 +381,13 @@ function StepPersonal({
 
   return (
     <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">Seus dados</h2>
+      <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">{tr("Seus dados")}</h2>
 
       <IconInput
         Icon={User}
         placeholder="João Carlos Silva"
-        label="Nome completo"
-        error={errors.full_name?.message}
+        label={tr("Nome completo")}
+        error={tr(errors.full_name?.message)}
         {...register("full_name")}
       />
 
@@ -394,7 +395,7 @@ function StepPersonal({
         Icon={IdCard}
         placeholder="000.000.000-00"
         label="CPF"
-        error={errors.cpf?.message}
+        error={tr(errors.cpf?.message)}
         {...register("cpf")}
         onChange={(e) =>
           setValue("cpf", maskCPF(e.target.value), { shouldValidate: true })
@@ -404,14 +405,14 @@ function StepPersonal({
       <IconInput
         Icon={Mail}
         type="email"
-        placeholder="joao@email.com.br"
-        label="Email"
-        error={errors.email?.message}
+        placeholder={tr("joao@email.com.br")}
+        label={tr("Email")}
+        error={tr(errors.email?.message)}
         {...register("email")}
       />
 
       <div>
-        <label className="block text-sm text-[#C9D1D9] mb-1.5">Senha</label>
+        <label className="block text-sm text-[#C9D1D9] mb-1.5">{tr("Senha")}</label>
         <div className="relative">
           <Lock
             size={16}
@@ -419,7 +420,7 @@ function StepPersonal({
           />
           <input
             type={showPwd ? "text" : "password"}
-            placeholder="Mínimo 8 caracteres"
+            placeholder={tr("Mínimo 8 caracteres")}
             {...register("password")}
             className="w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-10 text-sm text-[#E6EDF3] placeholder:text-[#484F58] focus:outline-none focus:border-[#1B6CB8]"
           />
@@ -449,29 +450,29 @@ function StepPersonal({
                     : "text-red-400"
               }`}
             >
-              {strength.label}
+              {tr(strength.label)}
             </div>
           </>
         )}
         {errors.password && (
-          <p className="text-xs text-red-400 mt-1">{errors.password.message}</p>
+          <p className="text-xs text-red-400 mt-1">{tr(errors.password.message)}</p>
         )}
       </div>
 
       <IconInput
         Icon={Lock}
         type={showPwd ? "text" : "password"}
-        placeholder="Repita a senha"
-        label="Confirmar senha"
-        error={errors.confirm?.message}
+        placeholder={tr("Repita a senha")}
+        label={tr("Confirmar senha")}
+        error={tr(errors.confirm?.message)}
         {...register("confirm")}
       />
 
       <IconInput
         Icon={Phone}
         placeholder="(11) 98433-9109"
-        label="Telefone"
-        error={errors.phone?.message}
+        label={tr("Telefone")}
+        error={tr(errors.phone?.message)}
         {...register("phone")}
         onChange={(e) =>
           setValue("phone", maskPhone(e.target.value), { shouldValidate: true })
@@ -488,11 +489,11 @@ function StepPersonal({
           {consentText}
         </span>
       </label>
-      {errors.terms && <p className="text-xs text-red-400">{errors.terms.message}</p>}
+      {errors.terms && <p className="text-xs text-red-400">{tr(errors.terms.message)}</p>}
 
       {authError && (
         <div className="text-sm text-red-400 bg-red-900/20 border border-red-700/30 rounded-[8px] px-3 py-2">
-          {authError}
+          {tr(authError ?? undefined)}
         </div>
       )}
 
@@ -501,15 +502,13 @@ function StepPersonal({
           type="button"
           onClick={onBack}
           className="flex-1 h-11 border border-[#30363D] text-[#E6EDF3] hover:bg-[#1C2128] text-sm font-medium rounded-[8px] transition-colors"
-        >
-          ← Voltar
-        </button>
+        >{tr("← Voltar")}</button>
         <button
           type="submit"
           disabled={!hydrated || submitting}
           className="flex-1 h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors"
         >
-          {!hydrated ? "Carregando..." : submitting ? "Criando..." : "Próximo →"}
+          {!hydrated ? tr("Carregando...") : submitting ? tr("Criando...") : tr("Próximo →")}
         </button>
       </div>
     </form>
@@ -530,6 +529,7 @@ function StepCompany({
   submitting: boolean;
   authError: string | null;
 }) {
+  const tr = useAuthCopy();
   const schema = role === "carrier"
     ? companyBase.extend({ antt: z.string().min(3, "RNTRC obrigatório") })
     : companyBase;
@@ -578,7 +578,7 @@ function StepCompany({
 
   return (
     <form method="post" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">Sua empresa</h2>
+      <h2 className="text-2xl font-bold text-[#E6EDF3] mb-4">{tr("Sua empresa")}</h2>
 
       <div>
         <label className="block text-sm text-[#C9D1D9] mb-1.5">CNPJ</label>
@@ -605,33 +605,33 @@ function StepCompany({
           )}
         </div>
         {errors.cnpj && (
-          <p className="text-xs text-red-400 mt-1">{errors.cnpj.message}</p>
+          <p className="text-xs text-red-400 mt-1">{tr(errors.cnpj.message)}</p>
         )}
         {!errors.cnpj && cnpjStatus === "ok" && (
-          <p className="text-xs text-[#2ECC8A] mt-1">✅ CNPJ válido</p>
+          <p className="text-xs text-[#2ECC8A] mt-1">{tr("✅ CNPJ válido")}</p>
         )}
         {!errors.cnpj && cnpjStatus === "error" && (
-          <p className="text-xs text-red-400 mt-1">❌ CNPJ não encontrado</p>
+          <p className="text-xs text-red-400 mt-1">{tr("❌ CNPJ não encontrado")}</p>
         )}
       </div>
 
       <IconInput
         Icon={Building}
-        placeholder="Razão social"
-        label="Razão social"
-        error={errors.legal_name?.message}
+        placeholder={tr("Razão social")}
+        label={tr("Razão social")}
+        error={tr(errors.legal_name?.message)}
         {...register("legal_name")}
       />
 
       <IconInput
         Icon={Building}
-        placeholder="Nome fantasia"
-        label="Nome fantasia (opcional)"
+        placeholder={tr("Nome fantasia")}
+        label={tr("Nome fantasia (opcional)")}
         {...register("trade_name")}
       />
 
       <div>
-        <label className="block text-sm text-[#C9D1D9] mb-1.5">Tipo de empresa</label>
+        <label className="block text-sm text-[#C9D1D9] mb-1.5">{tr("Tipo de empresa")}</label>
         <div className="relative">
           <Briefcase
             size={16}
@@ -642,16 +642,16 @@ function StepCompany({
             disabled={role === "carrier"}
             className="w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] focus:outline-none focus:border-[#1B6CB8] disabled:opacity-70"
           >
-            <option value="">Selecione...</option>
+            <option value="">{tr("Selecione...")}</option>
             {typeOptions.map((o) => (
               <option key={o.v} value={o.v}>
-                {o.l}
+                {tr(o.l)}
               </option>
             ))}
           </select>
         </div>
         {errors.type && (
-          <p className="text-xs text-red-400 mt-1">{errors.type.message}</p>
+          <p className="text-xs text-red-400 mt-1">{tr(errors.type.message)}</p>
         )}
       </div>
 
@@ -660,13 +660,13 @@ function StepCompany({
           Icon={FileText}
           placeholder="BR-0000000"
           label="RNTRC/ANTT"
-          error={errors.antt?.message}
+          error={tr(errors.antt?.message)}
           {...register("antt")}
         />
       )}
 
       <div>
-        <label className="block text-sm text-[#C9D1D9] mb-1.5">Estado sede</label>
+        <label className="block text-sm text-[#C9D1D9] mb-1.5">{tr("Estado sede")}</label>
         <div className="relative">
           <MapPin
             size={16}
@@ -676,7 +676,7 @@ function StepCompany({
             {...register("state")}
             className="w-full h-11 bg-[#0D1117] border border-[#30363D] rounded-[8px] pl-10 pr-3 text-sm text-[#E6EDF3] focus:outline-none focus:border-[#1B6CB8]"
           >
-            <option value="">UF...</option>
+            <option value="">{tr("UF...")}</option>
             {UFS.map((u) => (
               <option key={u} value={u}>
                 {u}
@@ -685,13 +685,13 @@ function StepCompany({
           </select>
         </div>
         {errors.state && (
-          <p className="text-xs text-red-400 mt-1">{errors.state.message}</p>
+          <p className="text-xs text-red-400 mt-1">{tr(errors.state.message)}</p>
         )}
       </div>
 
       {authError && (
         <div className="text-sm text-red-400 bg-red-900/20 border border-red-700/30 rounded-[8px] px-3 py-2">
-          {authError}
+          {tr(authError ?? undefined)}
         </div>
       )}
 
@@ -700,16 +700,14 @@ function StepCompany({
           type="button"
           onClick={onBack}
           className="flex-1 h-11 border border-[#30363D] text-[#E6EDF3] hover:bg-[#1C2128] text-sm font-medium rounded-[8px] transition-colors"
-        >
-          ← Voltar
-        </button>
+        >{tr("← Voltar")}</button>
         <button
           type="submit"
           disabled={!hydrated || submitting}
           className="flex-1 h-11 bg-[#1B6CB8] hover:bg-[#1758a0] disabled:opacity-60 text-white text-sm font-medium rounded-[8px] transition-colors flex items-center justify-center gap-2"
         >
           {submitting && <Loader2 size={16} className="animate-spin" />}
-          {!hydrated ? "Carregando..." : submitting ? "Criando..." : "Criar conta →"}
+          {!hydrated ? tr("Carregando...") : submitting ? tr("Criando...") : tr("Criar conta →")}
         </button>
       </div>
     </form>
