@@ -97,26 +97,92 @@ export function montarPrivacidade(
  * Em que FASE a tentativa parou. É isto que decide se repetir é seguro — não
  * o código HTTP isolado.
  *
- *   nao_enviado          provado que a requisição não chegou a sair. Nada foi
- *                        processado do outro lado.
- *   recusa_explicita     o gateway respondeu uma recusa definitiva, antes do
- *                        processamento. Há resposta; não há dúvida.
+ *   nao_enviado            provado que a requisição não chegou a sair. É o
+ *                          ÚNICO caso em que podemos afirmar, por conta
+ *                          própria, que nada foi processado do outro lado.
+ *   recusa_explicita       o fornecedor respondeu recusando. Há resposta —
+ *                          mas SE a requisição foi processada antes da
+ *                          recusa é outra pergunta, e só a documentação do
+ *                          fornecedor pode respondê-la.
  *   desfecho_desconhecido  timeout, conexão interrompida, ou erro de servidor
- *                        depois de a requisição possivelmente ter sido
- *                        entregue. NÃO SABEMOS se foi processada.
+ *                          depois de a requisição possivelmente ter sido
+ *                          entregue. NÃO SABEMOS se foi processada.
  */
 export type SendPhase = "nao_enviado" | "recusa_explicita" | "desfecho_desconhecido";
+
+/**
+ * Houve processamento do outro lado?
+ *
+ * Eixo SEPARADO da fase, e de propósito. Uma versão anterior deste módulo
+ * tratava todo 4xx — e o 429 em especial — como "seguramente anterior ao
+ * processamento". Isso não está escrito em lugar nenhum: era presunção
+ * minha, apoiada em como gateways costumam se comportar.
+ *
+ * Aqui só se afirma `nao_processado` quando a documentação do endpoint diz
+ * isso, com a citação junto. Todo o resto é `desconhecido`.
+ */
+export type EvidenciaDeProcessamento =
+  | { processado: "nao_processado"; fonte: string }
+  | { processado: "desconhecido"; motivo: string };
+
+/**
+ * Evidência documentada, por status, para POST /v5/pessoa-fisica/validacao.
+ *
+ * Hoje há exatamente UMA entrada. O 422 é o único cuja descrição afirma o
+ * não processamento:
+ *
+ *     "Requisição não processada — A requisição não pode ser processada
+ *      pois há alguma inconsistência com base no corpo da requisição
+ *      recebida"
+ *
+ * Os demais 4xx descrevem a recusa sem dizer se houve processamento:
+ * 400 "a requisição não foi aceita", 401 "problemas durante a autenticação",
+ * 403 "acesso não autorizado", 404 "verifique se o endereço é válido",
+ * 413 "a requisição tem um tamanho muito grande". Nenhuma afirma o que nos
+ * interessaria afirmar.
+ *
+ * 429 NÃO CONSTA das respostas documentadas deste endpoint. A versão
+ * anterior tinha um ramo para ele dizendo que não era processado — para um
+ * status que a documentação sequer lista.
+ */
+const EVIDENCIA_POR_STATUS: Record<number, EvidenciaDeProcessamento> = {
+  422: {
+    processado: "nao_processado",
+    fonte: "Referência da API, POST /v5/pessoa-fisica/validacao, 422: \"A requisição não pode ser processada\"",
+  },
+};
+
+export function evidenciaDeProcessamento(input: {
+  httpStatus: number | null;
+  possivelmenteEnviado: boolean;
+}): EvidenciaDeProcessamento {
+  if (!input.possivelmenteEnviado) {
+    return { processado: "nao_processado", fonte: "não houve envio (constatado no nosso lado)" };
+  }
+  if (input.httpStatus !== null && EVIDENCIA_POR_STATUS[input.httpStatus]) {
+    return EVIDENCIA_POR_STATUS[input.httpStatus];
+  }
+  return {
+    processado: "desconhecido",
+    motivo:
+      input.httpStatus === null
+        ? "sem resposta: não há como saber se a requisição foi processada"
+        : `HTTP ${input.httpStatus} não é documentado como anterior ao processamento`,
+  };
+}
 
 export type RetryDecision =
   | {
       retry: true;
       /** Sempre `true`: a documentação não autoriza reenviar o mesmo token. */
       requiresNewGccToken: true;
-      reason: "NAO_ENVIADO" | "RECUSA_COM_ORIENTACAO_DE_REPETIR";
+      reason: "NAO_ENVIADO";
     }
   | {
       retry: false;
       reason: "RECUSA_DEFINITIVA";
+      /** O que sabemos sobre processamento — pode ser `desconhecido`. */
+      evidencia: EvidenciaDeProcessamento;
     }
   | {
       retry: false;
@@ -127,33 +193,24 @@ export type RetryDecision =
        */
       requerReconciliacao: true;
       registrarResultadoDesconhecido: true;
+      evidencia: EvidenciaDeProcessamento;
     };
 
 /**
  * Classifica a fase a partir do que de fato aconteceu.
  *
- * `enviou` é a informação que o código HTTP sozinho não dá: houve ou não
- * houve entrega da requisição. Quem chama precisa saber disso — um `fetch`
- * que falhou em DNS ou em connect não enviou; um que falhou em leitura de
- * resposta pode ter enviado.
+ * `possivelmenteEnviado` é a informação que o código HTTP sozinho não dá.
+ * Um `fetch` que falhou em DNS ou em connect não enviou; um que falhou ao ler
+ * a resposta pode ter enviado. Na dúvida, `true`.
  */
 export function classificarFase(input: {
   httpStatus: number | null;
-  /** `false` só quando é POSSÍVEL PROVAR que nada saiu. Na dúvida, `true`. */
   possivelmenteEnviado: boolean;
 }): SendPhase {
   if (!input.possivelmenteEnviado) return "nao_enviado";
-
-  // Recusa do gateway ANTES do processamento: há resposta e ela é definitiva.
-  // 429 entra aqui porque também não foi processada — a diferença é que vem
-  // com orientação de repetir.
   if (input.httpStatus !== null && input.httpStatus >= 400 && input.httpStatus < 500) {
     return "recusa_explicita";
   }
-
-  // 5xx, timeout e conexão interrompida: a requisição pode ter chegado ao
-  // backend. 502 é explicitamente "problema ENTRE o gateway e o backend" —
-  // ou seja, pode ter passado.
   return "desfecho_desconhecido";
 }
 
@@ -161,40 +218,33 @@ export function classificarFase(input: {
  * Decide se repetir é seguro.
  *
  * ──────────────────────────────────────────────────────────────────────────
- * O PONTO DIFÍCIL: DESFECHO DESCONHECIDO NÃO SE RESOLVE COM TOKEN NOVO
+ * NENHUMA REPETIÇÃO AUTOMÁTICA DEPOIS DE A REQUISIÇÃO SAIR
  *
- * Uma versão anterior desta função repetia em 502, 503 e timeout, confiando
- * em obter um token novo. Estava errada, por dois motivos:
+ * Só o caso comprovadamente anterior ao envio repete sozinho. Recusa
+ * explícita não repete — a mesma requisição recebe a mesma recusa — e
+ * desfecho desconhecido fica bloqueado até haver reconciliação documentada
+ * ou orientação do fornecedor.
  *
- *  1. token novo evita reutilizar consentimento — não evita que o SERPRO
- *     processe DUAS VEZES. São problemas diferentes;
- *  2. nossa chave de idempotência é NOSSA. O endpoint de validação não
- *     documenta chave de idempotência nem mecanismo de reconciliação, e
- *     `x-request-trace-id` é rastreamento, não deduplicação.
- *
- * Por isso, desfecho desconhecido não repete sozinho: registra resultado
- * desconhecido e espera reconciliação documentada ou orientação do
- * fornecedor. Uma validação cobrada e contada duas vezes contra o
- * consentimento do titular é pior que uma que demora.
+ * Token novo evita reutilizar consentimento entre operações. NÃO evita que o
+ * SERPRO processe duas vezes: são problemas diferentes, e o segundo não tem
+ * mecanismo documentado do nosso lado.
  */
 export function decidirRetry(input: {
   httpStatus: number | null;
   possivelmenteEnviado: boolean;
 }): RetryDecision {
   const fase = classificarFase(input);
+  const evidencia = evidenciaDeProcessamento(input);
 
   if (fase === "nao_enviado") {
-    // Nada saiu. Repetir é seguro quanto a duplicidade externa; ainda assim,
-    // token novo, porque a documentação não autoriza reenviar o anterior.
     return { retry: true, requiresNewGccToken: true, reason: "NAO_ENVIADO" };
   }
 
   if (fase === "recusa_explicita") {
-    // 429 é recusa que vem com orientação de repetir, e não foi processada.
-    if (input.httpStatus === 429) {
-      return { retry: true, requiresNewGccToken: true, reason: "RECUSA_COM_ORIENTACAO_DE_REPETIR" };
-    }
-    return { retry: false, reason: "RECUSA_DEFINITIVA" };
+    // Não repete, independentemente da evidência: a mesma requisição receberia
+    // a mesma recusa. A evidência vai junto porque importa para conciliação e
+    // para faturamento, não para a decisão de repetir.
+    return { retry: false, reason: "RECUSA_DEFINITIVA", evidencia };
   }
 
   return {
@@ -202,9 +252,9 @@ export function decidirRetry(input: {
     reason: "DESFECHO_DESCONHECIDO",
     requerReconciliacao: true,
     registrarResultadoDesconhecido: true,
+    evidencia,
   };
 }
-
 /**
  * Chave de idempotência da NOSSA operação.
  *

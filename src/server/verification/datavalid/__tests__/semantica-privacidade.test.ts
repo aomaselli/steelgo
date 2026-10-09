@@ -24,6 +24,7 @@ import {
   chaveDeIdempotencia,
   classificarFase,
   decidirRetry,
+  evidenciaDeProcessamento,
   montarPrivacidade,
   privacidadeParaLog,
   TokenDeOutraOperacaoError,
@@ -225,17 +226,46 @@ test("fase 1 — falha comprovadamente ANTES do envio: repete, com token novo", 
   assert.equal(classificarFase({ httpStatus: null, possivelmenteEnviado: false }), "nao_enviado");
 });
 
-test("fase 2 — recusa explícita do fornecedor: NÃO repete", () => {
-  // Há resposta, e ela é definitiva. Repetir só gasta requisição.
-  for (const httpStatus of [400, 401, 403, 404, 413, 422]) {
+test("fase 2 — recusa explícita do fornecedor: NÃO repete, em nenhum status", () => {
+  // Inclui o 429. A versão anterior o repetia dizendo que "não foi
+  // processado" — presunção sem documento, para um status que a referência da
+  // API sequer lista entre as respostas deste endpoint.
+  for (const httpStatus of [400, 401, 403, 404, 413, 422, 429]) {
     const d = decidirRetry({ httpStatus, possivelmenteEnviado: true });
-    assert.equal(d.retry, false, `status ${httpStatus} não deveria repetir`);
+    assert.equal(d.retry, false, `status ${httpStatus} não deveria repetir sozinho`);
     assert.equal(d.reason, "RECUSA_DEFINITIVA");
   }
-  // 429 é recusa que vem com orientação de repetir, e não foi processada.
-  const d429 = decidirRetry({ httpStatus: 429, possivelmenteEnviado: true });
-  assert.equal(d429.retry, true);
-  assert.equal(d429.retry && d429.requiresNewGccToken, true);
+});
+
+test("só o 422 tem evidência documentada de não processamento", () => {
+  // "A requisição não pode ser processada" — é o único que afirma isso.
+  const e422 = evidenciaDeProcessamento({ httpStatus: 422, possivelmenteEnviado: true });
+  assert.equal(e422.processado, "nao_processado");
+  assert.equal(
+    e422.processado === "nao_processado" && /não pode ser processada/.test(e422.fonte),
+    true,
+    "a evidência precisa citar a fonte",
+  );
+
+  // Todo o resto é desconhecido — inclusive os que "parecem óbvios".
+  for (const httpStatus of [400, 401, 403, 404, 413, 429, 500, 502, 503, null]) {
+    const e = evidenciaDeProcessamento({ httpStatus, possivelmenteEnviado: true });
+    assert.equal(
+      e.processado,
+      "desconhecido",
+      `HTTP ${httpStatus} não tem evidência documentada e não pode ser afirmado`,
+    );
+  }
+});
+
+test("não ter saído é a única afirmação de não processamento que fazemos sozinhos", () => {
+  const e = evidenciaDeProcessamento({ httpStatus: null, possivelmenteEnviado: false });
+  assert.equal(e.processado, "nao_processado");
+  assert.equal(
+    e.processado === "nao_processado" && /nosso lado/.test(e.fonte),
+    true,
+    "a fonte precisa deixar claro que a constatação é nossa, não do fornecedor",
+  );
 });
 
 test("fase 3 — timeout ou conexão interrompida após possível envio: NÃO repete sozinho", () => {
