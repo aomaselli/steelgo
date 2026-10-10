@@ -58,8 +58,21 @@ select 'FUNCAO|' || p.proname || '|' ||
        replace(replace(pg_get_functiondef(p.oid), chr(10), ' '), chr(13), ' ')
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
- where n.nspname = 'public' and p.proname in ('document_audit_block_mutation')
+ where n.nspname = 'public'
+   and p.proname in ('document_audit_block_mutation', 'concluir_expurgo_de_documento')
  order by p.proname;
+
+-- Privilégios de execução das funções. `concluir_expurgo_de_documento` é
+-- `security definer` e escreve na trilha: tem de estar fora do alcance do
+-- cliente, e isso é parte da definição tanto quanto o corpo.
+select 'FUNCAO_GRANT|' || p.proname || '|' || g.grantee || '|' ||
+       has_function_privilege(g.grantee, p.oid, 'execute')::text
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  cross join (values ('anon'), ('authenticated')) as g(grantee)
+ where n.nspname = 'public'
+   and p.proname in ('document_audit_block_mutation', 'concluir_expurgo_de_documento')
+ order by p.proname, g.grantee;
 
 -- Triggers: a definição completa.
 select 'TRIGGER|' || c.relname || '|' || t.tgname || '|' || pg_get_triggerdef(t.oid)

@@ -47,6 +47,7 @@
 
 import { type DocumentAuditAction, type DocumentKind, type DocumentPurpose } from "./types";
 import {
+  RetencaoNaoConfiguradaError,
   type RetentionPolicy,
   type StoredDocument,
   avaliarExpurgo,
@@ -68,7 +69,19 @@ export interface PurgeableDocument extends StoredDocument {
 }
 
 /** Motivo da falha. Lista fechada, igual ao `check` do banco. */
-export type MotivoDeFalha = "REMOCAO_FALHOU" | "ARQUIVO_PERSISTE" | "CONFERENCIA_FALHOU";
+/**
+  * Motivo da falha. Lista fechada, igual ao `check` do banco.
+  *
+  * `CONCLUSAO_FALHOU` entrou depois: e a transacao que grava `purged_at`,
+  * limpa a falha anterior e insere o evento, e que nao confirmou. O arquivo
+  * ja nao esta la; o registro ainda diz que esta. E o estado que a
+  * recuperacao do passo 3 existe para desfazer.
+  */
+export type MotivoDeFalha =
+  | "REMOCAO_FALHOU"
+  | "ARQUIVO_PERSISTE"
+  | "CONFERENCIA_FALHOU"
+  | "CONCLUSAO_FALHOU";
 
 /**
  * Entrada do log operacional de falha de expurgo.
@@ -118,17 +131,84 @@ const PROIBIDOS_NO_LOG: Array<{ nome: string; re: RegExp }> = [
  * Barreira, não validação de formulário: quem chama não precisa acertar,
  * precisa não conseguir errar em silêncio.
  */
+/** Os motivos aceitos, em runtime. O tipo sozinho não vale em borda. */
+const MOTIVOS_VALIDOS: ReadonlySet<string> = new Set([
+  "REMOCAO_FALHOU",
+  "ARQUIVO_PERSISTE",
+  "CONFERENCIA_FALHOU",
+  "CONCLUSAO_FALHOU",
+]);
+
+export class CampoInvalidoEmLogDeExpurgoError extends Error {
+  constructor(campo: string, porque: string) {
+    super(`Log operacional de expurgo recusou a entrada: "${campo}" ${porque}.`);
+    this.name = "CampoInvalidoEmLogDeExpurgoError";
+  }
+}
+
+/**
+ * Confere a entrada e CONSTRÓI a saída, campo a campo.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * POR QUE NÃO `{ ...f }`
+ *
+ * O spread copiava tudo que viesse no objeto, incluindo propriedade que o tipo
+ * não declara. Tipo é verificação de compilação; o log recebe objeto que
+ * atravessou borda — JSON de fila, resposta de serviço, `any` em algum ponto
+ * do caminho — e ali o tipo não existe mais. Bastava alguém anexar
+ * `{ ...falha, subjectId, objectPath }` para o caminho do objeto e o titular
+ * irem junto para um serviço de terceiro, sem nenhuma barreira disparar: os
+ * campos extras nem eram CONFERIDOS, quanto mais bloqueados.
+ *
+ * Agora só os quatro campos permitidos são lidos do objeto de entrada, e a
+ * saída é construída com eles. O que vier a mais fica de fora por construção —
+ * não por lembrança de quem escreveu.
+ *
+ * Os valores também são validados em runtime, pelo mesmo motivo: um
+ * `motivo` vindo de fora pode não ser nenhum dos quatro.
+ */
 export function conferirFalhaParaLog(f: FalhaDeExpurgoParaLog): FalhaDeExpurgoParaLog {
-  for (const [campo, valor] of [
-    ["documentId", f.documentId],
-    ["motivo", f.motivo],
-    ["ocorridoEm", f.ocorridoEm],
-  ] as Array<[string, string]>) {
+  const entrada = f as unknown as Record<string, unknown>;
+
+  const documentId = entrada.documentId;
+  const motivo = entrada.motivo;
+  const tentativas = entrada.tentativas;
+  const ocorridoEm = entrada.ocorridoEm;
+
+  if (typeof documentId !== "string" || documentId.trim() === "") {
+    throw new CampoInvalidoEmLogDeExpurgoError("documentId", "não é texto não vazio");
+  }
+  if (typeof motivo !== "string" || !MOTIVOS_VALIDOS.has(motivo)) {
+    throw new CampoInvalidoEmLogDeExpurgoError(
+      "motivo",
+      `não está na lista fechada (${[...MOTIVOS_VALIDOS].join(", ")})`,
+    );
+  }
+  if (typeof tentativas !== "number" || !Number.isInteger(tentativas) || tentativas < 0) {
+    throw new CampoInvalidoEmLogDeExpurgoError("tentativas", "não é inteiro não negativo");
+  }
+  if (typeof ocorridoEm !== "string" || Number.isNaN(Date.parse(ocorridoEm))) {
+    throw new CampoInvalidoEmLogDeExpurgoError("ocorridoEm", "não é um instante legível");
+  }
+
+  // A varredura por dado pessoal vale para TODOS os campos textuais do objeto
+  // de entrada — inclusive os que não vão para a saída. Um campo extra com
+  // CPF não pode passar em silêncio só por não ser copiado: quem o anexou
+  // precisa saber que estava prestes a vazá-lo.
+  for (const [campo, valor] of Object.entries(entrada)) {
+    if (typeof valor !== "string") continue;
     for (const { nome, re } of PROIBIDOS_NO_LOG) {
       if (re.test(valor)) throw new DadoPessoalEmLogDeExpurgoError(campo, nome);
     }
   }
-  return { ...f };
+
+  // Construção explícita: só estes quatro saem daqui.
+  return {
+    documentId,
+    motivo: motivo as FalhaDeExpurgoParaLog["motivo"],
+    tentativas,
+    ocorridoEm,
+  };
 }
 
 /**
@@ -144,28 +224,47 @@ export interface PurgePorts {
   /** Consulta INDEPENDENTE: o objeto ainda está lá? */
   existe(objectPath: string): Promise<boolean>;
   /**
-   * Marca o registro do documento como expurgado.
+   * Conclui o expurgo: `purged_at`, limpeza da falha e trilha, ATOMICAMENTE.
    *
-   * Tem de LIMPAR a falha pendente ao concluir: um registro com `purged_at`
-   * preenchido e `last_purge_failure` ainda apontando falha é um estado que
-   * não existe. O `check validation_documents_purge_coerente` recusa esse
-   * estado no banco — e foi ele que apanhou esta porta incompleta na
-   * homologação integrada, numa execução em que a primeira passada falhava e a
-   * segunda concluía.
+   * ──────────────────────────────────────────────────────────────────────────
+   * POR QUE UMA PORTA SÓ, E NÃO DUAS
+   *
+   * Antes eram duas — `marcarExpurgado` e depois `registrarTrilha`. Entre uma
+   * e outra cabe uma falha, e o estado que ela deixa é o pior possível:
+   * `purged_at` preenchido, nenhum evento na trilha. O documento sai da
+   * seleção para sempre e não há registro de que foi apagado — exatamente a
+   * prova que a trilha existe para dar.
+   *
+   * Agora é uma chamada só, e quem a implementa tem de fazer as três coisas na
+   * MESMA transação de banco. Se a trilha falhar, `purged_at` não é gravado.
+   *
+   * A limpeza da falha anterior entra junto: um registro com `purged_at`
+   * preenchido e `last_purge_failure` apontando falha é estado que não existe,
+   * e o `check validation_documents_purge_coerente` o recusa.
+   *
+   * ──────────────────────────────────────────────────────────────────────────
+   * CONCORRÊNCIA
+   *
+   * Duas execuções podem alcançar o mesmo documento. Quem implementa condiciona
+   * a gravação a `purged_at is null` e devolve `"ja_concluido"` quando outra
+   * execução chegou antes — sem gravar segundo evento. O banco sustenta isso
+   * com índice único parcial sobre os eventos `purge`.
    */
-  marcarExpurgado(objectPath: string, quando: Date): Promise<void>;
-  /** Acrescenta a linha de trilha. Append-only no banco. */
-  registrarTrilha(evento: {
-    action: DocumentAuditAction;
-    subjectId: string;
-    actorId: string;
-    actorRole: string;
-    purpose: DocumentPurpose;
-    kind: DocumentKind;
+  concluirExpurgo(conclusao: {
     objectPath: string;
-    reasonCode: string;
-    occurredAt: string;
-  }): Promise<void>;
+    quando: Date;
+    evento: {
+      action: DocumentAuditAction;
+      subjectId: string;
+      actorId: string;
+      actorRole: string;
+      purpose: DocumentPurpose;
+      kind: DocumentKind;
+      objectPath: string;
+      reasonCode: string;
+      occurredAt: string;
+    };
+  }): Promise<"concluido" | "ja_concluido">;
   /**
    * Marca a TENTATIVA que falhou, no registro do documento.
    *
@@ -186,12 +285,17 @@ export type PurgeResult =
       /** Motivo da decisão, de `retention.ts`. */
       reason: "ABANDONED_UPLOAD" | "BIOMETRIC_EXPIRED" | "DOCUMENT_EXPIRED";
       tentativas: number;
+      /**
+       * Outra execução concorrente concluiu antes desta. O desfecho é o
+       * mesmo; quem lê o relatório é que merece saber de onde veio.
+       */
+      concluidoPorOutraExecucao: boolean;
     }
   | {
       status: "pendente";
       objectPath: string;
       /** Por que não se pôde concluir. */
-      falha: "REMOCAO_FALHOU" | "ARQUIVO_PERSISTE" | "CONFERENCIA_FALHOU";
+      falha: MotivoDeFalha;
       detalhe: string;
       tentativas: number;
       /**
@@ -260,7 +364,7 @@ export async function expurgarDocumento(
   }
 
   let tentativas = 0;
-  let ultimaFalha: { falha: "REMOCAO_FALHOU" | "ARQUIVO_PERSISTE" | "CONFERENCIA_FALHOU"; detalhe: string } = {
+  let ultimaFalha: { falha: MotivoDeFalha; detalhe: string } = {
     falha: "REMOCAO_FALHOU",
     detalhe: "nenhuma tentativa executada",
   };
@@ -269,51 +373,85 @@ export async function expurgarDocumento(
     tentativas += 1;
 
     // 2. Pedir a remoção.
+    //
+    //    Uma falha AQUI não decide nada sozinha. O passo 3 é que decide, e por
+    //    um motivo que só aparece na segunda tentativa: se a remoção já tiver
+    //    acontecido numa execução anterior cuja transação falhou, a Storage
+    //    API responde 400 para o objeto ausente — e tratar isso como
+    //    `REMOCAO_FALHOU` prenderia o documento para sempre, com o arquivo já
+    //    apagado e o registro dizendo que não.
+    let remocaoFalhou: string | null = null;
     try {
       await ports.remover(doc.objectPath);
     } catch (e) {
-      ultimaFalha = { falha: "REMOCAO_FALHOU", detalhe: mensagem(e) };
-      continue;
+      remocaoFalhou = mensagem(e);
     }
 
     // 3. Conferir a ausência por consulta SEPARADA. A resposta do passo 2 não
-    //    vale como prova: um 200 que não removeu nada é indistinguível, daqui,
-    //    de um 200 que removeu.
+    //    vale como prova — nem o sucesso, nem a falha. Ausência comprovada é
+    //    o que autoriza concluir; presença é o que impede.
     let aindaExiste: boolean;
     try {
       aindaExiste = await ports.existe(doc.objectPath);
     } catch (e) {
-      ultimaFalha = { falha: "CONFERENCIA_FALHOU", detalhe: mensagem(e) };
+      ultimaFalha = {
+        falha: "CONFERENCIA_FALHOU",
+        detalhe:
+          mensagem(e) + (remocaoFalhou ? ` (a remoção antes disso falhou: ${remocaoFalhou})` : ""),
+      };
       continue;
     }
 
     if (aindaExiste) {
       ultimaFalha = {
-        falha: "ARQUIVO_PERSISTE",
-        detalhe: "a remoção respondeu sem erro, mas o objeto continua no bucket",
+        falha: remocaoFalhou ? "REMOCAO_FALHOU" : "ARQUIVO_PERSISTE",
+        detalhe: remocaoFalhou ?? "a remoção respondeu sem erro, mas o objeto continua no bucket",
       };
       continue;
     }
 
-    // 4. Agora, e só agora, o expurgo pode ser declarado.
-    await ports.marcarExpurgado(doc.objectPath, now);
-    await ports.registrarTrilha({
-      action: "purge",
-      subjectId: doc.subjectId,
-      actorId: ATOR_DO_EXPURGO.actorId,
-      actorRole: ATOR_DO_EXPURGO.actorRole,
-      purpose: doc.purpose,
-      kind: doc.kind,
-      objectPath: doc.objectPath,
-      reasonCode: veredito.reason,
-      occurredAt: now.toISOString(),
-    });
+    // 4. Objeto comprovadamente ausente. Agora, e só agora, o expurgo pode ser
+    //    declarado — e as três gravações vão na MESMA transação.
+    //
+    //    Vale também quando o passo 2 falhou: o arquivo não está lá, e é isso
+    //    que importa. É este caminho que recupera a execução anterior que
+    //    apagou o arquivo e perdeu a transação.
+    let conclusao: "concluido" | "ja_concluido";
+    try {
+      conclusao = await ports.concluirExpurgo({
+        objectPath: doc.objectPath,
+        quando: now,
+        evento: {
+          action: "purge",
+          subjectId: doc.subjectId,
+          actorId: ATOR_DO_EXPURGO.actorId,
+          actorRole: ATOR_DO_EXPURGO.actorRole,
+          purpose: doc.purpose,
+          kind: doc.kind,
+          objectPath: doc.objectPath,
+          reasonCode: veredito.reason,
+          occurredAt: now.toISOString(),
+        },
+      });
+    } catch (e) {
+      // A transação não confirmou. O arquivo já não está lá, mas o registro e
+      // a trilha não foram gravados — e é PRECISO que a próxima tentativa
+      // consiga concluir. Ela consegue: `purged_at` continua nulo, o
+      // documento volta a ser selecionado, a remoção falha com o objeto
+      // ausente e o passo 3 prova a ausência.
+      ultimaFalha = { falha: "CONCLUSAO_FALHOU", detalhe: mensagem(e) };
+      continue;
+    }
 
     return {
       status: "expurgado",
       objectPath: doc.objectPath,
       reason: veredito.reason,
       tentativas,
+      // Outra execução chegou antes e já havia concluído. O resultado é o
+      // mesmo — documento expurgado, um único evento na trilha —, mas quem lê
+      // o relatório merece saber que não foi esta chamada que concluiu.
+      concluidoPorOutraExecucao: conclusao === "ja_concluido",
     };
   }
 
@@ -321,19 +459,37 @@ export async function expurgarDocumento(
   // diferentes: no registro do documento, para que `purged_at is null` deixe
   // de ser ambíguo; e no log operacional, para que alguém veja sem consultar o
   // banco. Nenhum dos dois recebe dado pessoal.
+  //
+  // As duas gravações são ACESSÓRIAS: se falharem, o documento continua
+  // pendente e recuperável, e derrubar a chamada por causa delas custaria o
+  // resto do lote. O motivo original é preservado.
   const ocorridoEm = now.toISOString();
   if (ports.marcarTentativaFalha) {
-    await ports.marcarTentativaFalha(doc.objectPath, now, ultimaFalha.falha);
+    try {
+      await ports.marcarTentativaFalha(doc.objectPath, now, ultimaFalha.falha);
+    } catch (e) {
+      ultimaFalha = {
+        ...ultimaFalha,
+        detalhe: `${ultimaFalha.detalhe} | registro da tentativa também falhou: ${mensagem(e)}`,
+      };
+    }
   }
   if (ports.registrarFalhaOperacional) {
-    ports.registrarFalhaOperacional(
-      conferirFalhaParaLog({
-        documentId: doc.documentId,
-        motivo: ultimaFalha.falha,
-        tentativas,
-        ocorridoEm,
-      }),
-    );
+    try {
+      ports.registrarFalhaOperacional(
+        conferirFalhaParaLog({
+          documentId: doc.documentId,
+          motivo: ultimaFalha.falha,
+          tentativas,
+          ocorridoEm,
+        }),
+      );
+    } catch (e) {
+      ultimaFalha = {
+        ...ultimaFalha,
+        detalhe: `${ultimaFalha.detalhe} | log operacional também falhou: ${mensagem(e)}`,
+      };
+    }
   }
 
   return {
@@ -361,7 +517,30 @@ export async function expurgarLote(
 ): Promise<PurgeResult[]> {
   const saida: PurgeResult[] = [];
   for (const doc of docs) {
-    saida.push(await expurgarDocumento(doc, policy, ports, now, tentativasMaximas));
+    try {
+      saida.push(await expurgarDocumento(doc, policy, ports, now, tentativasMaximas));
+    } catch (e) {
+      // ────────────────────────────────────────────────────────────────────
+      // UM DOCUMENTO NÃO DERRUBA O LOTE
+      //
+      // `expurgarDocumento` já trata as falhas que conhece. O que chega aqui é
+      // o que ele não previu — uma porta que lança de um jeito novo, por
+      // exemplo. Deixar propagar interromperia os documentos seguintes, e os
+      // não processados ficariam indistinguíveis dos que não precisavam de
+      // nada.
+      //
+      // O erro vira resultado pendente, com motivo da lista fechada, e o
+      // documento segue recuperável: `purged_at` continua nulo.
+      if (e instanceof RetencaoNaoConfiguradaError) throw e;
+      saida.push({
+        status: "pendente",
+        objectPath: doc.objectPath,
+        falha: "CONCLUSAO_FALHOU",
+        detalhe: `falha não prevista ao expurgar: ${mensagem(e)}`,
+        tentativas: 0,
+        concluido: false,
+      });
+    }
   }
   return saida;
 }

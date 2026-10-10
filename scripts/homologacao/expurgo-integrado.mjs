@@ -265,24 +265,25 @@ async function main() {
   /** Log operacional de falha. Identificador do registro e motivo, nada mais. */
   const logOperacional = [];
 
-  // Portas de verdade. `marcarExpurgado` e `registrarTrilha` passam pelo
-  // validador, como todo o resto.
+  // Portas de verdade. Tudo que toca o banco passa pelo validador.
   function portas({ chaveParaRemover }) {
     return {
       remover: (p) => removerNoStorage(chaveParaRemover, p),
       existe: (p) => existeNoStorage(chave, p),
-      marcarExpurgado: async (p, quando) => {
-        // Limpa a falha pendente no MESMO update. O
-        // `check validation_documents_purge_coerente` recusa registro com
-        // `purged_at` preenchido e `last_purge_failure` apontando falha --
-        // e foi ele que apanhou esta porta incompleta: a primeira passada
-        // falhava, a segunda concluia, e o banco barrou o estado impossivel.
-        sql(
-          `update public.validation_documents
-              set purged_at = '${quando.toISOString()}',
-                  last_purge_failure = null
-            where object_path = '${p}';`,
+      // UMA chamada, UMA transacao: `purged_at`, limpeza da falha e evento
+      // de trilha. Quem garante a atomicidade e a funcao do banco; aqui so
+      // se chama e se le o desfecho.
+      concluirExpurgo: async ({ objectPath, quando, evento }) => {
+        const r = sql(
+          `select public.concluir_expurgo_de_documento(
+              '${objectPath}', '${quando.toISOString()}', '${evento.subjectId}',
+              '${evento.actorId}', '${evento.actorRole}', '${evento.purpose}',
+              '${evento.kind}', '${evento.reasonCode}');`,
         );
+        if (r !== "concluido" && r !== "ja_concluido") {
+          throw new Error(`desfecho inesperado da conclusao: ${r}`);
+        }
+        return r;
       },
       marcarTentativaFalha: async (p, quando, motivo) => {
         sql(
@@ -294,16 +295,6 @@ async function main() {
       },
       registrarFalhaOperacional: (f) => {
         logOperacional.push(f);
-      },
-      registrarTrilha: async (e) => {
-        sql(
-          `insert into public.document_audit
-             (action, subject_id, actor_id, actor_role, purpose, kind, object_path,
-              reason_code, occurred_at)
-           values ('${e.action}', '${e.subjectId}', '${e.actorId}', '${e.actorRole}',
-                   '${e.purpose}', '${e.kind}', '${e.objectPath}',
-                   '${e.reasonCode}', '${e.occurredAt}');`,
-        );
       },
     };
   }
@@ -382,8 +373,8 @@ async function main() {
   reg(contarTrilha("purge") === 1, "N5. exatamente uma linha `purge`");
   reg(contarTrilha("upload") === 1, "N6. a trilha SOBREVIVEU ao expurgo");
 
-  // Sem limpeza manual aqui: quem limpa a falha e a propria porta
-  // `marcarExpurgado`, porque o banco nao aceita o estado intermediario.
+  // Sem limpeza manual: quem limpa a falha e a propria funcao do banco, na
+  // mesma transacao em que grava `purged_at` e o evento.
   const classificacaoFinal = sql(
     `select case
               when purged_at is not null then 'concluido'
@@ -426,6 +417,93 @@ async function main() {
   );
   reg(prazoFinal === "nulo/nulo/nulo aprovador=nulo",
     `R1. prazo de produção sem valor aprovado (${prazoFinal})`);
+
+  // ─── RECUPERAÇÃO: arquivo já removido, transação anterior falhou ────────
+  console.log(`\n  -- recuperação: arquivo já ausente, registro por concluir --`);
+  {
+    const CAMINHO_REC = `identity_validation/${TITULAR}/recuperacao-${EXECUCAO}.png`;
+    // Documento registrado, arquivo NUNCA enviado ao Storage. É o estado em
+    // que uma execução anterior ficaria: apagou o arquivo e perdeu a
+    // transação do banco.
+    sql(
+      `insert into public.validation_documents
+         (subject_id, purpose, kind, object_path, uploaded_at, validation_started_at)
+       values ('${TITULAR}', 'identity_validation', 'selfie', '${CAMINHO_REC}',
+               now() - interval '10 days', now() - interval '10 days');`,
+    );
+    const idRec = sql(
+      `select id from public.validation_documents where object_path = '${CAMINHO_REC}';`,
+    );
+    const docRec = {
+      documentId: idRec,
+      objectPath: CAMINHO_REC,
+      kind: "selfie",
+      subjectId: TITULAR,
+      purpose: "identity_validation",
+      uploadedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      validationStartedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      purgedAt: null,
+    };
+
+    const rRec = await purge.expurgarDocumento(
+      docRec,
+      politica,
+      portas({ chaveParaRemover: chave }),
+      new Date(),
+      1,
+    );
+    reg(rRec.status === "expurgado", `R1. objeto ausente permite CONCLUIR (${rRec.status})`);
+    reg(
+      sql(`select coalesce(purged_at::text,'NULO') from public.validation_documents where object_path = '${CAMINHO_REC}';`) !== "NULO",
+      "R2. purged_at gravado na recuperação",
+    );
+    reg(
+      Number(
+        sql(
+          `select count(*) from public.document_audit where object_path = '${CAMINHO_REC}' and action = 'purge';`,
+        ),
+      ) === 1,
+      "R3. exatamente um evento `purge` na recuperação",
+    );
+
+    // ─── CONCORRÊNCIA: a segunda execução não grava segundo evento ────────
+    console.log(`\n  -- concorrência sobre o mesmo documento --`);
+    const rConc = await purge.expurgarDocumento(
+      { ...docRec, purgedAt: null },
+      politica,
+      portas({ chaveParaRemover: chave }),
+      new Date(),
+      1,
+    );
+    reg(
+      rConc.status === "expurgado" && rConc.concluidoPorOutraExecucao === true,
+      `C1. segunda execução vê \`ja_concluido\` (${rConc.status}, porOutra=${
+        rConc.status === "expurgado" ? rConc.concluidoPorOutraExecucao : "-"
+      })`,
+    );
+    reg(
+      Number(
+        sql(
+          `select count(*) from public.document_audit where object_path = '${CAMINHO_REC}' and action = 'purge';`,
+        ),
+      ) === 1,
+      "C2. segue com UM evento `purge`, não dois",
+    );
+
+    // E o banco sustenta isso sozinho: o índice único recusa o segundo.
+    let indiceRecusou = false;
+    try {
+      sql(
+        `insert into public.document_audit
+           (action, subject_id, actor_id, actor_role, purpose, kind, object_path)
+         values ('purge', '${TITULAR}', '00000000-0000-0000-0000-000000000000',
+                 'system', 'identity_validation', 'selfie', '${CAMINHO_REC}');`,
+      );
+    } catch {
+      indiceRecusou = true;
+    }
+    reg(indiceRecusou, "C3. o índice único do banco recusa um segundo evento `purge`");
+  }
 
   // ─── evidência deixada atrás, contada ───────────────────────────────────
   const trilhaFinal = sql(
