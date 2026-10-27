@@ -35,6 +35,8 @@ export type FakeSenatranScenario =
   | "invalid_license"
   | "expired_at_source"
   | "unavailable"
+  | "com_impedimento"
+  | "impedimento_inconclusivo"
   | "skip";
 
 export class FakeSenatranProvider implements SenatranProvider {
@@ -58,6 +60,8 @@ export class FakeSenatranProvider implements SenatranProvider {
       providerReference: `fake-senatran-${input.subjectRef.slice(0, 8)}`,
       category: "E",
       restrictions: [] as string[],
+      // Declarado em todos os cenarios: o tipo obriga, e obrigar e o ponto.
+      hasImpediment: false as boolean | null,
     };
 
     if (this.scenario === "invalid_license") {
@@ -65,6 +69,12 @@ export class FakeSenatranProvider implements SenatranProvider {
     }
     if (this.scenario === "expired_at_source") {
       return { ok: true, value: { ...base, licenseValid: true, licenseExpiresAt: "2020-01-01", resultCode: "SENATRAN_LICENSE_EXPIRED" } };
+    }
+    if (this.scenario === "com_impedimento") {
+      return { ok: true, value: { ...base, licenseValid: true, licenseExpiresAt: null, hasImpediment: true, resultCode: "SENATRAN_IMPEDIMENT" } };
+    }
+    if (this.scenario === "impedimento_inconclusivo") {
+      return { ok: true, value: { ...base, licenseValid: true, licenseExpiresAt: null, hasImpediment: null, resultCode: "SENATRAN_IMPEDIMENT_UNKNOWN" } };
     }
     return { ok: true, value: { ...base, licenseValid: true, licenseExpiresAt: null, resultCode: "SENATRAN_OK" } };
   }

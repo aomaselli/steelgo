@@ -213,6 +213,7 @@ test("consentimento não concedido não aprova, mesmo com identidade e habilita�
       licenseExpiresAt: "2030-01-01",
       category: "E",
       restrictions: [],
+      hasImpediment: false,
       providerReference: "ref",
       resultCode: "ok",
     },

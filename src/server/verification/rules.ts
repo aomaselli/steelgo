@@ -176,6 +176,21 @@ export function avaliarHabilitacao(input: RuleInput): BlockOutcome {
   if (!status.licenseValid) {
     return { block: bloco, status: "rejected", reasonCode: "LICENSE_INVALID_AT_SOURCE" };
   }
+
+  // Impedimento confirmado reprova — ANTES de qualquer caminho que aprove.
+  //
+  // O exemplo oficial do Datavalid envia `possui_impedimento: true` e recebe
+  // `true`: a base CONFIRMA que há impedimento. Um motor que lesse booleanos
+  // soltos aprovaria esse caso.
+  if (status.hasImpediment === true) {
+    return { block: bloco, status: "rejected", reasonCode: "LICENSE_IMPEDIMENT" };
+  }
+  // `null` é inconclusivo: a base não confirmou o valor declarado e não diz
+  // qual é o correto. Não se aprova sem saber.
+  if (status.hasImpediment === null || status.hasImpediment === undefined) {
+    return { block: bloco, status: "inconclusive", reasonCode: "LICENSE_STATUS_UNCONFIRMED" };
+  }
+
   if (isExpired(status.licenseExpiresAt, input.now)) {
     return { block: bloco, status: "expired", reasonCode: "LICENSE_EXPIRED" };
   }
@@ -212,6 +227,8 @@ const PRIORIDADE_DO_MOTIVO: Partial<Record<InternalReasonCode, number>> = {
   MISSING_LICENSE_EXPIRY: 50,
   IDENTITY_LOW_CONFIDENCE: 40,
   IDENTITY_PARTIAL_MATCH: 40,
+  LICENSE_IMPEDIMENT: 45,
+  LICENSE_STATUS_UNCONFIRMED: 38,
   MANUAL_REVIEW_REQUIRED: 35,
   PROVIDER_TIMEOUT: 30,
   PROVIDER_UNAVAILABLE: 30,
