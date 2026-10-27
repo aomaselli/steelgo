@@ -90,6 +90,12 @@ export class DriverVerificationService {
         decision: "approved",
         reasonCode: "ALREADY_APPROVED",
         ruleVersion: VERIFICATION_RULE_VERSION,
+        // Os dois blocos foram aprovados quando este estado foi gravado.
+        // Repetir aqui mantem a forma do resultado estavel para quem le.
+        blocks: [
+          { block: "driving_license", status: "approved", reasonCode: "ALREADY_APPROVED" },
+          { block: "identity", status: "approved", reasonCode: "ALREADY_APPROVED" },
+        ],
       };
     }
 
@@ -161,6 +167,9 @@ export class DriverVerificationService {
       identityFailure,
       driverStatus,
       driverStatusFailure,
+      // A fonte de habilitacao existe nesta instalacao? Ausencia NAO e
+      // indisponibilidade, e nenhuma das duas aprova.
+      drivingLicenseSourceConfigured: this.senatran !== null,
     });
 
     const state = decisionToDriverState(ruled.decision);
@@ -205,6 +214,9 @@ export class DriverVerificationService {
       decision: ruled.decision,
       reasonCode: ruled.reasonCode,
       ruleVersion: ruled.ruleVersion,
+      // Resultado por bloco preservado: quem le consegue dizer O QUE foi
+      // verificado, e nao so o veredito composto.
+      blocks: ruled.blocks,
     };
   }
 
