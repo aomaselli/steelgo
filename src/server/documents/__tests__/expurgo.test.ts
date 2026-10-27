@@ -13,6 +13,9 @@ import assert from "node:assert/strict";
 import {
   ATOR_DO_EXPURGO,
   CampoInvalidoEmLogDeExpurgoError,
+  ConclusaoInconsistenteError,
+  type InconsistenciaParaLog,
+  conferirInconsistenciaParaLog,
   DadoPessoalEmLogDeExpurgoError,
   conferirFalhaParaLog,
   type FalhaDeExpurgoParaLog,
@@ -52,6 +55,7 @@ interface Registro {
   trilha: Array<{ action: string; objectPath: string; actorId: string; reasonCode: string }>;
   tentativasFalhas: Array<{ objectPath: string; motivo: string }>;
   logOperacional: FalhaDeExpurgoParaLog[];
+  inconsistencias: InconsistenciaParaLog[];
 }
 
 function portas(
@@ -70,6 +74,7 @@ function portas(
     trilha: [],
     tentativasFalhas: [],
     logOperacional: [],
+    inconsistencias: [],
   };
   let tentativaRemocao = 0;
   let tentativaConferencia = 0;
@@ -109,6 +114,9 @@ function portas(
     },
     registrarFalhaOperacional(f) {
       reg.logOperacional.push(f);
+    },
+    registrarInconsistencia(i) {
+      reg.inconsistencias.push(i);
     },
   };
   return { ports, reg };
@@ -268,6 +276,7 @@ test("um pendente no lote nao impede os outros", async () => {
   assert.equal(resumo.expurgados, 2);
   assert.equal(resumo.pendentes, 1);
   assert.equal(resumo.exigeAtencao, true, "pendente tem de exigir atencao");
+  assert.equal(resumo.inconsistentes, 0);
   assert.equal(reg.trilha.length, 2, "so o que saiu de fato entra na trilha");
 });
 
@@ -590,4 +599,179 @@ test("valores invalidos sao recusados em runtime", () => {
       `esperava recusa de ${nome}`,
     );
   }
+});
+
+// ═══════════ retorno explicito da conclusao: DV001 e DV002 ════════════════
+
+test("registro inexistente vira PENDENCIA, nunca sucesso", async () => {
+  // A versao anterior devolvia `ja_concluido` quando o `update` nao casava
+  // linha, sem distinguir 'ja estava feito' de 'nao ha o que fazer'. Marcar
+  // como expurgado um documento que nao existe e o pior dos dois.
+  const { ports, reg } = portas({
+    aoConcluir: () => {
+      throw new ConclusaoInconsistenteError(
+        "REGISTRO_INEXISTENTE",
+        "nao ha registro para este caminho",
+      );
+    },
+  });
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA);
+
+  assert.equal(r.status, "pendente", "nao e sucesso");
+  assert.equal(r.status === "pendente" && r.falha, "CONCLUSAO_FALHOU");
+  assert.match(
+    r.status === "pendente" ? r.detalhe : "",
+    /REGISTRO_INEXISTENTE/,
+    "a causa precisa ser legivel no detalhe",
+  );
+  assert.deepEqual(reg.marcou, [], "nada foi marcado");
+  assert.deepEqual(reg.trilha, [], "nada foi registrado");
+  assert.deepEqual(reg.inconsistencias, [], "nao e inconsistencia, e pendencia");
+});
+
+test("expurgado SEM auditoria e inconsistencia, nunca sucesso", async () => {
+  const { ports, reg } = portas({
+    aoConcluir: () => {
+      throw new ConclusaoInconsistenteError(
+        "EXPURGADO_SEM_AUDITORIA",
+        "purged_at preenchido e trilha sem evento purge",
+      );
+    },
+  });
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA);
+
+  assert.equal(r.status, "inconsistente");
+  assert.equal(
+    r.status === "inconsistente" && r.problema,
+    "EXPURGADO_SEM_AUDITORIA",
+  );
+  assert.equal(r.status === "inconsistente" && r.concluido, false);
+  // Repetir nao conserta: uma tentativa so, e sai.
+  assert.equal(reg.marcou.length, 0);
+  // E alguem precisa ver.
+  assert.equal(reg.inconsistencias.length, 1);
+  assert.equal(reg.inconsistencias[0].problema, "EXPURGADO_SEM_AUDITORIA");
+  assert.equal(reg.inconsistencias[0].documentId, SELFIE_VENCIDA.documentId);
+});
+
+test("inconsistencia NAO vira pendencia nem consome tentativas", async () => {
+  let chamadas = 0;
+  const { ports, reg } = portas({
+    aoConcluir: () => {
+      chamadas += 1;
+      throw new ConclusaoInconsistenteError(
+        "EXPURGADO_SEM_AUDITORIA",
+        "estado impossivel",
+      );
+    },
+  });
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA, 3);
+  assert.equal(r.status, "inconsistente");
+  assert.equal(chamadas, 1, "o teto de 3 nao se aplica: repetir nao conserta");
+  assert.deepEqual(reg.tentativasFalhas, [], "nao e falha recuperavel");
+});
+
+test("ja_concluido segue valendo quando o registro E o evento existem", async () => {
+  // A porta so devolve `ja_concluido` quando o banco confirmou as duas
+  // condicoes. Aqui o executor confia nisso -- e o teste fixa que o
+  // desfecho continua sendo sucesso.
+  const { ports, reg } = portas({
+    aoConcluir: () => "ja_concluido",
+  });
+  const r = await expurgarDocumento(SELFIE_VENCIDA, PRAZO_DE_TESTE, ports, AGORA);
+  assert.equal(r.status, "expurgado");
+  assert.equal(r.status === "expurgado" && r.concluidoPorOutraExecucao, true);
+  assert.deepEqual(reg.inconsistencias, []);
+});
+
+test("inconsistencia num documento nao interrompe o lote", async () => {
+  const docs: PurgeableDocument[] = [1, 2, 3].map((n) => ({
+    ...SELFIE_VENCIDA,
+    documentId: `3f1b9c7e-0000-4000-8000-00000000000${n}`,
+    objectPath: `identity_validation/sujeito-1/selfie-${n}.jpg`,
+  }));
+  let conclusoes = 0;
+  const { ports, reg } = portas({
+    aoConcluir: () => {
+      conclusoes += 1;
+      if (conclusoes === 2) {
+        throw new ConclusaoInconsistenteError(
+          "EXPURGADO_SEM_AUDITORIA",
+          "estado impossivel no segundo",
+        );
+      }
+    },
+  });
+  const rs = await expurgarLote(docs, PRAZO_DE_TESTE, ports, AGORA);
+
+  assert.equal(rs.length, 3);
+  assert.equal(rs[0].status, "expurgado");
+  assert.equal(rs[1].status, "inconsistente");
+  assert.equal(rs[2].status, "expurgado", "o terceiro foi processado");
+
+  const resumo = resumirExpurgo(rs);
+  assert.equal(resumo.expurgados, 2);
+  assert.equal(resumo.inconsistentes, 1);
+  assert.equal(resumo.pendentes, 0);
+  assert.equal(
+    resumo.exigeAtencao,
+    true,
+    "inconsistencia exige atencao mesmo sem nenhum pendente",
+  );
+  assert.equal(reg.inconsistencias.length, 1);
+});
+
+test("o log de inconsistencia tem lista fechada e recusa dado pessoal", () => {
+  const base: InconsistenciaParaLog = {
+    documentId: "3f1b9c7e-0000-4000-8000-000000000001",
+    problema: "EXPURGADO_SEM_AUDITORIA",
+    ocorridoEm: AGORA.toISOString(),
+  };
+  const saida = conferirInconsistenciaParaLog({
+    ...base,
+    maquina: "worker-7",
+  } as InconsistenciaParaLog);
+  assert.deepEqual(Object.keys(saida).sort(), [
+    "documentId",
+    "ocorridoEm",
+    "problema",
+  ]);
+
+  assert.throws(
+    () =>
+      conferirInconsistenciaParaLog({
+        ...base,
+        objectPath: "identity_validation/sujeito-1/selfie-1.jpg",
+      } as InconsistenciaParaLog),
+    DadoPessoalEmLogDeExpurgoError,
+  );
+  assert.throws(
+    () =>
+      conferirInconsistenciaParaLog({ ...base, problema: "OUTRA_COISA" } as unknown as InconsistenciaParaLog),
+    CampoInvalidoEmLogDeExpurgoError,
+  );
+});
+
+test("falha do log de inconsistencia nao derruba o resultado", async () => {
+  const { ports } = portas({
+    aoConcluir: () => {
+      throw new ConclusaoInconsistenteError(
+        "EXPURGADO_SEM_AUDITORIA",
+        "estado impossivel",
+      );
+    },
+  });
+  const comLogQueQuebra: PurgePorts = {
+    ...ports,
+    registrarInconsistencia() {
+      throw new Error("coletor fora do ar");
+    },
+  };
+  const r = await expurgarDocumento(
+    SELFIE_VENCIDA,
+    PRAZO_DE_TESTE,
+    comLogQueQuebra,
+    AGORA,
+  );
+  assert.equal(r.status, "inconsistente", "o resultado chega mesmo sem log");
 });

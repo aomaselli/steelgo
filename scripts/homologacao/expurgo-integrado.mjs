@@ -74,7 +74,12 @@ let seqSql = 0;
 function sql(texto, { transacao = true } = {}) {
   seqSql += 1;
   const arq = join(TMP, `q${seqSql}.sql`);
-  writeFileSync(arq, texto.endsWith("\n") ? texto : texto + "\n", "utf8");
+  // `VERBOSITY verbose` faz o psql imprimir o SQLSTATE junto do erro. Sem
+  // isso, distinguir DV001 de DV002 dependeria de casar o TEXTO da
+  // mensagem — que muda quando alguém melhora a redação, e aí a esteira
+  // passa a tratar inconsistência como pendência sem ninguém notar.
+  const corpo = "\\set VERBOSITY verbose\n" + (texto.endsWith("\n") ? texto : texto + "\n");
+  writeFileSync(arq, corpo, "utf8");
   const args = ["scripts/banco/destino-autorizado.sh", DESTINO, "-At"];
   if (transacao) args.push("-1");
   args.push("--sql-arquivo", arq);
@@ -274,12 +279,33 @@ async function main() {
       // de trilha. Quem garante a atomicidade e a funcao do banco; aqui so
       // se chama e se le o desfecho.
       concluirExpurgo: async ({ objectPath, quando, evento }) => {
-        const r = sql(
+        let r;
+        try {
+          r = sql(
           `select public.concluir_expurgo_de_documento(
               '${objectPath}', '${quando.toISOString()}', '${evento.subjectId}',
               '${evento.actorId}', '${evento.actorRole}', '${evento.purpose}',
               '${evento.kind}', '${evento.reasonCode}');`,
-        );
+          );
+        } catch (e) {
+          // Traducao do SQLSTATE para o erro que `purge.ts` conhece. O
+          // modulo nao conhece Postgres, e e aqui -- na porta -- que a
+          // fronteira fica.
+          const saida = String(e.stdout ?? "") + String(e.stderr ?? "") + String(e.message ?? "");
+          if (saida.includes("DV001")) {
+            throw new purge.ConclusaoInconsistenteError(
+              "REGISTRO_INEXISTENTE",
+              "o banco recusou: nao ha registro para este caminho",
+            );
+          }
+          if (saida.includes("DV002")) {
+            throw new purge.ConclusaoInconsistenteError(
+              "EXPURGADO_SEM_AUDITORIA",
+              "o banco recusou: expurgado sem evento purge na trilha",
+            );
+          }
+          throw e;
+        }
         if (r !== "concluido" && r !== "ja_concluido") {
           throw new Error(`desfecho inesperado da conclusao: ${r}`);
         }
@@ -503,6 +529,100 @@ async function main() {
       indiceRecusou = true;
     }
     reg(indiceRecusou, "C3. o índice único do banco recusa um segundo evento `purge`");
+  }
+
+  // ─── DV001: registro inexistente ────────────────────────────────────────
+  console.log(`\n  -- registro inexistente: pendência, não sucesso --`);
+  {
+    const INEXISTENTE = `identity_validation/${TITULAR}/nao-existe-${EXECUCAO}.png`;
+    const docFantasma = {
+      documentId: `00000000-0000-4000-8000-${EXECUCAO}`,
+      objectPath: INEXISTENTE,
+      kind: "selfie",
+      subjectId: TITULAR,
+      purpose: "identity_validation",
+      uploadedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      validationStartedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      purgedAt: null,
+    };
+    const rFantasma = await purge.expurgarDocumento(
+      docFantasma,
+      politica,
+      portas({ chaveParaRemover: chave }),
+      new Date(),
+      1,
+    );
+    reg(
+      rFantasma.status === "pendente",
+      `D1. registro inexistente -> ${rFantasma.status} (esperado pendente)`,
+    );
+    reg(
+      rFantasma.status === "pendente" && /REGISTRO_INEXISTENTE/.test(rFantasma.detalhe),
+      "D2. a causa aparece no detalhe, não vira sucesso silencioso",
+    );
+  }
+
+  // ─── DV002: expurgado sem auditoria ─────────────────────────────────────
+  console.log(`\n  -- expurgado sem auditoria: inconsistência, não sucesso --`);
+  {
+    const SEM_TRILHA = `identity_validation/${TITULAR}/sem-trilha-${EXECUCAO}.png`;
+    // Estado fabricado de propósito: `purged_at` preenchido e trilha vazia.
+    // É exatamente o que a conclusão atômica impede de acontecer — e o que a
+    // função precisa recusar quando encontra.
+    sql(
+      `insert into public.validation_documents
+         (subject_id, purpose, kind, object_path, uploaded_at,
+          validation_started_at, purged_at)
+       values ('${TITULAR}', 'identity_validation', 'selfie', '${SEM_TRILHA}',
+               now() - interval '10 days', now() - interval '10 days', now());`,
+    );
+    const idSem = sql(
+      `select id from public.validation_documents where object_path = '${SEM_TRILHA}';`,
+    );
+    const docSem = {
+      documentId: idSem,
+      objectPath: SEM_TRILHA,
+      kind: "selfie",
+      subjectId: TITULAR,
+      purpose: "identity_validation",
+      uploadedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      validationStartedAt: new Date(Date.now() - 10 * 86400000).toISOString(),
+      // `purgedAt: null` de propósito: o executor NÃO sabe que já está
+      // marcado. Quem descobre é o banco.
+      purgedAt: null,
+    };
+    const inconsistencias = [];
+    const rSem = await purge.expurgarDocumento(
+      docSem,
+      politica,
+      {
+        ...portas({ chaveParaRemover: chave }),
+        registrarInconsistencia: (i) => inconsistencias.push(i),
+      },
+      new Date(),
+      1,
+    );
+    reg(
+      rSem.status === "inconsistente",
+      `D3. expurgado sem trilha -> ${rSem.status} (esperado inconsistente)`,
+    );
+    reg(
+      rSem.status === "inconsistente" && rSem.concluido === false,
+      "D4. o resultado nega explicitamente a conclusão",
+    );
+    reg(
+      inconsistencias.length === 1 &&
+        inconsistencias[0].problema === "EXPURGADO_SEM_AUDITORIA",
+      "D5. a inconsistência foi registrada no canal próprio",
+    );
+    reg(
+      Number(
+        sql(
+          `select count(*) from public.document_audit where object_path = '${SEM_TRILHA}';`,
+        ),
+      ) === 0,
+      "D6. nenhum evento foi inventado para encobrir o estado",
+    );
   }
 
   // ─── evidência deixada atrás, contada ───────────────────────────────────

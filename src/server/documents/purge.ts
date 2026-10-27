@@ -105,6 +105,37 @@ export interface FalhaDeExpurgoParaLog {
   ocorridoEm: string;
 }
 
+/**
+ * A conclusão não pôde ser decidida como sucesso nem como pendência comum.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * DOIS MOTIVOS, DUAS REAÇÕES
+ *
+ * `REGISTRO_INEXISTENTE` — não há documento para o caminho pedido. Pode ser
+ * caminho errado, documento apagado por outro processo, esteira apontando para
+ * o lugar errado. Nada foi concluído, e tratar como sucesso marcaria como
+ * expurgado algo que nunca existiu. Vira PENDÊNCIA de conclusão.
+ *
+ * `EXPURGADO_SEM_AUDITORIA` — `purged_at` preenchido e trilha sem o evento
+ * `purge`. É o estado que a conclusão atômica existe para impedir, e o que
+ * mais custa quando acontece: o documento não volta a ser selecionado, então
+ * ninguém olha de novo, e a prova de que ele existiu e foi apagado não está
+ * em lugar nenhum. Não é pendência — repetir não conserta — e muito menos
+ * sucesso. Vira INCONSISTÊNCIA, que pede gente.
+ *
+ * Quem implementa a porta traduz o erro do banco para cá. Os SQLSTATE são
+ * `DV001` e `DV002`, e ficam do lado do banco de propósito: `purge.ts` não
+ * conhece Postgres.
+ */
+export class ConclusaoInconsistenteError extends Error {
+  readonly motivo: "REGISTRO_INEXISTENTE" | "EXPURGADO_SEM_AUDITORIA";
+  constructor(motivo: "REGISTRO_INEXISTENTE" | "EXPURGADO_SEM_AUDITORIA", detalhe: string) {
+    super(`Conclusão do expurgo recusada (${motivo}): ${detalhe}`);
+    this.name = "ConclusaoInconsistenteError";
+    this.motivo = motivo;
+  }
+}
+
 export class DadoPessoalEmLogDeExpurgoError extends Error {
   constructor(campo: string, achado: string) {
     super(
@@ -138,6 +169,46 @@ const MOTIVOS_VALIDOS: ReadonlySet<string> = new Set([
   "CONFERENCIA_FALHOU",
   "CONCLUSAO_FALHOU",
 ]);
+
+/**
+ * Entrada do log de inconsistência. Lista fechada, como a de falha.
+ *
+ * Não leva `tentativas`: repetir não conserta este estado, e o número daria a
+ * impressão errada de que alguém deve tentar de novo.
+ */
+export interface InconsistenciaParaLog {
+  /** `validation_documents.id`. Não identifica pessoa. */
+  documentId: string;
+  problema: "EXPURGADO_SEM_AUDITORIA";
+  ocorridoEm: string;
+}
+
+/** Confere e CONSTRÓI, pela mesma regra de `conferirFalhaParaLog`. */
+export function conferirInconsistenciaParaLog(i: InconsistenciaParaLog): InconsistenciaParaLog {
+  const entrada = i as unknown as Record<string, unknown>;
+  const documentId = entrada.documentId;
+  const problema = entrada.problema;
+  const ocorridoEm = entrada.ocorridoEm;
+
+  if (typeof documentId !== "string" || documentId.trim() === "") {
+    throw new CampoInvalidoEmLogDeExpurgoError("documentId", "não é texto não vazio");
+  }
+  if (problema !== "EXPURGADO_SEM_AUDITORIA") {
+    throw new CampoInvalidoEmLogDeExpurgoError("problema", "não está na lista fechada");
+  }
+  if (typeof ocorridoEm !== "string" || Number.isNaN(Date.parse(ocorridoEm))) {
+    throw new CampoInvalidoEmLogDeExpurgoError("ocorridoEm", "não é um instante legível");
+  }
+
+  for (const [campo, valor] of Object.entries(entrada)) {
+    if (typeof valor !== "string") continue;
+    for (const { nome, re } of PROIBIDOS_NO_LOG) {
+      if (re.test(valor)) throw new DadoPessoalEmLogDeExpurgoError(campo, nome);
+    }
+  }
+
+  return { documentId, problema, ocorridoEm };
+}
 
 export class CampoInvalidoEmLogDeExpurgoError extends Error {
   constructor(campo: string, porque: string) {
@@ -238,6 +309,19 @@ export interface PurgePorts {
    * Agora é uma chamada só, e quem a implementa tem de fazer as três coisas na
    * MESMA transação de banco. Se a trilha falhar, `purged_at` não é gravado.
    *
+   * ──────────────────────────────────────────────────────────────────────────
+   * `ja_concluido` EXIGE AS DUAS CONDIÇÕES
+   *
+   * Só vale quando o registro está expurgado **e** existe o evento `purge`
+   * correspondente. Sem o evento, a resposta não é sucesso: quem implementa
+   * lança `ConclusaoInconsistenteError` com `EXPURGADO_SEM_AUDITORIA`.
+   *
+   * Registro inexistente também não é `ja_concluido` — é
+   * `REGISTRO_INEXISTENTE`, e o executor o trata como pendência. Uma versão
+   * anterior devolvia `ja_concluido` para os dois casos, e o comentário dizia
+   * que distingui-los "não muda a ação de quem chama". Muda: num deles não há
+   * nada para concluir, no outro falta a prova de que já se concluiu.
+   *
    * A limpeza da falha anterior entra junto: um registro com `purged_at`
    * preenchido e `last_purge_failure` apontando falha é estado que não existe,
    * e o `check validation_documents_purge_coerente` o recusa.
@@ -276,6 +360,19 @@ export interface PurgePorts {
   marcarTentativaFalha?(objectPath: string, quando: Date, motivo: MotivoDeFalha): Promise<void>;
   /** Log operacional. Recebe só identificador e motivo. */
   registrarFalhaOperacional?(f: FalhaDeExpurgoParaLog): void;
+  /**
+   * Registra uma INCONSISTÊNCIA — documento expurgado sem evento na trilha.
+   *
+   * Canal separado do log de falhas, e não por capricho: aquele acompanha
+   * `last_purge_failure`, que aqui não pode ser gravado (o documento está
+   * expurgado, e o `check` de coerência proíbe falha pendente nesse estado).
+   * Misturar os dois faria o motivo da inconsistência entrar numa lista que o
+   * banco não aceita.
+   *
+   * Mesma disciplina de campos: identificador do registro e problema, nada
+   * mais.
+   */
+  registrarInconsistencia?(i: InconsistenciaParaLog): void;
 }
 
 export type PurgeResult =
@@ -315,6 +412,21 @@ export type PurgeResult =
        * tentar atribuir um literal. Explícito é mais longo e não mente.
        */
       reason: "ALREADY_PURGED" | "WITHIN_RETENTION";
+    }
+  | {
+      /**
+       * Estado que não deveria existir, e que repetir não conserta.
+       *
+       * Separado de `pendente` de propósito: pendente quer dizer "tente de
+       * novo", e aqui tentar de novo não muda nada — o documento está marcado
+       * como expurgado e não volta a ser selecionado. Pede gente, não laço.
+       */
+      status: "inconsistente";
+      objectPath: string;
+      problema: "EXPURGADO_SEM_AUDITORIA";
+      detalhe: string;
+      /** Sempre `false`. Nenhuma leitura disto pode virar sucesso. */
+      readonly concluido: false;
     };
 
 /**
@@ -434,12 +546,51 @@ export async function expurgarDocumento(
         },
       });
     } catch (e) {
-      // A transação não confirmou. O arquivo já não está lá, mas o registro e
-      // a trilha não foram gravados — e é PRECISO que a próxima tentativa
+      // Inconsistência: documento marcado como expurgado e trilha sem o
+      // evento. Sai AQUI, sem virar pendência — repetir não conserta, e o
+      // laço só gastaria tentativas contra um estado que já está gravado.
+      if (e instanceof ConclusaoInconsistenteError && e.motivo === "EXPURGADO_SEM_AUDITORIA") {
+        const ocorridoEm = now.toISOString();
+        if (ports.registrarInconsistencia) {
+          try {
+            ports.registrarInconsistencia(
+              conferirInconsistenciaParaLog({
+                documentId: doc.documentId,
+                problema: "EXPURGADO_SEM_AUDITORIA",
+                ocorridoEm,
+              }),
+            );
+          } catch {
+            // O log é acessório; a inconsistência vai no resultado de todo
+            // jeito, e derrubar a chamada aqui custaria o resto do lote.
+          }
+        }
+        return {
+          status: "inconsistente",
+          objectPath: doc.objectPath,
+          problema: "EXPURGADO_SEM_AUDITORIA",
+          detalhe: e.message,
+          concluido: false,
+        };
+      }
+
+      // A transação não confirmou — ou não havia registro para concluir. Os
+      // dois são pendência: o arquivo pode já não estar lá, mas o registro e
+      // a trilha não foram gravados, e é PRECISO que a próxima tentativa
       // consiga concluir. Ela consegue: `purged_at` continua nulo, o
       // documento volta a ser selecionado, a remoção falha com o objeto
       // ausente e o passo 3 prova a ausência.
-      ultimaFalha = { falha: "CONCLUSAO_FALHOU", detalhe: mensagem(e) };
+      //
+      // `REGISTRO_INEXISTENTE` entra aqui porque não há o que concluir agora.
+      // O detalhe nomeia a causa, para que a leitura do log não a confunda
+      // com uma transação que caiu.
+      ultimaFalha = {
+        falha: "CONCLUSAO_FALHOU",
+        detalhe:
+          e instanceof ConclusaoInconsistenteError
+            ? `${e.motivo}: ${e.message}`
+            : mensagem(e),
+      };
       continue;
     }
 
@@ -550,13 +701,24 @@ export function resumirExpurgo(rs: PurgeResult[]): {
   expurgados: number;
   pendentes: number;
   dispensados: number;
-  /** `true` quando há arquivo que devia ter saído e não saiu. */
+  /** Estados que repetir nao conserta. Contados a parte, de propósito. */
+  inconsistentes: number;
+  /** `true` quando há arquivo que devia ter saído e não saiu, OU inconsistência. */
   exigeAtencao: boolean;
 } {
   const expurgados = rs.filter((r) => r.status === "expurgado").length;
   const pendentes = rs.filter((r) => r.status === "pendente").length;
   const dispensados = rs.filter((r) => r.status === "dispensado").length;
-  return { expurgados, pendentes, dispensados, exigeAtencao: pendentes > 0 };
+  const inconsistentes = rs.filter((r) => r.status === "inconsistente").length;
+  return {
+    expurgados,
+    pendentes,
+    dispensados,
+    inconsistentes,
+    // Inconsistência pesa MAIS que pendência: pendente volta sozinho na
+    // próxima passada, inconsistente não volta nunca.
+    exigeAtencao: pendentes > 0 || inconsistentes > 0,
+  };
 }
 
 function mensagem(e: unknown): string {
