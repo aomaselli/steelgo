@@ -44,3 +44,7 @@ supabase/.branches/
 # maquina de quem executa. Nunca versionar.
 scripts/banco/destinos.local
 scripts/banco/publicacao/destino-producao.local
+
+# Gerado pelo harness de homologacao; sai no `finally`, mas se a execucao
+# morrer no meio nao deve virar commit.
+tsconfig.homologacao-*.json
