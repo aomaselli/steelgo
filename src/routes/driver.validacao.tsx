@@ -24,6 +24,10 @@ import {
   obterEstadoDoFluxoFn,
 } from "@/server/documents/fluxo.fn";
 import type { DocumentKind } from "@/server/documents/types";
+import {
+  obterEstadoDoProcessamentoFn,
+  processarDemonstracaoFn,
+} from "@/server/verification/datavalid/demonstracao/processamento.fn";
 
 export const Route = createFileRoute("/driver/validacao")({ component: ValidacaoPage });
 
@@ -284,8 +288,176 @@ function ValidacaoPage() {
               cada leitura. Ela não faz parte desta etapa.
             </div>
           </section>
+
+          <Processamento />
         </>
       )}
     </DriverShell>
   );
 }
+
+/**
+ * Processamento de demonstração.
+ *
+ * O aviso de que o documento enviado NÃO é processado fica no corpo da seção,
+ * não num rodapé: é a pergunta que qualquer pessoa faz ao ver um botão de
+ * "processar" logo abaixo de um documento que acabou de enviar.
+ */
+function Processamento() {
+  const [indice, setIndice] = useState(0);
+
+  const estado = useQuery({
+    queryKey: ["processamento-demonstracao"],
+    queryFn: () => obterEstadoDoProcessamentoFn(),
+    retry: false,
+  });
+
+  const processar = useMutation({
+    mutationFn: () => processarDemonstracaoFn({ data: { indiceDaMassa: indice } }),
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const d = estado.data;
+  const r = processar.data;
+
+  return (
+    <section className="mx-4 mt-4 mb-6 rounded-[14px] bg-bg-surface p-4">
+      <h2 className="text-[15px] text-graphite-50">Processamento</h2>
+
+      <div
+        className="mt-2 rounded-[10px] p-3 text-[12px]"
+        style={{ background: "#1F1500", border: "1px solid #CC8800", color: "#F5C451" }}
+      >
+        O documento que você enviou <strong>não</strong> é processado aqui. A demonstração roda
+        sobre a massa fictícia oficial do SERPRO, e a autorização é de uma{" "}
+        <strong>GCC simulada</strong> — não de entidade credenciada.
+      </div>
+
+      {d && !d.pronto && (
+        <div className="mt-3 text-[13px] text-graphite-200">
+          {d.motivo === "SEM_CONSENTIMENTO" && "Aceite o termo antes de processar."}
+          {d.motivo === "SEM_CREDENCIAL" &&
+            "Credencial de demonstração não configurada no servidor."}
+          {d.motivo === "MASSA_INDISPONIVEL" && "Massa oficial não disponível no servidor."}
+        </div>
+      )}
+
+      {d?.pronto && (
+        <>
+          <div className="text-[12px] text-graphite-200 mt-3">Registro fictício</div>
+          <div className="grid grid-cols-1 gap-2 mt-1.5">
+            {d.registros.map((reg) => (
+              <button
+                key={reg.indice}
+                onClick={() => setIndice(reg.indice)}
+                className="rounded-[10px] py-2 px-3 text-left text-[12px]"
+                style={{
+                  background: indice === reg.indice ? "#0D2744" : "#21262D",
+                  border: `1px solid ${indice === reg.indice ? "#1B6CB8" : "#30363D"}`,
+                  color: indice === reg.indice ? "#79B8F8" : "#C9D1D9",
+                }}
+              >
+                {reg.indice + 1}. {reg.nome}
+                <span className="text-graphite-400">
+                  {reg.temCnh ? " · CNH" : ""}
+                  {reg.temBiometriaFacial ? " · facial" : ""}
+                  {reg.temQrCode ? " · QR" : ""}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => processar.mutate()}
+            disabled={processar.isPending}
+            className="mt-3 w-full rounded-[10px] py-2.5 text-[14px] disabled:opacity-60"
+            style={{ background: "#0D2744", border: "1px solid #1B6CB8", color: "#79B8F8" }}
+          >
+            {processar.isPending ? "Processando…" : "Processar registro fictício"}
+          </button>
+        </>
+      )}
+
+      {r && !r.executado && (
+        <div className="mt-3 text-[13px] text-amber-400">
+          {r.motivo}: {r.detalhe}
+          {r.repeticaoAutomaticaBloqueada && (
+            <div className="text-[12px] text-graphite-200 mt-1">
+              Repetição automática bloqueada — o desfecho é desconhecido e repetir poderia
+              duplicar do outro lado.
+            </div>
+          )}
+        </div>
+      )}
+
+      {r?.executado && (
+        <div className="mt-4">
+          <div className="text-[12px] text-graphite-200">Resultado por bloco</div>
+          <ul className="mt-1.5 space-y-1.5">
+            {r.blocos.map((b) => (
+              <li key={b.nome} className="text-[13px] flex justify-between items-start gap-3">
+                <span className="text-graphite-100">{b.nome}</span>
+                <span
+                  style={{
+                    color:
+                      b.veredito === "confere"
+                        ? "#3FB950"
+                        : b.veredito === "diverge"
+                          ? "#F85149"
+                          : "#8B949E",
+                  }}
+                >
+                  {b.veredito === "confere" && `confere (${b.confere}/${b.total})`}
+                  {b.veredito === "diverge" && `diverge (${b.confere}/${b.total})`}
+                  {b.veredito === "nao_avaliado" && "não avaliado"}
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          {r.blocos.some((b) => b.observacoes.length > 0) && (
+            <div className="mt-3 text-[12px] text-graphite-200">
+              {r.blocos.flatMap((b) =>
+                b.observacoes.map((o) => (
+                  <div key={`${b.nome}-${o.campo}`}>
+                    {b.nome} · {o.campo}: {o.valor}
+                  </div>
+                )),
+              )}
+            </div>
+          )}
+
+          <div
+            className="mt-3 rounded-[10px] p-3 text-[13px]"
+            style={{ background: "#161B22", border: "1px solid #30363D" }}
+          >
+            <div className="text-graphite-50">
+              {r.composicao === "sem_impedimento_aparente" && "Sem impedimento aparente"}
+              {r.composicao === "divergencia" && "Divergência em ao menos um bloco"}
+              {r.composicao === "inconclusivo" && "Inconclusivo — há bloco não avaliado"}
+            </div>
+            <div className="text-[12px] text-amber-400 mt-1">
+              Resultado de demonstração. Não aprova cadastro e não libera viagem.
+            </div>
+          </div>
+
+          {r.camposOmitidos.length > 0 && (
+            <div className="mt-3 text-[12px] text-graphite-200">
+              <div>Campos não enviados, e por quê:</div>
+              {r.camposOmitidos.map((c) => (
+                <div key={c.campo}>
+                  · {c.campo} — {c.motivo}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="text-[12px] text-graphite-400 mt-3">
+            Consentimento pedido à GCC simulada para: {r.parametrosPedidos.join(", ")}
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
