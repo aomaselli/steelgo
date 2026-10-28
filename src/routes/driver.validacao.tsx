@@ -45,6 +45,8 @@ const RECUSA: Record<string, string> = {
   CONSENTIMENTO_DESATUALIZADO: "O termo mudou. Leia e aceite a versão vigente.",
   CONSENTIMENTO_RETIRADO: "O consentimento foi retirado.",
   FALHA_NO_REGISTRO: "O envio não foi registrado. Nada ficou guardado.",
+  REGISTRO_INDEFINIDO:
+    "O banco não respondeu. O arquivo foi mantido — reenvie o mesmo arquivo para reconciliar.",
   OBJETO_SEM_REGISTRO:
     "O envio não foi registrado e o arquivo não pôde ser removido. Avise o suporte.",
 };

@@ -30,7 +30,7 @@
  */
 
 import { createServerFn } from "@tanstack/react-start";
-import { createHash, randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import { z } from "zod";
 
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -44,6 +44,7 @@ import {
 } from "./ambiente";
 import {
   decidirAposFalhaDeRegistro,
+  identificadorDoEnvio,
   montarCaminhoDoObjeto,
   montarFalhaDeEnvioParaLog,
   validarEnvio,
@@ -251,7 +252,7 @@ const envioSchema = z.object({
 
 export type ResultadoDoEnvio =
   | { enviado: true; documentId: string; kind: DocumentKind }
-  | { enviado: false; motivo: MotivoDeRecusa | "CONSENTIMENTO_AUSENTE" | "CONSENTIMENTO_DESATUALIZADO" | "CONSENTIMENTO_RETIRADO" | "FALHA_NO_REGISTRO" | "OBJETO_SEM_REGISTRO"; detalhe: string };
+  | { enviado: false; motivo: MotivoDeRecusa | "CONSENTIMENTO_AUSENTE" | "CONSENTIMENTO_DESATUALIZADO" | "CONSENTIMENTO_RETIRADO" | "FALHA_NO_REGISTRO" | "REGISTRO_INDEFINIDO" | "OBJETO_SEM_REGISTRO"; detalhe: string };
 
 export const enviarDocumentoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -289,8 +290,19 @@ export const enviarDocumentoFn = createServerFn({ method: "POST" })
     });
     if (!v.aceito) return { enviado: false, motivo: v.motivo, detalhe: v.detalhe };
 
-    // 3. Caminho e subida, com a sessão do titular.
-    const documentId = randomUUID();
+    // 3. Identificador derivado de (titular, finalidade, espécie, conteúdo).
+    //    Reenviar o mesmo arquivo recai no mesmo id e no mesmo caminho, e a
+    //    repetição vira um nada acontecer.
+    const documentId = identificadorDoEnvio(
+      {
+        subjectId: userId,
+        purpose: FINALIDADE,
+        kind: data.kind,
+        sha256DoConteudo: createHash("sha256").update(bytes).digest("hex"),
+      },
+      (texto) => new Uint8Array(createHash("sha256").update(texto, "utf8").digest()),
+    );
+
     const objectPath = montarCaminhoDoObjeto({
       purpose: FINALIDADE,
       subjectId: userId,
@@ -302,7 +314,11 @@ export const enviarDocumentoFn = createServerFn({ method: "POST" })
     const { error: erroUp } = await supabase.storage
       .from(BUCKET)
       .upload(objectPath, bytes, { contentType: v.formato, upsert: false });
-    if (erroUp) {
+
+    // Objeto já existente é a MARCA da repetição, não uma falha: o caminho
+    // deriva do conteúdo, então só o mesmo arquivo do mesmo titular para a
+    // mesma espécie chega aqui. Segue para o registro, que é idempotente.
+    if (erroUp && !objetoJaExiste(erroUp)) {
       return { enviado: false, motivo: "FALHA_NO_REGISTRO", detalhe: "o objeto nao foi aceito" };
     }
 
@@ -333,41 +349,49 @@ export const enviarDocumentoFn = createServerFn({ method: "POST" })
 
     // Falha sem código de barreira pode ser do caminho de volta: o registro
     // talvez tenha acontecido e a resposta se perdeu. Uma repetição, e só uma.
-    // É segura porque a função do banco é idempotente pelo identificador --
-    // repetir o mesmo envio não grava nada de novo.
-    if (erroRpc && decidirAposFalhaDeRegistro(erroRpc.code) === "REPETIR_REGISTRO") {
+    // É segura porque a função do banco é idempotente pelo identificador.
+    if (erroRpc && decidirAposFalhaDeRegistro(erroRpc.code, false) === "REPETIR_REGISTRO") {
       erroRpc = (await db.rpc("registrar_envio_de_documento", argumentos)).error;
     }
 
     if (erroRpc) {
-      // Objeto no bucket sem linha no registro é órfão que o expurgo NÃO
-      // alcança, porque o expurgo varre o registro. Enquanto o caminho é
-      // conhecido, dá para desfazer.
-      const { error: erroRemocao } = await supabase.storage.from(BUCKET).remove([objectPath]);
+      const acao = decidirAposFalhaDeRegistro(erroRpc.code, true);
 
-      const falha = montarFalhaDeEnvioParaLog({
-        documentId,
-        motivo: erroRemocao
-          ? "OBJETO_SEM_REGISTRO"
-          : decidirAposFalhaDeRegistro(erroRpc.code) === "REMOVER_OBJETO"
-            ? "REGISTRO_RECUSADO"
-            : "REGISTRO_INDISPONIVEL",
-        ocorridoEm: new Date().toISOString(),
-      });
-      // Lista fechada, sem caminho, sem titular, sem mensagem de fornecedor.
-      console.warn("[documentos] falha de envio", falha);
+      const declarar = (motivo: Parameters<typeof montarFalhaDeEnvioParaLog>[0]["motivo"]) => {
+        // Lista fechada, sem caminho, sem titular, sem mensagem de fornecedor.
+        console.warn(
+          "[documentos] falha de envio",
+          montarFalhaDeEnvioParaLog({ documentId, motivo, ocorridoEm: new Date().toISOString() }),
+        );
+      };
 
-      if (erroRemocao) {
-        // O estado que sobra: objeto sem registro, e a remoção também falhou.
-        // Não há como alcançá-lo pelo expurgo, que varre o registro. Fica
-        // declarado aqui e no log, em vez de desaparecer num `catch` vazio.
+      // Silêncio NÃO é recusa. Só a barreira afirma que nada foi gravado; sem
+      // essa afirmação, remover o objeto poderia apagar um envio que deu
+      // certo e deixar a linha apontando para o vazio.
+      if (acao === "MANTER_E_DECLARAR") {
+        declarar("REGISTRO_INDEFINIDO");
         return {
           enviado: false,
-          motivo: "OBJETO_SEM_REGISTRO",
-          detalhe: "o registro falhou e o objeto nao pode ser removido",
+          motivo: "REGISTRO_INDEFINIDO",
+          detalhe:
+            "o banco nao respondeu; o arquivo foi mantido e reenviar o mesmo arquivo reconcilia",
         };
       }
 
+      // Barreira: o banco respondeu que não. Objeto no bucket sem linha no
+      // registro é órfão que o expurgo não alcança, porque o expurgo varre o
+      // registro — e aqui o caminho ainda é conhecido.
+      const { error: erroRemocao } = await supabase.storage.from(BUCKET).remove([objectPath]);
+      if (erroRemocao) {
+        declarar("OBJETO_SEM_REGISTRO");
+        return {
+          enviado: false,
+          motivo: "OBJETO_SEM_REGISTRO",
+          detalhe: "o registro foi recusado e o objeto nao pode ser removido",
+        };
+      }
+
+      declarar("REGISTRO_RECUSADO");
       return {
         enviado: false,
         motivo: "FALHA_NO_REGISTRO",
@@ -379,3 +403,17 @@ export const enviarDocumentoFn = createServerFn({ method: "POST" })
   });
 
 export { AmbienteNaoSinteticoError };
+
+/**
+ * O Storage recusa gravar por cima quando `upsert` é falso.
+ *
+ * Aqui essa recusa é informação, não erro: o caminho deriva do conteúdo, então
+ * só o mesmo arquivo do mesmo titular para a mesma espécie pode colidir. A
+ * forma do erro muda entre versões do cliente, então a conferência olha o
+ * código e a mensagem — e, na dúvida, trata como falha de verdade.
+ */
+function objetoJaExiste(erro: { message?: string; statusCode?: string } | null): boolean {
+  if (!erro) return false;
+  if (erro.statusCode === "409") return true;
+  return /already exists|duplicate|resource.*exists/i.test(erro.message ?? "");
+}
