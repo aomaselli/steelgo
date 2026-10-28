@@ -24,6 +24,14 @@ import { join } from "node:path";
 
 const RAIZ_DOCS = join(process.cwd(), "src", "server", "documents");
 const TELA = join(process.cwd(), "src", "routes", "driver.validacao.tsx");
+const RAIZ_DEMO = join(
+  process.cwd(),
+  "src",
+  "server",
+  "verification",
+  "datavalid",
+  "demonstracao",
+);
 
 /** Tabelas e colunas cuja escrita significaria aprovar ou liberar. */
 const ESCRITAS_PROIBIDAS: Array<{ nome: string; re: RegExp }> = [
@@ -49,7 +57,7 @@ function relativo(caminho: string): string {
 
 test("documentos: nenhum arquivo escreve estado de aprovação ou de viagem", () => {
   const infratores: string[] = [];
-  const alvos = [...arquivosFonte(RAIZ_DOCS), TELA];
+  const alvos = [...arquivosFonte(RAIZ_DOCS), ...arquivosFonte(RAIZ_DEMO), TELA];
 
   for (const caminho of alvos) {
     // A própria regressão cita os termos que procura.
@@ -78,6 +86,54 @@ test("documentos: a barreira de ambiente é chamada em toda server function", ()
     barreiras.length,
     declaracoes.length,
     `${declaracoes.length} server function(s) e ${barreiras.length} chamada(s) da barreira`,
+  );
+});
+
+/**
+ * O caminho mais curto para um vazamento sério, neste repositório, é mandar ao
+ * endpoint público de demonstração um documento que alguém enviou pela tela.
+ * O endpoint é compartilhado, a tela não sabe se o arquivo é sintético, e o
+ * botão de "processar" fica logo abaixo do de "enviar".
+ *
+ * A barreira principal é a assinatura: `processarDemonstracaoFn` aceita um
+ * índice da massa e nada mais. Esta regressão guarda a barreira — ela falha no
+ * dia em que alguém acrescentar um parâmetro de documento, antes de aquele
+ * parâmetro chegar a ser usado.
+ */
+test("demonstração: o processamento não alcança documento do titular", () => {
+  const PROIBIDOS: Array<{ nome: string; re: RegExp }> = [
+    { nome: "conteúdo enviado pela tela", re: /\bconteudoBase64\b/ },
+    { nome: "bucket de documentos", re: /["'`]validation-documents["'`]/ },
+    { nome: "caminho de objeto", re: /\bobject_path\b|\bobjectPath\b/ },
+    { nome: "cliente de storage", re: /\.storage\b/ },
+    { nome: "módulo de envio de documentos", re: /from\s+["'`][^"'`]*documents\/envio["'`]/ },
+  ];
+
+  const infratores: string[] = [];
+  for (const caminho of arquivosFonte(RAIZ_DEMO)) {
+    if (/__tests__|\.test\.tsx?$/.test(caminho)) continue;
+    const fonte = readFileSync(caminho, "utf8");
+    for (const { nome, re } of PROIBIDOS) {
+      if (re.test(fonte)) infratores.push(`${relativo(caminho)} — ${nome}`);
+    }
+  }
+
+  assert.deepEqual(
+    infratores,
+    [],
+    `o processamento de demonstracao encostou no documento do titular:\n  ${infratores.join("\n  ")}`,
+  );
+});
+
+test("demonstração: a entrada do processamento é só o índice da massa", () => {
+  const fonte = readFileSync(join(RAIZ_DEMO, "processamento.fn.ts"), "utf8");
+  const schema = fonte.match(/const entradaSchema = z\.object\(\{([\s\S]*?)\}\);/);
+  assert.ok(schema, "nao encontrei o schema de entrada");
+  const campos = [...schema![1].matchAll(/^\s*([a-zA-Z][a-zA-Z0-9]*)\s*:/gm)].map((m) => m[1]);
+  assert.deepEqual(
+    campos,
+    ["indiceDaMassa"],
+    `a entrada ganhou campo alem do indice: ${campos.join(", ")}`,
   );
 });
 
