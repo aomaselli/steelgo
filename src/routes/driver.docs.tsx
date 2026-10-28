@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { AlertCircle, Camera, CheckCircle2, Clock, Lock, BadgeCheck } from "lucide-react";
 import { DriverShell } from "@/components/driver/DriverShell";
 import { useAuth } from "@/contexts/AuthContext";
@@ -153,6 +153,29 @@ function DocsPage() {
           if (f) handleFile(f);
         }}
       />
+
+      {/*
+        Entrada para o fluxo de validação de identidade. Fica aqui, e não só na
+        URL, porque módulo que ninguém alcança por navegação é módulo que não
+        está ligado — foi exatamente esse o diagnóstico que originou esta etapa.
+        O rótulo diz "demonstração" desde a entrada: quem clica já sabe o que
+        vai encontrar.
+      */}
+      <Link
+        to="/driver/validacao"
+        className="block mx-4 mt-4 rounded-[14px] p-4"
+        style={{ background: "#21262D", border: "1px solid #30363D" }}
+      >
+        <div className="flex items-center gap-2.5">
+          <BadgeCheck size={22} className="text-steel-blue shrink-0" />
+          <div>
+            <div className="text-[14px] text-graphite-50">Validação de identidade</div>
+            <div className="text-[12px] text-amber-400">
+              Demonstração — não aprova cadastro nem libera viagem
+            </div>
+          </div>
+        </div>
+      </Link>
 
       <div className="flex items-center justify-center gap-1 mt-6 px-4 text-graphite-400" style={{ fontSize: 11 }}>
         <Lock size={11} />
