@@ -24,6 +24,7 @@ import {
   obterEstadoDoFluxoFn,
 } from "@/server/documents/fluxo.fn";
 import type { DocumentKind } from "@/server/documents/types";
+import { listarRevisoesFn } from "@/server/documents/revisao.fn";
 import {
   obterEstadoDoProcessamentoFn,
   processarDemonstracaoFn,
@@ -276,18 +277,21 @@ function ValidacaoPage() {
             ) : (
               <ul className="mt-2 space-y-1.5">
                 {d.documentos.map((doc) => (
-                  <li key={doc.id} className="text-[13px] text-graphite-100 flex justify-between">
-                    <span>{ESPECIES.find((e) => e.kind === doc.kind)?.rotulo ?? doc.kind}</span>
-                    <span className="text-graphite-200">
-                      {new Date(doc.uploadedAt).toLocaleString("pt-BR")}
-                    </span>
+                  <li key={doc.id} className="text-[13px] text-graphite-100">
+                    <div className="flex justify-between">
+                      <span>{ESPECIES.find((e) => e.kind === doc.kind)?.rotulo ?? doc.kind}</span>
+                      <span className="text-graphite-200">
+                        {new Date(doc.uploadedAt).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    <RevisoesDoDocumento documentId={doc.id} />
                   </li>
                 ))}
               </ul>
             )}
             <div className="text-[12px] text-graphite-200 mt-3">
-              A visualização do documento será por rota autenticada, com autorização revalidada a
-              cada leitura. Ela não faz parte desta etapa.
+              O documento é servido por rota autenticada, com autorização revalidada a cada
+              leitura. Nenhuma URL assinada é entregue ao navegador.
             </div>
           </section>
 
@@ -463,3 +467,45 @@ function Processamento() {
   );
 }
 
+
+/**
+ * Revisões do próprio documento, para o titular.
+ *
+ * O motorista precisa saber que lhe pediram novo envio — e precisa saber disso
+ * na mesma tela onde ele envia. A policy do banco é quem decide o que ele lê:
+ * as revisões dos documentos dele, e nada além.
+ */
+function RevisoesDoDocumento({ documentId }: { documentId: string }) {
+  const revisoes = useQuery({
+    queryKey: ["minhas-revisoes", documentId],
+    queryFn: () => listarRevisoesFn({ data: { documentId } }),
+    retry: false,
+  });
+
+  const linhas = revisoes.data ?? [];
+  if (linhas.length === 0) return null;
+
+  const ROTULO: Record<string, string> = {
+    observacao: "Observação do revisor",
+    divergencia: "Divergência apontada",
+    novo_envio_solicitado: "Novo envio solicitado",
+  };
+
+  return (
+    <ul className="mt-1 ml-1 space-y-1">
+      {linhas.map((r) => (
+        <li
+          key={r.id}
+          className="text-[12px]"
+          style={{ color: r.tipo === "observacao" ? "#8B949E" : "#F5C451" }}
+        >
+          · {ROTULO[r.tipo] ?? r.tipo}
+          {r.contexto === "demonstracao" && (
+            <span className="text-graphite-400"> (demonstração)</span>
+          )}
+          {r.nota && <div className="text-graphite-300 ml-2">{r.nota}</div>}
+        </li>
+      ))}
+    </ul>
+  );
+}

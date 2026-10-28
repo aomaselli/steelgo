@@ -314,6 +314,37 @@ export type MotivoDeFalhaDeEnvio =
   | "REGISTRO_INDISPONIVEL"
   /** O banco não respondeu. Pode ter gravado. O objeto ficou, de propósito. */
   | "REGISTRO_INDEFINIDO"
+  /**
+   * Objeto no bucket sem linha no registro.
+   *
+   * ──────────────────────────────────────────────────────────────────────
+   * PENDÊNCIA DE E5, E O QUE A VARREDURA PRECISA DISTINGUIR
+   *
+   * O expurgo varre o REGISTRO, então não alcança este estado. A limpeza
+   * será uma varredura do bucket — e ela tem um jeito óbvio de dar errado:
+   * apagar o objeto de um envio que ainda está em curso.
+   *
+   * Os dois estados têm a mesma aparência (objeto presente, registro
+   * ausente) e são opostos:
+   *
+   *   - envio ABANDONADO: o registro nunca vai chegar;
+   *   - envio EM ANDAMENTO: o registro está a milissegundos de chegar, ou
+   *     ficou indefinido e o titular vai reenviar.
+   *
+   * Três exigências para a varredura, nesta ordem:
+   *
+   *   1. PRAZO DE SEGURANÇA. Só entra na varredura o objeto cuja criação é
+   *      mais antiga que uma janela folgada — maior que qualquer envio
+   *      plausível, incluindo rede ruim de caminhão em estrada.
+   *   2. NOVA CONFERÊNCIA ANTES DE APAGAR. O registro é consultado de novo
+   *      imediatamente antes da remoção, e não no início do lote: entre
+   *      listar e apagar cabe um envio inteiro.
+   *   3. REGISTRO DO QUE FOI APAGADO, com o identificador derivado do
+   *      caminho — nunca o caminho, que carrega o titular.
+   *
+   * Enquanto E5 não existir, o estado fica declarado no retorno e no log. É
+   * pendência conhecida, não defeito silencioso.
+   */
   | "OBJETO_SEM_REGISTRO";
 
 export interface FalhaDeEnvioParaLog {

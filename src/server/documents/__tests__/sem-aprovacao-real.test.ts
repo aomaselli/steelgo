@@ -24,6 +24,7 @@ import { join } from "node:path";
 
 const RAIZ_DOCS = join(process.cwd(), "src", "server", "documents");
 const TELA = join(process.cwd(), "src", "routes", "driver.validacao.tsx");
+const TELA_REVISAO = join(process.cwd(), "src", "routes", "admin.validacao-documental.tsx");
 const RAIZ_DEMO = join(
   process.cwd(),
   "src",
@@ -144,4 +145,54 @@ test("documentos: a tela declara o estado de demonstração", () => {
     /demonstra[çc][ãa]o/i,
     "a tela precisa dizer, de forma visivel, que roda em demonstracao",
   );
+});
+
+/**
+ * D4 decidida: documento servido por rota autenticada, com autorização
+ * revalidada por leitura. A tentação de voltar atrás é concreta — URL assinada
+ * é uma linha de código e resolve o problema de hoje — e por isso a decisão
+ * fica guardada por regressão, não por memória.
+ */
+test("leitura: nenhuma URL assinada no caminho dos documentos", () => {
+  const PROIBIDOS: Array<{ nome: string; re: RegExp }> = [
+    { nome: "emissão de URL assinada", re: /createSignedUrls?\s*\(/ },
+    { nome: "URL pública do bucket", re: /getPublicUrl\s*\(/ },
+    { nome: "redirecionamento para o Storage", re: /\bredirect\s*\(\s*["'`]https?:/ },
+  ];
+
+  const infratores: string[] = [];
+  for (const caminho of [...arquivosFonte(RAIZ_DOCS), TELA, TELA_REVISAO]) {
+    if (/__tests__|\.test\.tsx?$/.test(caminho)) continue;
+    const fonte = readFileSync(caminho, "utf8");
+    for (const { nome, re } of PROIBIDOS) {
+      if (re.test(fonte)) infratores.push(`${relativo(caminho)} — ${nome}`);
+    }
+  }
+
+  assert.deepEqual(
+    infratores,
+    [],
+    `o caminho dos documentos voltou a emitir credencial:\n  ${infratores.join("\n  ")}`,
+  );
+});
+
+test("revisão: toda server function de revisão aplica os cabeçalhos de leitura", () => {
+  const fonte = readFileSync(join(RAIZ_DOCS, "revisao.fn.ts"), "utf8");
+  const declaracoes = fonte.match(/createServerFn\(/g) ?? [];
+  const cabecalhos = fonte.match(/aplicarCabecalhosDeLeitura\(/g) ?? [];
+  assert.ok(declaracoes.length > 0, "nenhuma server function encontrada");
+  assert.equal(
+    cabecalhos.length,
+    declaracoes.length,
+    `${declaracoes.length} server function(s) e ${cabecalhos.length} aplicacao(oes) de cabecalho`,
+  );
+});
+
+test("revisão: a tela do revisor não oferece aprovação", () => {
+  const fonte = readFileSync(TELA_REVISAO, "utf8");
+  // "não aprova" é texto do aviso e deve continuar lá; o que não pode existir
+  // é um rótulo de ação que aprove.
+  const rotulos = [...fonte.matchAll(/>\s*(Aprovar|Validar|Liberar)[^<]*</gi)].map((m) => m[0]);
+  assert.deepEqual(rotulos, [], `a tela ganhou acao de aprovacao: ${rotulos.join(", ")}`);
+  assert.match(fonte, /n[ãa]o aprova/i, "o aviso de que a revisao nao aprova sumiu");
 });
