@@ -80,10 +80,30 @@ confirmado foi o erro que produziu a frase corrigida no §0.
 |---|---|---|---|---|
 | C1 | **Credenciamento da SteelGo junto à SENATRAN** | não iniciado | **não** | o termo ou regulamento de credenciamento. O cabeçalho de `datavalid.provider.ts` lista isto como "pré-requisito confirmado", mas `dependencias-por-capacidade.md` registra que essas três linhas **não foram conferidas contra o contrato**. Pergunta A7.2 ao SERPRO |
 | C2 | **Contrato com o SERPRO — Datavalid V5**, com ambiente de homologação e de produção | não iniciado | **sim** — é o fornecedor escolhido | — |
-| C3 | **Contrato com uma GCC credenciada pela SENATRAN** | não iniciado | **sim** | Portaria SENATRAN nº 139/2025. Registro próprio **não substitui**. É a única obrigação deste quadro confirmada por norma citável |
+| C3 | **Contrato com uma GCC credenciada pela SENATRAN** | não iniciado | **sim** | Portaria SENATRAN nº 139/2025. **O consentimento que coletamos na nossa tela não substitui a autorização da GCC** — ver quadro abaixo. É a única obrigação deste quadro confirmada por norma citável |
 | C4 | **Registro do template de tratamento RFB** no ambiente contratado | depende de C2 | **sim** quanto à existência; **não** quanto ao endereço | o OpenAPI do ambiente contratado. Três variantes divergentes entre webinar, guia e Swagger — pergunta A7.4 |
 | C5 | **mTLS com certificado ICP-Brasil e-CNPJ**, se a Consulta Online SENATRAN entrar | não iniciado | **não** | a **especificação técnica de integração da Consulta Online SENATRAN** (RENACH / RENAVAM / RENAINF), ou o termo de credenciamento correspondente. **Ninguém aqui leu nenhum dos dois.** A única base hoje é o comentário de `senatran.provider.ts`: *"Provavelmente exige mTLS com certificado ICP-Brasil e-CNPJ"* — hipótese registrada em código, não requisito confirmado |
 | C6 | **Base legal e aviso de privacidade revisados por jurídico** para o tratamento biométrico | rascunho em `docs/lgpd/aviso-privacidade-motorista-v1.md`, não aprovado | **sim** quanto à obrigação; **não** quanto ao conteúdo | parecer do jurídico |
+
+### Consentimento interno ≠ autorização da GCC
+
+São dois atos distintos, com naturezas distintas, e **um não cobre o outro.**
+Confundi-los seria o erro mais caro possível aqui: faria parecer que a tela de
+consentimento destrava a consulta.
+
+| | Consentimento interno | Autorização da GCC |
+|---|---|---|
+| Quem registra | a SteelGo, em `document_consents` | entidade **credenciada pela SENATRAN** |
+| Para que serve | base legal do **nosso** tratamento: coletar, guardar, exibir ao revisor, expurgar | autorizar **uma requisição** ao Datavalid |
+| Escopo | a finalidade `identity_validation`, versionada por texto e sha256 | por operação, não reutilizável |
+| Vale sem o outro? | **sim** — é o que permite coletar e guardar | **sim** — e é o único que permite consultar |
+| Substitui o outro? | **não** | **não** |
+
+Consequência operacional, válida já na ligação do fluxo: a tela de
+consentimento permite **coletar e guardar** documento, com base declarada. Ela
+**não** autoriza consulta a base oficial, e nada no fluxo pode tratá-la como se
+autorizasse. Enquanto a GCC for simulada, o que existe é coleta consentida sem
+consulta — que é um estado legítimo, desde que dito.
 
 ### Sobre C5, especificamente
 
@@ -232,7 +252,19 @@ o que faz um deployment parecer uma entrega.
 |---|---|---|---|
 | **E1. CI** | o código compila e a bateria de testes passa, no SHA exato | GitHub Actions, workflow `verificar` | nada sobre publicação, nada sobre uso |
 | **E2. Publicação** | o build foi gerado e a URL serve | Vercel, deployment de produção | nada sobre o que está alcançável dentro da aplicação |
-| **E3. Funcionamento integrado** | o código conversa com serviço de verdade e produz o efeito esperado | harness de homologação, contra **pilhas locais descartáveis** | **nada em produção, e nada ligado à interface** |
+| **E3. Teste funcional local** | o código conversa com um serviço de verdade, **em pilha local descartável ou em ambiente de demonstração**, e produz o efeito esperado | harness de homologação | **nada em produção, nada ligado à interface, e nada sobre o contrato do fornecedor real** |
+| **E4. Homologação para produção** | o comportamento foi exercitado contra o **serviço contratado**, com credenciais próprias, e aceito como apto | — | **não existe.** Nenhuma linha desta coluna foi produzida até hoje |
+
+### E3 e E4 não são a mesma coisa, e a diferença não é de grau
+
+Teste funcional local responde: *o nosso lado se comporta como projetado?*
+Homologação para produção responde: *o serviço contratado se comporta como
+precisamos, e aceitamos ligá-lo?*
+
+A primeira pergunta está respondida em vários pontos. A segunda não foi feita
+uma única vez, porque não há contrato, não há credencial e não há ambiente de
+homologação do fornecedor. Chamar E3 de "homologado" — como alguns documentos
+anteriores fizeram — empresta à primeira a autoridade da segunda.
 
 ### E1 — CI dos quatro merges
 
@@ -265,27 +297,45 @@ Produção ativa: `https://steelgo-9fz7ql8wp-steelgo.vercel.app`.
 **E2 não implica E3.** A URL serve a aplicação; dentro dela não há tela de
 consentimento, de envio, nem invocação de `verifyDriverFn` (§3.2).
 
-### E3 — Funcionamento integrado, e contra o quê
+### E3 — Teste funcional local: o que, quando, contra qual pilha
 
-Tudo abaixo rodou contra **pilhas Supabase locais e descartáveis**, nunca
-contra produção e nunca com documento real.
+**Em ordem cronológica.** A ordem importa porque o arquivo da migration mudou
+entre a primeira e a última medição, e uma lista sem datas faria parecer que
+todas descrevem o mesmo estado. Descrevem estados sucessivos.
 
-| Evidência | Resultado | Contra o quê | Registrada em |
-|---|---|---|---|
-| Migration final em **banco limpo**, com o registro no histórico na mesma transação | exit 0; histórico 87 → 88 | pilha `fcgprova13`, exclusiva | [`migration-13-banco-limpo.md`](../homologacao/migration-13-banco-limpo.md) |
-| Bateria de acesso e invariantes | **37 de 37** | idem | idem |
-| Comparação estrutural por **definição** (não por nome) entre a pilha de prova e a de trabalho | **104 linhas, idênticas** | idem | idem |
-| Expurgo integrado, com falha e nova tentativa | 19 de 19 (09/10) · **39 de 39** na execução de 27/10, após DV001/DV002 | Storage local de verdade | [`infraestrutura-versus-ligado.md`](../homologacao/infraestrutura-versus-ligado.md) + execução desta rodada |
-| URL assinada tratada como credencial | **11 de 11** | Storage local | [`infraestrutura-versus-ligado.md`](../homologacao/infraestrutura-versus-ligado.md) |
-| Adaptador Datavalid em modo demonstração — execução ponta a ponta | **24 de 24** | **ambiente oficial de demonstração do SERPRO**, massa fictícia | [`datavalid-v5-demonstracao.md`](./datavalid-v5-demonstracao.md) |
-| Idem, homologação estendida (QR Code, biometria com prova de vida, negativo, ausente, composição) | **35 de 35** | idem | idem |
+| Quando | Evidência | Resultado | Contra qual pilha | Registrada em |
+|---|---|---|---|---|
+| **09/10** | Bateria de banco na pilha de trabalho | 31 de 31 | `fcgsint1001` (`simulacao`) | [`infraestrutura-versus-ligado.md`](../homologacao/infraestrutura-versus-ligado.md) |
+| **09/10** | Expurgo integrado, com falha e nova tentativa | 19 de 19 | `fcgsint1001`, Storage local | idem |
+| **09/10** | URL assinada tratada como credencial | 11 de 11 | `fcgsint1001`, Storage local | idem |
+| **09/10** | Módulo em TypeScript | 33 de 33 | sem banco | idem |
+| **09/10** | Adaptador Datavalid, execução ponta a ponta | 24 de 24 | **demonstração oficial do SERPRO**, massa fictícia | [`datavalid-v5-demonstracao.md`](./datavalid-v5-demonstracao.md) |
+| **09/10** | Idem, homologação estendida (QR Code, biometria com prova de vida, negativo, ausente, composição) | 35 de 35 | idem | idem |
+| **09/10** | Migration **final** em banco limpo, com o registro no histórico na mesma transação | exit 0; histórico 87 → 88 | `fcgprova13`, criada só para isto | [`migration-13-banco-limpo.md`](../homologacao/migration-13-banco-limpo.md) |
+| **09/10** | Bateria de acesso e invariantes, na pilha de prova | **37 de 37** | `fcgprova13` | idem |
+| **09/10** | Comparação estrutural **por definição**, entre `fcgprova13` e `fcgsint1001` | **104 linhas, idênticas** | as duas | idem |
+| **27/10** | Expurgo integrado, reexecutado após a correção de `concluir_expurgo_de_documento` (DV001/DV002) | **39 de 39** | `fcgsint1001`, Storage local | execução desta rodada |
+
+**Por que 31 e 37 não se contradizem.** São baterias de datas e escopos
+diferentes: a de 31 rodou antes de o arquivo ganhar o `check` do ator de
+sistema e as duas colunas de falha de expurgo; a de 37 rodou depois, sobre o
+arquivo final. Pela mesma razão, 19 → 39 no expurgo: os vinte casos novos são
+os cenários DV001/DV002 que não existiam em 09/10. **Nenhum número substitui o
+anterior — cada um descreve o estado daquela data.**
 
 **O limite de E3, dito explicitamente.** O ambiente de demonstração do SERPRO é
 mock: o que ele aceita, recusa ou devolve descreve o simulador, não o contrato
 de produção. Uma bateria verde contra ele prova que **nosso** lado se comporta
-como projetado — não prova nada sobre o serviço real.
+como projetado — não prova nada sobre o serviço real, e não é E4.
 
-### O que nenhuma das três classes comprova
+### E4 — Homologação para produção: vazia, e por quê
+
+Nada aqui. As condições que a tornariam possível estão em §5 e §6: contrato
+(C2, C3), credenciais de um ambiente contratado (H1), e as respostas de A4
+(captura) e A5 (respostas desconhecidas). **Enquanto esta seção estiver vazia,
+nenhuma aprovação cadastral real pode depender deste fluxo.**
+
+### O que nenhuma das quatro classes comprova
 
 | | |
 |---|---|

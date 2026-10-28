@@ -35,6 +35,7 @@ esquema, não troca fornecedor.
 | **Existe hoje** | `document_consent_texts` e `document_consents` no banco, com versão e `sha256` do corpo. `consentStatus()` em `access.ts` decide o estado. Policy: o titular lê e grava o próprio aceite, ninguém aceita pelo outro |
 | **Falta** | publicar o texto vigente; tela que o exiba; rota que grave o aceite com a versão e o `sha256` **do corpo exibido**, não do corpo presumido |
 | **Regra que não pode ser perdida** | o aceite grava o hash do texto que a pessoa **viu**. Se o texto mudar, aceites antigos continuam válidos para a versão antiga — e é por isso que a coluna existe |
+| **O que este aceite NÃO é** | **não é a autorização da GCC.** Ele é a base do *nosso* tratamento — coletar, guardar, exibir ao revisor, expurgar. A consulta ao Datavalid exige autorização emitida por entidade credenciada, por operação. Nada no fluxo pode tratar o aceite interno como se destravasse a consulta |
 | **Homologável com demonstração?** | **sim, inteiramente.** Não toca fornecedor nenhum |
 
 ### E2. Envio
@@ -95,24 +96,34 @@ responde por simulação declarada. Isso é um ganho real — tira L4 a L9 da li
 
 ---
 
-## 4. Requisitos de staging isolado — **a confirmar antes de implementar**
+## 4. Staging isolado — **decidido em 28/10/2026**
 
-Não implemento nada até estes pontos estarem confirmados por você. Estão aqui
-como proposta, não como decisão tomada.
+As oito perguntas foram respondidas. Ficam registradas como decisão, não como
+proposta, porque é isso que elas passaram a ser.
 
-| # | Requisito | Proposta | Precisa de |
-|---|---|---|---|
-| S1 | **Destino** | pilha Supabase local descartável, nova e exclusiva para a ligação do fluxo — projeto, diretório, volumes e portas próprios, como foi feito para `fcgprova13` | autorização de portas, conferidas contra as faixas excluídas do Windows imediatamente antes de configurar |
-| S2 | **Instância proibida** | `iaabxrclxpsagdijkrcx` continua negada, inclusive para consulta, pelas seis barreiras do validador | nada — já vale |
-| S3 | **Dados** | somente massa sintética. Nenhum CPF, nome, imagem ou documento de pessoa real. Para E3, somente a massa fictícia oficial do ambiente de demonstração | confirmação de que nenhum dado real entra, nem para "testar de verdade" |
-| S4 | **Credenciais** | `VERIFICATION_PROVIDER_MODE=fake` para E1, E2, E4, E5; adaptador de **demonstração** para E3. Nenhuma credencial de sandbox ou produção | confirmação de que não há configuração de provider nesta fase |
-| S5 | **Migrations** | nenhuma migration nova é necessária — o esquema do #13 já cobre as cinco etapas. Se alguma for, é **incremental**, aplicada só no descartável, nunca remota | confirmação; e, se surgir necessidade de esquema, uma rodada própria |
-| S6 | **Retenção** | o prazo no descartável é **de teste**, declarado como tal, e não vira proposta de produção por repetição | D1 continua pendente e separada |
-| S7 | **Publicação** | nada vai para produção. O PR da ligação fica aberto até você decidir; a Vercel publicará o preview, que é comportamento normal do repositório | confirmação de que preview publicado é aceitável nesta fase |
-| S8 | **Escopo do PR** | um PR por etapa, ou um só? Proposta: **E1+E2 num PR**, **E4 noutro**, **E5 noutro** — E3 só depois de D4 e das respostas de A4 | sua escolha |
+| # | Ponto | Decisão |
+|---|---|---|
+| S1 | **Destino** | conferir os ambientes exclusivos **já disponíveis** antes de criar outro; só preparar novo destino isolado se nenhum servir, com identidade registrada deliberadamente e todas as barreiras preservadas |
+| S2 | **Instância proibida** | nenhum caminho pode alcançar produção nem `iaabxrclxpsagdijkrcx` |
+| S3 | **Dados** | somente sintéticos |
+| S4 | **Credenciais** | somente de demonstração |
+| S5 | **Migrations** | nenhuma remota. Incremental e local quando necessária |
+| S6 | **Retenção** | parâmetros do ambiente sintético são **identificados como exclusivos de teste** e **não representam aprovação de prazo para produção** |
+| S7 | **Publicação** | preview só pode ser publicado **com acesso protegido e backend isolado**. Sem isso, a execução fica **local** |
+| S8 | **Escopo dos PRs** | separados, nesta ordem: **E1+E2**, depois **E3 de demonstração**, depois **E4**, depois **E5** |
 
-**A pergunta que mais muda o trabalho é S8.** As demais são confirmações; essa
-é uma decisão.
+### D4 — decidida
+
+Documentos serão servidos por **rota autenticada**, com **autorização
+revalidada por leitura**, `Cache-Control: no-store` e **auditoria**.
+**URL assinada não é exposta ao cliente.**
+
+Isso resolve a lacuna medida em `url-assinada-como-credencial.mjs`: sem
+credencial na mão do cliente, não há credencial que sobreviva à retirada do
+consentimento. O custo é que todo byte passa pela aplicação — aceito.
+
+Consequência que vale já em E2: o envio também não entrega credencial de
+Storage ao cliente.
 
 ---
 
