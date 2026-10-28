@@ -104,6 +104,10 @@ const SECTIONS: Record<Exclude<UserRole, "driver">, NavSection[]> = {
       label: "Sistema",
       items: [
         { label: "Segurança", to: "/admin/security", icon: Shield },
+        // Entrada da revisão documental. Fica na navegação, e não só na URL,
+        // porque tela que ninguém alcança por navegação é tela que não está
+        // ligada — foi esse o diagnóstico que originou esta etapa.
+        { label: "Validação documental", to: "/admin/validacao-documental", icon: ClipboardList },
         { label: "ESG", to: "/admin/esg", icon: Leaf },
         { label: "Auditoria", to: "/admin/audit", icon: ClipboardList },
         { label: "Configurações", to: "/admin/settings", icon: Settings },

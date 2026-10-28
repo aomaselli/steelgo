@@ -31,6 +31,7 @@ export type TabelaDeDocumentos =
   | "document_consent_texts"
   | "document_consents"
   | "validation_documents"
+  | "document_review_events"
   // Esta existe nos tipos gerados. Entra aqui só para que a resolução de
   // papel passe pelo mesmo cliente das outras consultas, em vez de o módulo
   // carregar duas formas do mesmo objeto.
@@ -72,17 +73,33 @@ export interface Insercao {
   insert(linha: Record<string, unknown>): PromiseLike<{ error: ErroDeConsulta | null }>;
 }
 
+/** As funções definidoras que este módulo chama, e os argumentos de cada uma. */
+export interface FuncoesDeDocumentos {
+  registrar_envio_de_documento: {
+    p_document_id: string;
+    p_purpose: string;
+    p_kind: string;
+    p_object_path: string;
+  };
+  registrar_acesso_a_documento: { p_document_id: string };
+  registrar_revisao_de_documento: {
+    p_document_id: string;
+    p_tipo: string;
+    p_contexto: string;
+    p_nota: string | null;
+  };
+}
+
 export interface ClienteDeDocumentos {
   from<T>(tabela: TabelaDeDocumentos): Consulta<T> & Insercao;
-  rpc(
-    nome: "registrar_envio_de_documento",
-    argumentos: {
-      p_document_id: string;
-      p_purpose: string;
-      p_kind: string;
-      p_object_path: string;
-    },
-  ): PromiseLike<{ error: ErroDeConsulta | null }>;
+  /**
+   * `T` é a forma das linhas devolvidas. As funções que não devolvem linha
+   * usam `never`, e aí só `error` importa.
+   */
+  rpc<T = never, N extends keyof FuncoesDeDocumentos = keyof FuncoesDeDocumentos>(
+    nome: N,
+    argumentos: FuncoesDeDocumentos[N],
+  ): PromiseLike<{ data: T[] | null; error: ErroDeConsulta | null }>;
 }
 
 /**

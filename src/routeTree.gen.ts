@@ -42,6 +42,7 @@ import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminSecurityRouteImport } from './routes/admin.security'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AdminValidacaoDocumentalRouteImport } from './routes/admin.validacao-documental'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
 import { Route as CarrierActiveRouteImport } from './routes/carrier.active'
@@ -284,6 +285,12 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminValidacaoDocumentalRoute =
+  AdminValidacaoDocumentalRouteImport.update({
+    id: '/validacao-documental',
+    path: '/validacao-documental',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AuthCallbackRoute = AuthCallbackRouteImport.update({
   id: '/auth/callback',
   path: '/auth/callback',
@@ -707,6 +714,7 @@ export interface FileRoutesByFullPath {
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/validacao-documental': typeof AdminValidacaoDocumentalRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/carrier/active': typeof CarrierActiveRoute
   '/carrier/bids': typeof CarrierBidsRoute
@@ -814,6 +822,7 @@ export interface FileRoutesByTo {
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/validacao-documental': typeof AdminValidacaoDocumentalRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/carrier/active': typeof CarrierActiveRoute
   '/carrier/bids': typeof CarrierBidsRoute
@@ -926,6 +935,7 @@ export interface FileRoutesById {
   '/admin/security': typeof AdminSecurityRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/admin/validacao-documental': typeof AdminValidacaoDocumentalRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/carrier/active': typeof CarrierActiveRoute
   '/carrier/bids': typeof CarrierBidsRoute
@@ -1039,6 +1049,7 @@ export interface FileRouteTypes {
     | '/admin/security'
     | '/admin/settings'
     | '/admin/users'
+    | '/admin/validacao-documental'
     | '/auth/callback'
     | '/carrier/active'
     | '/carrier/bids'
@@ -1146,6 +1157,7 @@ export interface FileRouteTypes {
     | '/admin/security'
     | '/admin/settings'
     | '/admin/users'
+    | '/admin/validacao-documental'
     | '/auth/callback'
     | '/carrier/active'
     | '/carrier/bids'
@@ -1257,6 +1269,7 @@ export interface FileRouteTypes {
     | '/admin/security'
     | '/admin/settings'
     | '/admin/users'
+    | '/admin/validacao-documental'
     | '/auth/callback'
     | '/carrier/active'
     | '/carrier/bids'
@@ -1621,6 +1634,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/admin/users'
       preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/validacao-documental': {
+      id: '/admin/validacao-documental'
+      path: '/validacao-documental'
+      fullPath: '/admin/validacao-documental'
+      preLoaderRoute: typeof AdminValidacaoDocumentalRouteImport
       parentRoute: typeof AdminRoute
     }
     '/auth/callback': {
@@ -2168,6 +2188,7 @@ interface AdminRouteChildren {
   AdminSecurityRoute: typeof AdminSecurityRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  AdminValidacaoDocumentalRoute: typeof AdminValidacaoDocumentalRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminDisputesIdRoute: typeof AdminDisputesIdRoute
   AdminOperationsIdRoute: typeof AdminOperationsIdRoute
@@ -2186,6 +2207,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSecurityRoute: AdminSecurityRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminUsersRoute: AdminUsersRoute,
+  AdminValidacaoDocumentalRoute: AdminValidacaoDocumentalRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminDisputesIdRoute: AdminDisputesIdRoute,
   AdminOperationsIdRoute: AdminOperationsIdRoute,
