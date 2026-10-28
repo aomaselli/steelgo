@@ -42,7 +42,13 @@ import {
   conferirAmbienteSintetico,
   AmbienteNaoSinteticoError,
 } from "./ambiente";
-import { montarCaminhoDoObjeto, validarEnvio, type MotivoDeRecusa } from "./envio";
+import {
+  decidirAposFalhaDeRegistro,
+  montarCaminhoDoObjeto,
+  montarFalhaDeEnvioParaLog,
+  validarEnvio,
+  type MotivoDeRecusa,
+} from "./envio";
 import { DOCUMENT_KINDS, type DocumentKind } from "./types";
 
 const FINALIDADE = "identity_validation" as const;
@@ -245,7 +251,7 @@ const envioSchema = z.object({
 
 export type ResultadoDoEnvio =
   | { enviado: true; documentId: string; kind: DocumentKind }
-  | { enviado: false; motivo: MotivoDeRecusa | "CONSENTIMENTO_AUSENTE" | "CONSENTIMENTO_DESATUALIZADO" | "CONSENTIMENTO_RETIRADO" | "FALHA_NO_REGISTRO"; detalhe: string };
+  | { enviado: false; motivo: MotivoDeRecusa | "CONSENTIMENTO_AUSENTE" | "CONSENTIMENTO_DESATUALIZADO" | "CONSENTIMENTO_RETIRADO" | "FALHA_NO_REGISTRO" | "OBJETO_SEM_REGISTRO"; detalhe: string };
 
 export const enviarDocumentoFn = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -316,18 +322,52 @@ export const enviarDocumentoFn = createServerFn({ method: "POST" })
       occurredAt: new Date().toISOString(),
     });
 
-    const { error: erroRpc } = await db.rpc("registrar_envio_de_documento", {
+    const argumentos = {
       p_document_id: documentId,
       p_purpose: FINALIDADE,
       p_kind: data.kind,
       p_object_path: objectPath,
-    });
+    };
+
+    let erroRpc = (await db.rpc("registrar_envio_de_documento", argumentos)).error;
+
+    // Falha sem código de barreira pode ser do caminho de volta: o registro
+    // talvez tenha acontecido e a resposta se perdeu. Uma repetição, e só uma.
+    // É segura porque a função do banco é idempotente pelo identificador --
+    // repetir o mesmo envio não grava nada de novo.
+    if (erroRpc && decidirAposFalhaDeRegistro(erroRpc.code) === "REPETIR_REGISTRO") {
+      erroRpc = (await db.rpc("registrar_envio_de_documento", argumentos)).error;
+    }
 
     if (erroRpc) {
-      // Compensação: objeto no bucket sem linha no registro é exatamente o
-      // estado órfão que o expurgo não alcança, porque o expurgo varre o
-      // registro. Melhor apagar agora, enquanto se sabe o caminho.
-      await supabase.storage.from(BUCKET).remove([objectPath]);
+      // Objeto no bucket sem linha no registro é órfão que o expurgo NÃO
+      // alcança, porque o expurgo varre o registro. Enquanto o caminho é
+      // conhecido, dá para desfazer.
+      const { error: erroRemocao } = await supabase.storage.from(BUCKET).remove([objectPath]);
+
+      const falha = montarFalhaDeEnvioParaLog({
+        documentId,
+        motivo: erroRemocao
+          ? "OBJETO_SEM_REGISTRO"
+          : decidirAposFalhaDeRegistro(erroRpc.code) === "REMOVER_OBJETO"
+            ? "REGISTRO_RECUSADO"
+            : "REGISTRO_INDISPONIVEL",
+        ocorridoEm: new Date().toISOString(),
+      });
+      // Lista fechada, sem caminho, sem titular, sem mensagem de fornecedor.
+      console.warn("[documentos] falha de envio", falha);
+
+      if (erroRemocao) {
+        // O estado que sobra: objeto sem registro, e a remoção também falhou.
+        // Não há como alcançá-lo pelo expurgo, que varre o registro. Fica
+        // declarado aqui e no log, em vez de desaparecer num `catch` vazio.
+        return {
+          enviado: false,
+          motivo: "OBJETO_SEM_REGISTRO",
+          detalhe: "o registro falhou e o objeto nao pode ser removido",
+        };
+      }
+
       return {
         enviado: false,
         motivo: "FALHA_NO_REGISTRO",

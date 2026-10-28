@@ -47,6 +47,26 @@ export type ResultadoDaValidacao =
   | { aceito: false; motivo: MotivoDeRecusa; detalhe: string };
 
 /**
+ * `detalhe` nunca repete o que o cliente mandou.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * A VERSÃO ANTERIOR ECOAVA
+ *
+ * `detalhe: \`declarado "${e.contentTypeDeclarado}"\`` devolvia ao chamador a
+ * string que o chamador enviou. Hoje ela só volta para quem mandou, e parece
+ * inofensivo. Deixa de ser no dia em que essa mensagem passar a ser registrada
+ * em log, mostrada a um revisor ou repassada numa resposta de erro — e
+ * nenhuma dessas mudanças teria motivo para reabrir esta linha.
+ *
+ * Então o detalhe descreve o que FOI RECUSADO, usando só valores que o
+ * servidor conhece. Valor fora das listas vira rótulo fixo, não aspas em volta
+ * do que veio de fora.
+ */
+function semEco(valor: string, conhecidos: readonly string[]): string {
+  return conhecidos.includes(valor) ? valor : "(fora da lista)";
+}
+
+/**
  * Formato pelo número mágico.
  *
  * JPEG: `FF D8 FF`. PNG: a assinatura de oito bytes, inteira — os quatro
@@ -83,10 +103,18 @@ export interface EnvioDeclarado {
  */
 export function validarEnvio(e: EnvioDeclarado): ResultadoDaValidacao {
   if (!(DOCUMENT_PURPOSES as readonly string[]).includes(e.purpose)) {
-    return { aceito: false, motivo: "FINALIDADE_INVALIDA", detalhe: `finalidade "${e.purpose}"` };
+    return {
+      aceito: false,
+      motivo: "FINALIDADE_INVALIDA",
+      detalhe: `finalidade ${semEco(e.purpose, DOCUMENT_PURPOSES)}`,
+    };
   }
   if (!(DOCUMENT_KINDS as readonly string[]).includes(e.kind)) {
-    return { aceito: false, motivo: "ESPECIE_INVALIDA", detalhe: `especie "${e.kind}"` };
+    return {
+      aceito: false,
+      motivo: "ESPECIE_INVALIDA",
+      detalhe: `especie ${semEco(e.kind, DOCUMENT_KINDS)}`,
+    };
   }
   if (e.actorId !== e.subjectId) {
     return {
@@ -118,7 +146,10 @@ export function validarEnvio(e: EnvioDeclarado): ResultadoDaValidacao {
     return {
       aceito: false,
       motivo: "FORMATO_DIVERGE_DO_DECLARADO",
-      detalhe: `declarado "${e.contentTypeDeclarado}", lido "${formato}"`,
+      detalhe: `declarado ${semEco(
+        e.contentTypeDeclarado.trim().toLowerCase(),
+        FORMATOS_ACEITOS,
+      )}, lido ${formato}`,
     };
   }
 
@@ -149,4 +180,85 @@ export function titularDoCaminho(caminho: string): string | null {
   const partes = caminho.split("/");
   if (partes.length !== 3) return null;
   return partes[1] || null;
+}
+
+// ───────────────── o que fazer quando o registro falha ─────────────────────
+
+/**
+ * SQLSTATEs com que a função do banco recusa por barreira.
+ *
+ * Estão aqui, e não só no SQL, porque a decisão de repetir ou desfazer depende
+ * de distinguir "o banco disse não" de "o banco não respondeu" — e tratar os
+ * dois igual é o jeito de errar em qualquer das duas direções.
+ */
+export const RECUSAS_DE_BARREIRA = [
+  "DV010", // sem sessão
+  "DV011", // finalidade ou espécie fora da lista
+  "DV012", // caminho não pertence a quem envia
+  "DV013", // caminho carrega credencial
+  "DV014", // consentimento ausente, retirado ou desatualizado
+  "DV015", // o identificador já descreve outro envio
+] as const;
+
+export type AcaoAposFalhaDeRegistro = "REPETIR_REGISTRO" | "REMOVER_OBJETO";
+
+/**
+ * Recusa de barreira vai recusar de novo: repetir só adia a limpeza. Falha sem
+ * código — rede, tempo esgotado, indisponibilidade — merece UMA repetição,
+ * porque o objeto pode já estar registrado do outro lado e apagá-lo seria
+ * destruir um envio que deu certo.
+ *
+ * A repetição só é segura porque a função do banco é idempotente pelo
+ * identificador do documento. Sem aquela idempotência, esta função estaria
+ * propondo duplicar registro e trilha.
+ */
+export function decidirAposFalhaDeRegistro(
+  codigo: string | null | undefined,
+): AcaoAposFalhaDeRegistro {
+  if (codigo && (RECUSAS_DE_BARREIRA as readonly string[]).includes(codigo)) {
+    return "REMOVER_OBJETO";
+  }
+  return "REPETIR_REGISTRO";
+}
+
+// ───────────────────── log operacional do envio ────────────────────────────
+
+export type MotivoDeFalhaDeEnvio =
+  | "REGISTRO_RECUSADO"
+  | "REGISTRO_INDISPONIVEL"
+  | "OBJETO_SEM_REGISTRO";
+
+export interface FalhaDeEnvioParaLog {
+  documentId: string;
+  motivo: MotivoDeFalhaDeEnvio;
+  ocorridoEm: string;
+}
+
+export class CampoInvalidoEmLogDeEnvioError extends Error {}
+
+const MOTIVOS_DE_FALHA: readonly MotivoDeFalhaDeEnvio[] = [
+  "REGISTRO_RECUSADO",
+  "REGISTRO_INDISPONIVEL",
+  "OBJETO_SEM_REGISTRO",
+];
+
+/**
+ * Lista fechada, montada campo a campo.
+ *
+ * Sem espalhamento do objeto de entrada: espalhar carregaria qualquer campo
+ * que alguém acrescentasse depois, e o log operacional vai para serviço de
+ * terceiro com retenção que não controlamos. O identificador é o do REGISTRO,
+ * nunca o caminho do objeto — que carrega o titular no segundo segmento.
+ */
+export function montarFalhaDeEnvioParaLog(f: FalhaDeEnvioParaLog): FalhaDeEnvioParaLog {
+  if (!/^[0-9a-f-]{36}$/i.test(f.documentId)) {
+    throw new CampoInvalidoEmLogDeEnvioError("documentId fora da forma de identificador");
+  }
+  if (!MOTIVOS_DE_FALHA.includes(f.motivo)) {
+    throw new CampoInvalidoEmLogDeEnvioError(`motivo "${f.motivo}" fora da lista fechada`);
+  }
+  if (Number.isNaN(Date.parse(f.ocorridoEm))) {
+    throw new CampoInvalidoEmLogDeEnvioError("ocorridoEm nao e um instante valido");
+  }
+  return { documentId: f.documentId, motivo: f.motivo, ocorridoEm: f.ocorridoEm };
 }

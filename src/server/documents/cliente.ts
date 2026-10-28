@@ -38,6 +38,15 @@ export type TabelaDeDocumentos =
 
 export interface ErroDeConsulta {
   message: string;
+  /**
+   * SQLSTATE devolvido pelo PostgREST, quando houver.
+   *
+   * É o que distingue recusa de barreira (`DV0…`, deterministicamente
+   * repetível) de falha sem resposta. Sem ele, desfazer e repetir ficariam
+   * indistinguíveis — e errar nessa escolha apaga envio que deu certo ou
+   * duplica o que não deu.
+   */
+  code?: string;
 }
 
 export interface Resposta<T> {
@@ -86,3 +95,55 @@ export interface ClienteDeDocumentos {
 export function comoClienteDeDocumentos(cliente: unknown): ClienteDeDocumentos {
   return cliente as ClienteDeDocumentos;
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   COMO APAGAR ESTE ARQUIVO
+
+   Ele existe por uma razão temporária e some quando ela acabar. O caminho
+   abaixo não encosta na instância proibida em nenhum passo.
+
+   1. GERAR OS TIPOS DE UM DESTINO AUTORIZADO.
+
+      O descartável `simulacao` tem as cinco tabelas da Etapa 1 e a função de
+      registro, aplicadas em transação única com o histórico. Ele é um
+      destino autorizado, e é dele que os tipos saem:
+
+          npx supabase gen types typescript \
+            --db-url "postgresql://postgres:<senha-local>@127.0.0.1:57325/postgres" \
+            > /tmp/types-do-descartavel.ts
+
+      A senha é a da pilha local, obtida pelo mesmo caminho das outras chaves
+      locais; não entra no repositório nem em log.
+
+   2. CONFERIR, NÃO SUBSTITUIR EM BLOCO.
+
+      O arquivo gerado descreve o DESCARTÁVEL, que não é idêntico ao projeto
+      de onde `types.ts` veio. Trocar um pelo outro traria diferenças que não
+      têm nada a ver com documentos.
+
+          diff <(grep -o '^      [a-z_]*: {' types-atuais.ts | sort -u) \
+               <(grep -o '^      [a-z_]*: {' /tmp/types-do-descartavel.ts | sort -u)
+
+      O que se aproveita é só o que falta hoje:
+
+        - `document_consent_texts`, `document_consents`, `validation_documents`,
+          `document_audit`, `document_retention_policy` em `Tables`;
+        - `registrar_envio_de_documento` e `concluir_expurgo_de_documento`
+          em `Functions`.
+
+      Qualquer outra diferença é sinal de que as duas bases divergiram, e
+      merece ser entendida antes de virar código.
+
+   3. TROCAR E APAGAR.
+
+      Com as tabelas nos tipos gerados, `db.from<T>(...)` vira
+      `supabase.from(...)` tipado de verdade, `comoClienteDeDocumentos` sai de
+      `fluxo.fn.ts` e este arquivo inteiro é removido. A remoção é mecânica
+      porque aqui não há lógica — só forma.
+
+   4. O QUE NÃO FAZER.
+
+      Não gerar de `iaabxrclxpsagdijkrcx`, que segue proibida inclusive para
+      consulta. Não editar `src/integrations/supabase/types.ts` à mão: ele diz
+      na primeira linha que é gerado, e a próxima geração desfaz a edição.
+   ───────────────────────────────────────────────────────────────────────── */
