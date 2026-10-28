@@ -14,11 +14,13 @@
  * `scripts/homologacao/lacunas-do-envio.mjs`.
  */
 
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 
 import {
   CampoInvalidoEmLogDeEnvioError,
   decidirAposFalhaDeRegistro,
+  identificadorDoEnvio,
   montarFalhaDeEnvioParaLog,
   validarEnvio,
 } from "../envio";
@@ -70,21 +72,105 @@ describe("L3 — a recusa não repete o que o cliente mandou", () => {
 describe("L4 — desfazer e repetir não são a mesma decisão", () => {
   it("recusa de barreira manda remover: ela vai recusar de novo", () => {
     for (const codigo of ["DV010", "DV011", "DV012", "DV013", "DV014", "DV015"]) {
-      expect(decidirAposFalhaDeRegistro(codigo)).toBe("REMOVER_OBJETO");
+      expect(decidirAposFalhaDeRegistro(codigo, false)).toBe("REMOVER_OBJETO");
+      // E continua mandando remover depois da repetição: o banco respondeu.
+      expect(decidirAposFalhaDeRegistro(codigo, true)).toBe("REMOVER_OBJETO");
     }
   });
 
   it("falha sem código manda repetir: o registro pode ter acontecido", () => {
-    expect(decidirAposFalhaDeRegistro(undefined)).toBe("REPETIR_REGISTRO");
-    expect(decidirAposFalhaDeRegistro(null)).toBe("REPETIR_REGISTRO");
-    expect(decidirAposFalhaDeRegistro("")).toBe("REPETIR_REGISTRO");
+    expect(decidirAposFalhaDeRegistro(undefined, false)).toBe("REPETIR_REGISTRO");
+    expect(decidirAposFalhaDeRegistro(null, false)).toBe("REPETIR_REGISTRO");
+    expect(decidirAposFalhaDeRegistro("", false)).toBe("REPETIR_REGISTRO");
   });
 
   it("código de banco que não é barreira nossa também manda repetir", () => {
     // Indisponibilidade, deadlock, conexão caída: a resposta pode ter se
     // perdido depois de o registro ter sido gravado.
-    expect(decidirAposFalhaDeRegistro("57P01")).toBe("REPETIR_REGISTRO");
-    expect(decidirAposFalhaDeRegistro("40001")).toBe("REPETIR_REGISTRO");
+    expect(decidirAposFalhaDeRegistro("57P01", false)).toBe("REPETIR_REGISTRO");
+    expect(decidirAposFalhaDeRegistro("40001", false)).toBe("REPETIR_REGISTRO");
+  });
+});
+
+describe("L6 — silêncio do transporte não é recusa definitiva", () => {
+  it("falha sem código que persiste MANTÉM o objeto, em vez de apagar", () => {
+    for (const codigo of [undefined, null, "", "57P01", "40001", "ETIMEDOUT"]) {
+      expect(decidirAposFalhaDeRegistro(codigo, true)).toBe("MANTER_E_DECLARAR");
+    }
+  });
+
+  it("os três desfechos são distintos — nenhum colapsa no outro", () => {
+    const desfechos = new Set([
+      decidirAposFalhaDeRegistro("DV014", true),
+      decidirAposFalhaDeRegistro(undefined, false),
+      decidirAposFalhaDeRegistro(undefined, true),
+    ]);
+    expect(desfechos.size).toBe(3);
+  });
+
+  it("o motivo do silêncio tem lugar próprio no log", () => {
+    const f = montarFalhaDeEnvioParaLog({
+      documentId: "11111111-2222-4333-8444-555555555555",
+      motivo: "REGISTRO_INDEFINIDO",
+      ocorridoEm: "2026-10-28T21:00:00.000Z",
+    });
+    expect(f.motivo).toBe("REGISTRO_INDEFINIDO");
+  });
+});
+
+describe("L7 — a chave de idempotência vem do titular e do conteúdo", () => {
+  const digerir = (texto: string) =>
+    new Uint8Array(createHash("sha256").update(texto, "utf8").digest());
+
+  const base = {
+    subjectId: TITULAR,
+    purpose: "identity_validation",
+    kind: "selfie",
+    sha256DoConteudo: "a".repeat(64),
+  };
+
+  it("o mesmo titular com o mesmo arquivo e a mesma espécie dá o mesmo id", () => {
+    expect(identificadorDoEnvio(base, digerir)).toBe(identificadorDoEnvio(base, digerir));
+  });
+
+  it("conteúdo diferente dá id diferente", () => {
+    expect(identificadorDoEnvio(base, digerir)).not.toBe(
+      identificadorDoEnvio({ ...base, sha256DoConteudo: "b".repeat(64) }, digerir),
+    );
+  });
+
+  it("titular diferente dá id diferente — ninguém colide com o arquivo do outro", () => {
+    expect(identificadorDoEnvio(base, digerir)).not.toBe(
+      identificadorDoEnvio({ ...base, subjectId: "3b017ae9-b74a-4c1a-87d7-e796ad2a7feb" }, digerir),
+    );
+  });
+
+  it("espécie diferente dá id diferente — a mesma foto como CNH e como selfie são dois envios", () => {
+    expect(identificadorDoEnvio(base, digerir)).not.toBe(
+      identificadorDoEnvio({ ...base, kind: "cnh_front" }, digerir),
+    );
+  });
+
+  it("finalidade diferente dá id diferente", () => {
+    expect(identificadorDoEnvio(base, digerir)).not.toBe(
+      identificadorDoEnvio({ ...base, purpose: "outra_finalidade" }, digerir),
+    );
+  });
+
+  it("é um UUID válido, versão 8 e variante RFC 9562", () => {
+    const id = identificadorDoEnvio(base, digerir);
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-8[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
+  });
+
+  it("os campos não se confundem entre si — a separação é explícita", () => {
+    // Sem separador, "ab" + "c" e "a" + "bc" dariam a mesma entrada.
+    const a = identificadorDoEnvio({ ...base, kind: "selfie", purpose: "x" }, digerir);
+    const b = identificadorDoEnvio({ ...base, kind: "", purpose: "xselfie" }, digerir);
+    expect(a).not.toBe(b);
+  });
+
+  it("recusa digestor que devolve bytes de menos", () => {
+    expect(() => identificadorDoEnvio(base, () => new Uint8Array(8))).toThrow(/16 bytes/);
   });
 });
 

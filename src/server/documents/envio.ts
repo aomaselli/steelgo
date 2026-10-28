@@ -182,6 +182,79 @@ export function titularDoCaminho(caminho: string): string | null {
   return partes[1] || null;
 }
 
+// ─────────────── identificador derivado do titular e do conteúdo ───────────
+
+/**
+ * O identificador do documento vem do CONTEÚDO, não de um sorteio.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * O QUE A VERSÃO ANTERIOR NÃO PROTEGIA
+ *
+ * A função do banco é idempotente por `p_document_id`, e isso resolvia a
+ * repetição da CHAMADA. Não resolvia a repetição do ENVIO: o identificador era
+ * sorteado a cada clique, então dois cliques no mesmo arquivo viravam dois
+ * identificadores, dois objetos, dois registros e dois eventos de trilha. A
+ * idempotência existia e não alcançava o caso que acontece de verdade.
+ *
+ * Agora o identificador é função de (titular, finalidade, espécie, bytes).
+ * Reenviar o mesmo arquivo para a mesma espécie recai no mesmo identificador,
+ * no mesmo caminho e no mesmo registro — e a repetição vira um nada acontecer,
+ * que é o que repetição deveria ser.
+ *
+ * O titular entra na derivação, e não só por idempotência: sem ele, duas
+ * pessoas que enviassem o mesmo arquivo colidiriam no mesmo identificador, e a
+ * segunda receberia DV015 por um documento que não é dela. Com ele, cada
+ * titular tem o próprio espaço.
+ *
+ * ────────────────────────────────────────────────────────────────────────────
+ * POR QUE VERSÃO 8
+ *
+ * É um UUID derivado por hash, e a RFC 9562 reserva a versão 8 exatamente para
+ * derivação própria. Chamá-lo de v5 seria mentir sobre o algoritmo — v5 é
+ * SHA-1 com namespace, e isto é SHA-256 com um prefixo de domínio.
+ */
+const DOMINIO_DO_IDENTIFICADOR = "steelgo:validation_documents:v1";
+
+export type Digestor = (texto: string) => Uint8Array;
+
+export function identificadorDoEnvio(
+  a: {
+    subjectId: string;
+    purpose: string;
+    kind: string;
+    sha256DoConteudo: string;
+  },
+  /**
+   * SHA-256, passado por quem chama.
+   *
+   * `envio.ts` é lógica pura: é importado pelo teste, pela server function e
+   * pela regressão que lê o código-fonte. Trazer `node:crypto` para cá faria
+   * este arquivo exigir ambiente, e ele acabaria no grafo do cliente pelo
+   * caminho da rota. Um parâmetro resolve sem estado de módulo.
+   */
+  digerir: Digestor,
+): string {
+  const bytes = digerir(
+    [DOMINIO_DO_IDENTIFICADOR, a.subjectId, a.purpose, a.kind, a.sha256DoConteudo].join("\u0000"),
+  );
+  if (bytes.length < 16) {
+    throw new Error("digestor devolveu menos de 16 bytes");
+  }
+
+  const b = Uint8Array.from(bytes.slice(0, 16));
+  b[6] = (b[6] & 0x0f) | 0x80; // versão 8
+  b[8] = (b[8] & 0x3f) | 0x80; // variante RFC 9562
+
+  const hex = [...b].map((n) => n.toString(16).padStart(2, "0")).join("");
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+}
+
 // ───────────────── o que fazer quando o registro falha ─────────────────────
 
 /**
@@ -200,25 +273,38 @@ export const RECUSAS_DE_BARREIRA = [
   "DV015", // o identificador já descreve outro envio
 ] as const;
 
-export type AcaoAposFalhaDeRegistro = "REPETIR_REGISTRO" | "REMOVER_OBJETO";
+export type AcaoAposFalhaDeRegistro =
+  | "REPETIR_REGISTRO"
+  | "REMOVER_OBJETO"
+  | "MANTER_E_DECLARAR";
 
 /**
- * Recusa de barreira vai recusar de novo: repetir só adia a limpeza. Falha sem
- * código — rede, tempo esgotado, indisponibilidade — merece UMA repetição,
- * porque o objeto pode já estar registrado do outro lado e apagá-lo seria
- * destruir um envio que deu certo.
+ * Três desfechos, não dois.
  *
- * A repetição só é segura porque a função do banco é idempotente pelo
- * identificador do documento. Sem aquela idempotência, esta função estaria
- * propondo duplicar registro e trilha.
+ * ────────────────────────────────────────────────────────────────────────────
+ * A VERSÃO ANTERIOR PRESUMIA RECUSA
+ *
+ * Ela tinha dois desfechos: repetir ou remover. Falha de transporte repetida
+ * caía em "remover" — ou seja, **presumia que o registro não aconteceu**. Se o
+ * registro tivesse acontecido e as duas respostas se perdessem, apagaríamos o
+ * objeto de um documento registrado, deixando a linha apontando para o vazio.
+ *
+ * Só a recusa de barreira autoriza remover, porque só ela afirma que nada foi
+ * gravado: o banco respondeu, com código, dizendo não. Silêncio não é não.
+ *
+ * Quando o silêncio persiste, o objeto FICA. O estado é declarado no retorno e
+ * no log, e a reconciliação acontece sozinha na próxima tentativa do titular:
+ * o identificador vem do conteúdo, então reenviar o mesmo arquivo recai no
+ * mesmo caminho e no mesmo registro.
  */
 export function decidirAposFalhaDeRegistro(
   codigo: string | null | undefined,
+  jaRepetiu = false,
 ): AcaoAposFalhaDeRegistro {
   if (codigo && (RECUSAS_DE_BARREIRA as readonly string[]).includes(codigo)) {
     return "REMOVER_OBJETO";
   }
-  return "REPETIR_REGISTRO";
+  return jaRepetiu ? "MANTER_E_DECLARAR" : "REPETIR_REGISTRO";
 }
 
 // ───────────────────── log operacional do envio ────────────────────────────
@@ -226,6 +312,8 @@ export function decidirAposFalhaDeRegistro(
 export type MotivoDeFalhaDeEnvio =
   | "REGISTRO_RECUSADO"
   | "REGISTRO_INDISPONIVEL"
+  /** O banco não respondeu. Pode ter gravado. O objeto ficou, de propósito. */
+  | "REGISTRO_INDEFINIDO"
   | "OBJETO_SEM_REGISTRO";
 
 export interface FalhaDeEnvioParaLog {
@@ -239,6 +327,7 @@ export class CampoInvalidoEmLogDeEnvioError extends Error {}
 const MOTIVOS_DE_FALHA: readonly MotivoDeFalhaDeEnvio[] = [
   "REGISTRO_RECUSADO",
   "REGISTRO_INDISPONIVEL",
+  "REGISTRO_INDEFINIDO",
   "OBJETO_SEM_REGISTRO",
 ];
 
