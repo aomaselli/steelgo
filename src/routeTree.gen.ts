@@ -9,218 +9,119 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TransportadorasRouteImport } from './routes/transportadoras'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as TecnologiaRouteImport } from './routes/tecnologia'
-import { Route as SuporteRouteImport } from './routes/suporte'
-import { Route as SolucoesRouteImport } from './routes/solucoes'
-import { Route as SobreRouteImport } from './routes/sobre'
-import { Route as ShipperRouteImport } from './routes/shipper'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as RegisterRouteImport } from './routes/register'
-import { Route as RecursosRouteImport } from './routes/recursos'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as OnboardingRouteImport } from './routes/onboarding'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as IndustriasRouteImport } from './routes/industrias'
-import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
-import { Route as EsgRouteImport } from './routes/esg'
-import { Route as DriverRouteImport } from './routes/driver'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CookiesRouteImport } from './routes/cookies'
-import { Route as ContatoRouteImport } from './routes/contato'
-import { Route as CarrierRouteImport } from './routes/carrier'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ShipperIndexRouteImport } from './routes/shipper.index'
-import { Route as DriverIndexRouteImport } from './routes/driver.index'
-import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as CarrierRouteImport } from './routes/carrier'
+import { Route as ContatoRouteImport } from './routes/contato'
+import { Route as CookiesRouteImport } from './routes/cookies'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as DriverRouteImport } from './routes/driver'
+import { Route as EsgRouteImport } from './routes/esg'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as IndustriasRouteImport } from './routes/industrias'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as RecursosRouteImport } from './routes/recursos'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as ShipperRouteImport } from './routes/shipper'
+import { Route as SobreRouteImport } from './routes/sobre'
+import { Route as SolucoesRouteImport } from './routes/solucoes'
+import { Route as SuporteRouteImport } from './routes/suporte'
+import { Route as TecnologiaRouteImport } from './routes/tecnologia'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as TransportadorasRouteImport } from './routes/transportadoras'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
-import { Route as TransportadorasViagensRouteImport } from './routes/transportadoras_.viagens'
-import { Route as TransportadorasHomologacaoRouteImport } from './routes/transportadoras_.homologacao'
-import { Route as TecnologiaSteelCargoPassportRouteImport } from './routes/tecnologia_.steel-cargo-passport'
-import { Route as TecnologiaOpenApiEcosystemRouteImport } from './routes/tecnologia_.open-api-ecosystem'
-import { Route as TecnologiaDriverAppRouteImport } from './routes/tecnologia_.driver-app'
-import { Route as TecnologiaComplianceSuiteRouteImport } from './routes/tecnologia_.compliance-suite'
-import { Route as TecnologiaAiOrchestrationEngineRouteImport } from './routes/tecnologia_.ai-orchestration-engine'
-import { Route as SuporteCanaisRouteImport } from './routes/suporte_.canais'
-import { Route as SuporteAjudaRouteImport } from './routes/suporte_.ajuda'
-import { Route as SolucoesSteelgoPlatformRouteImport } from './routes/solucoes_.steelgo-platform'
-import { Route as SolucoesSteelgoPayRouteImport } from './routes/solucoes_.steelgo-pay'
-import { Route as SolucoesSteelgoNetworkRouteImport } from './routes/solucoes_.steelgo-network'
-import { Route as SolucoesManagedLogisticsRouteImport } from './routes/solucoes_.managed-logistics'
-import { Route as SolucoesControlTowerRouteImport } from './routes/solucoes_.control-tower'
-import { Route as SobreVisaoRouteImport } from './routes/sobre_.visao'
-import { Route as SobrePilaresRouteImport } from './routes/sobre_.pilares'
-import { Route as ShipperSettingsRouteImport } from './routes/shipper.settings'
-import { Route as ShipperPaymentsRouteImport } from './routes/shipper.payments'
-import { Route as ShipperEsgRouteImport } from './routes/shipper.esg'
-import { Route as RecursosIntegracoesRouteImport } from './routes/recursos_.integracoes'
-import { Route as RecursosGuiasRouteImport } from './routes/recursos_.guias'
-import { Route as IndustriasVarejoRouteImport } from './routes/industrias_.varejo'
-import { Route as IndustriasSiderurgicasRouteImport } from './routes/industrias_.siderurgicas'
-import { Route as IndustriasIndustriaRouteImport } from './routes/industrias_.industria'
-import { Route as IndustriasDistribuidoresRouteImport } from './routes/industrias_.distribuidores'
-import { Route as EsgSteelgoGreenRouteImport } from './routes/esg_.steelgo-green'
-import { Route as EsgIndicadoresRouteImport } from './routes/esg_.indicadores'
-import { Route as EsgEficienciaRouteImport } from './routes/esg_.eficiencia'
-import { Route as EsgCalculadoraRouteImport } from './routes/esg_.calculadora'
-import { Route as DriverReturnReceiptRouteImport } from './routes/driver.return-receipt'
-import { Route as DriverProfileRouteImport } from './routes/driver.profile'
-import { Route as DriverPodRouteImport } from './routes/driver.pod'
-import { Route as DriverPanicRouteImport } from './routes/driver.panic'
-import { Route as DriverHistoryRouteImport } from './routes/driver.history'
-import { Route as DriverExceptionRouteImport } from './routes/driver.exception'
-import { Route as DriverDocsRouteImport } from './routes/driver.docs'
-import { Route as DriverDeliveryCompleteRouteImport } from './routes/driver.delivery-complete'
-import { Route as DriverCheckpointRouteImport } from './routes/driver.checkpoint'
-import { Route as ContatoComercialRouteImport } from './routes/contato_.comercial'
-import { Route as CarrierVehiclesRouteImport } from './routes/carrier.vehicles'
-import { Route as CarrierSettingsRouteImport } from './routes/carrier.settings'
-import { Route as CarrierScoreRouteImport } from './routes/carrier.score'
-import { Route as CarrierPayoutsRouteImport } from './routes/carrier.payouts'
-import { Route as CarrierPaymentsRouteImport } from './routes/carrier.payments'
-import { Route as CarrierMarketplaceRouteImport } from './routes/carrier.marketplace'
-import { Route as CarrierFleetRouteImport } from './routes/carrier.fleet'
-import { Route as CarrierDriversRouteImport } from './routes/carrier.drivers'
-import { Route as CarrierBidsRouteImport } from './routes/carrier.bids'
-import { Route as CarrierActiveRouteImport } from './routes/carrier.active'
-import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
-import { Route as AdminUsersRouteImport } from './routes/admin.users'
-import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
-import { Route as AdminSecurityRouteImport } from './routes/admin.security'
-import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
-import { Route as AdminFreightsRouteImport } from './routes/admin.freights'
-import { Route as AdminEsgRouteImport } from './routes/admin.esg'
-import { Route as AdminContractsRouteImport } from './routes/admin.contracts'
-import { Route as AdminCarriersRouteImport } from './routes/admin.carriers'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
-import { Route as ShipperTripsIndexRouteImport } from './routes/shipper.trips.index'
-import { Route as ShipperFreightsIndexRouteImport } from './routes/shipper.freights.index'
-import { Route as ShipperDisputesIndexRouteImport } from './routes/shipper.disputes.index'
-import { Route as ShipperContractsIndexRouteImport } from './routes/shipper.contracts.index'
-import { Route as CarrierTripsIndexRouteImport } from './routes/carrier.trips.index'
-import { Route as CarrierDisputesIndexRouteImport } from './routes/carrier.disputes.index'
-import { Route as CarrierContractsIndexRouteImport } from './routes/carrier.contracts.index'
-import { Route as AdminOperationsIndexRouteImport } from './routes/admin.operations.index'
+import { Route as AdminCarriersRouteImport } from './routes/admin.carriers'
+import { Route as AdminContractsRouteImport } from './routes/admin.contracts'
+import { Route as AdminEsgRouteImport } from './routes/admin.esg'
+import { Route as AdminFreightsRouteImport } from './routes/admin.freights'
+import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
+import { Route as AdminSecurityRouteImport } from './routes/admin.security'
+import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as CarrierIndexRouteImport } from './routes/carrier.index'
+import { Route as CarrierActiveRouteImport } from './routes/carrier.active'
+import { Route as CarrierBidsRouteImport } from './routes/carrier.bids'
+import { Route as CarrierDriversRouteImport } from './routes/carrier.drivers'
+import { Route as CarrierFleetRouteImport } from './routes/carrier.fleet'
+import { Route as CarrierMarketplaceRouteImport } from './routes/carrier.marketplace'
+import { Route as CarrierPaymentsRouteImport } from './routes/carrier.payments'
+import { Route as CarrierPayoutsRouteImport } from './routes/carrier.payouts'
+import { Route as CarrierScoreRouteImport } from './routes/carrier.score'
+import { Route as CarrierSettingsRouteImport } from './routes/carrier.settings'
+import { Route as CarrierVehiclesRouteImport } from './routes/carrier.vehicles'
+import { Route as ContatoComercialRouteImport } from './routes/contato_.comercial'
+import { Route as DriverIndexRouteImport } from './routes/driver.index'
+import { Route as DriverCheckpointRouteImport } from './routes/driver.checkpoint'
+import { Route as DriverDeliveryCompleteRouteImport } from './routes/driver.delivery-complete'
+import { Route as DriverDocsRouteImport } from './routes/driver.docs'
+import { Route as DriverExceptionRouteImport } from './routes/driver.exception'
+import { Route as DriverHistoryRouteImport } from './routes/driver.history'
+import { Route as DriverPanicRouteImport } from './routes/driver.panic'
+import { Route as DriverPodRouteImport } from './routes/driver.pod'
+import { Route as DriverProfileRouteImport } from './routes/driver.profile'
+import { Route as DriverReturnReceiptRouteImport } from './routes/driver.return-receipt'
+import { Route as DriverValidacaoRouteImport } from './routes/driver.validacao'
+import { Route as EsgCalculadoraRouteImport } from './routes/esg_.calculadora'
+import { Route as EsgEficienciaRouteImport } from './routes/esg_.eficiencia'
+import { Route as EsgIndicadoresRouteImport } from './routes/esg_.indicadores'
+import { Route as EsgSteelgoGreenRouteImport } from './routes/esg_.steelgo-green'
+import { Route as IndustriasDistribuidoresRouteImport } from './routes/industrias_.distribuidores'
+import { Route as IndustriasIndustriaRouteImport } from './routes/industrias_.industria'
+import { Route as IndustriasSiderurgicasRouteImport } from './routes/industrias_.siderurgicas'
+import { Route as IndustriasVarejoRouteImport } from './routes/industrias_.varejo'
+import { Route as RecursosGuiasRouteImport } from './routes/recursos_.guias'
+import { Route as RecursosIntegracoesRouteImport } from './routes/recursos_.integracoes'
+import { Route as ShipperIndexRouteImport } from './routes/shipper.index'
+import { Route as ShipperEsgRouteImport } from './routes/shipper.esg'
+import { Route as ShipperPaymentsRouteImport } from './routes/shipper.payments'
+import { Route as ShipperSettingsRouteImport } from './routes/shipper.settings'
+import { Route as SobrePilaresRouteImport } from './routes/sobre_.pilares'
+import { Route as SobreVisaoRouteImport } from './routes/sobre_.visao'
+import { Route as SolucoesControlTowerRouteImport } from './routes/solucoes_.control-tower'
+import { Route as SolucoesManagedLogisticsRouteImport } from './routes/solucoes_.managed-logistics'
+import { Route as SolucoesSteelgoNetworkRouteImport } from './routes/solucoes_.steelgo-network'
+import { Route as SolucoesSteelgoPayRouteImport } from './routes/solucoes_.steelgo-pay'
+import { Route as SolucoesSteelgoPlatformRouteImport } from './routes/solucoes_.steelgo-platform'
+import { Route as SuporteAjudaRouteImport } from './routes/suporte_.ajuda'
+import { Route as SuporteCanaisRouteImport } from './routes/suporte_.canais'
+import { Route as TecnologiaAiOrchestrationEngineRouteImport } from './routes/tecnologia_.ai-orchestration-engine'
+import { Route as TecnologiaComplianceSuiteRouteImport } from './routes/tecnologia_.compliance-suite'
+import { Route as TecnologiaDriverAppRouteImport } from './routes/tecnologia_.driver-app'
+import { Route as TecnologiaOpenApiEcosystemRouteImport } from './routes/tecnologia_.open-api-ecosystem'
+import { Route as TecnologiaSteelCargoPassportRouteImport } from './routes/tecnologia_.steel-cargo-passport'
+import { Route as TransportadorasHomologacaoRouteImport } from './routes/transportadoras_.homologacao'
+import { Route as TransportadorasViagensRouteImport } from './routes/transportadoras_.viagens'
 import { Route as AdminDisputesIndexRouteImport } from './routes/admin.disputes.index'
-import { Route as ShipperTripsIdRouteImport } from './routes/shipper.trips.$id'
-import { Route as ShipperReviewContractIdRouteImport } from './routes/shipper.review.$contractId'
-import { Route as ShipperPaymentContractIdRouteImport } from './routes/shipper.payment.$contractId'
-import { Route as ShipperFreightsNewRouteImport } from './routes/shipper.freights.new'
-import { Route as ShipperFreightsIdRouteImport } from './routes/shipper.freights.$id'
-import { Route as ShipperDisputesIdRouteImport } from './routes/shipper.disputes.$id'
-import { Route as ShipperContractsIdRouteImport } from './routes/shipper.contracts.$id'
-import { Route as CarrierTripsIdRouteImport } from './routes/carrier.trips.$id'
-import { Route as CarrierDisputesIdRouteImport } from './routes/carrier.disputes.$id'
-import { Route as CarrierContractsIdRouteImport } from './routes/carrier.contracts.$id'
-import { Route as AdminOperationsGovernanceRouteImport } from './routes/admin.operations.governance'
-import { Route as AdminOperationsIdRouteImport } from './routes/admin.operations.$id'
 import { Route as AdminDisputesIdRouteImport } from './routes/admin.disputes.$id'
+import { Route as AdminOperationsIndexRouteImport } from './routes/admin.operations.index'
+import { Route as AdminOperationsIdRouteImport } from './routes/admin.operations.$id'
+import { Route as AdminOperationsGovernanceRouteImport } from './routes/admin.operations.governance'
+import { Route as CarrierContractsIndexRouteImport } from './routes/carrier.contracts.index'
+import { Route as CarrierContractsIdRouteImport } from './routes/carrier.contracts.$id'
+import { Route as CarrierDisputesIndexRouteImport } from './routes/carrier.disputes.index'
+import { Route as CarrierDisputesIdRouteImport } from './routes/carrier.disputes.$id'
+import { Route as CarrierTripsIndexRouteImport } from './routes/carrier.trips.index'
+import { Route as CarrierTripsIdRouteImport } from './routes/carrier.trips.$id'
+import { Route as ShipperContractsIndexRouteImport } from './routes/shipper.contracts.index'
+import { Route as ShipperContractsIdRouteImport } from './routes/shipper.contracts.$id'
+import { Route as ShipperDisputesIndexRouteImport } from './routes/shipper.disputes.index'
+import { Route as ShipperDisputesIdRouteImport } from './routes/shipper.disputes.$id'
+import { Route as ShipperFreightsIndexRouteImport } from './routes/shipper.freights.index'
+import { Route as ShipperFreightsIdRouteImport } from './routes/shipper.freights.$id'
+import { Route as ShipperFreightsNewRouteImport } from './routes/shipper.freights.new'
+import { Route as ShipperPaymentContractIdRouteImport } from './routes/shipper.payment.$contractId'
+import { Route as ShipperReviewContractIdRouteImport } from './routes/shipper.review.$contractId'
+import { Route as ShipperTripsIndexRouteImport } from './routes/shipper.trips.index'
+import { Route as ShipperTripsIdRouteImport } from './routes/shipper.trips.$id'
 
-const TransportadorasRoute = TransportadorasRouteImport.update({
-  id: '/transportadoras',
-  path: '/transportadoras',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const TecnologiaRoute = TecnologiaRouteImport.update({
-  id: '/tecnologia',
-  path: '/tecnologia',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SuporteRoute = SuporteRouteImport.update({
-  id: '/suporte',
-  path: '/suporte',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolucoesRoute = SolucoesRouteImport.update({
-  id: '/solucoes',
-  path: '/solucoes',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SobreRoute = SobreRouteImport.update({
-  id: '/sobre',
-  path: '/sobre',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShipperRoute = ShipperRouteImport.update({
-  id: '/shipper',
-  path: '/shipper',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RegisterRoute = RegisterRouteImport.update({
-  id: '/register',
-  path: '/register',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RecursosRoute = RecursosRouteImport.update({
-  id: '/recursos',
-  path: '/recursos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const OnboardingRoute = OnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndustriasRoute = IndustriasRouteImport.update({
-  id: '/industrias',
-  path: '/industrias',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
-  id: '/forgot-password',
-  path: '/forgot-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EsgRoute = EsgRouteImport.update({
-  id: '/esg',
-  path: '/esg',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DriverRoute = DriverRouteImport.update({
-  id: '/driver',
-  path: '/driver',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CookiesRoute = CookiesRouteImport.update({
-  id: '/cookies',
-  path: '/cookies',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContatoRoute = ContatoRouteImport.update({
-  id: '/contato',
-  path: '/contato',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CarrierRoute = CarrierRouteImport.update({
-  id: '/carrier',
-  path: '/carrier',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -228,155 +129,299 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CarrierRoute = CarrierRouteImport.update({
+  id: '/carrier',
+  path: '/carrier',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ShipperIndexRoute = ShipperIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ShipperRoute,
+const ContatoRoute = ContatoRouteImport.update({
+  id: '/contato',
+  path: '/contato',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const DriverIndexRoute = DriverIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DriverRoute,
+const CookiesRoute = CookiesRouteImport.update({
+  id: '/cookies',
+  path: '/cookies',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const CarrierIndexRoute = CarrierIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => CarrierRoute,
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DriverRoute = DriverRouteImport.update({
+  id: '/driver',
+  path: '/driver',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgRoute = EsgRouteImport.update({
+  id: '/esg',
+  path: '/esg',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndustriasRoute = IndustriasRouteImport.update({
+  id: '/industrias',
+  path: '/industrias',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecursosRoute = RecursosRouteImport.update({
+  id: '/recursos',
+  path: '/recursos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShipperRoute = ShipperRouteImport.update({
+  id: '/shipper',
+  path: '/shipper',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreRoute = SobreRouteImport.update({
+  id: '/sobre',
+  path: '/sobre',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesRoute = SolucoesRouteImport.update({
+  id: '/solucoes',
+  path: '/solucoes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuporteRoute = SuporteRouteImport.update({
+  id: '/suporte',
+  path: '/suporte',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TecnologiaRoute = TecnologiaRouteImport.update({
+  id: '/tecnologia',
+  path: '/tecnologia',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransportadorasRoute = TransportadorasRouteImport.update({
+  id: '/transportadoras',
+  path: '/transportadoras',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRoute,
 } as any)
-const TransportadorasViagensRoute = TransportadorasViagensRouteImport.update({
-  id: '/transportadoras_/viagens',
-  path: '/transportadoras/viagens',
-  getParentRoute: () => rootRouteImport,
+const AdminAuditRoute = AdminAuditRouteImport.update({
+  id: '/audit',
+  path: '/audit',
+  getParentRoute: () => AdminRoute,
 } as any)
-const TransportadorasHomologacaoRoute =
-  TransportadorasHomologacaoRouteImport.update({
-    id: '/transportadoras_/homologacao',
-    path: '/transportadoras/homologacao',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const TecnologiaSteelCargoPassportRoute =
-  TecnologiaSteelCargoPassportRouteImport.update({
-    id: '/tecnologia_/steel-cargo-passport',
-    path: '/tecnologia/steel-cargo-passport',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const TecnologiaOpenApiEcosystemRoute =
-  TecnologiaOpenApiEcosystemRouteImport.update({
-    id: '/tecnologia_/open-api-ecosystem',
-    path: '/tecnologia/open-api-ecosystem',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const TecnologiaDriverAppRoute = TecnologiaDriverAppRouteImport.update({
-  id: '/tecnologia_/driver-app',
-  path: '/tecnologia/driver-app',
-  getParentRoute: () => rootRouteImport,
+const AdminCarriersRoute = AdminCarriersRouteImport.update({
+  id: '/carriers',
+  path: '/carriers',
+  getParentRoute: () => AdminRoute,
 } as any)
-const TecnologiaComplianceSuiteRoute =
-  TecnologiaComplianceSuiteRouteImport.update({
-    id: '/tecnologia_/compliance-suite',
-    path: '/tecnologia/compliance-suite',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const TecnologiaAiOrchestrationEngineRoute =
-  TecnologiaAiOrchestrationEngineRouteImport.update({
-    id: '/tecnologia_/ai-orchestration-engine',
-    path: '/tecnologia/ai-orchestration-engine',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const SuporteCanaisRoute = SuporteCanaisRouteImport.update({
-  id: '/suporte_/canais',
-  path: '/suporte/canais',
-  getParentRoute: () => rootRouteImport,
+const AdminContractsRoute = AdminContractsRouteImport.update({
+  id: '/contracts',
+  path: '/contracts',
+  getParentRoute: () => AdminRoute,
 } as any)
-const SuporteAjudaRoute = SuporteAjudaRouteImport.update({
-  id: '/suporte_/ajuda',
-  path: '/suporte/ajuda',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolucoesSteelgoPlatformRoute = SolucoesSteelgoPlatformRouteImport.update({
-  id: '/solucoes_/steelgo-platform',
-  path: '/solucoes/steelgo-platform',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolucoesSteelgoPayRoute = SolucoesSteelgoPayRouteImport.update({
-  id: '/solucoes_/steelgo-pay',
-  path: '/solucoes/steelgo-pay',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolucoesSteelgoNetworkRoute = SolucoesSteelgoNetworkRouteImport.update({
-  id: '/solucoes_/steelgo-network',
-  path: '/solucoes/steelgo-network',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SolucoesManagedLogisticsRoute =
-  SolucoesManagedLogisticsRouteImport.update({
-    id: '/solucoes_/managed-logistics',
-    path: '/solucoes/managed-logistics',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const SolucoesControlTowerRoute = SolucoesControlTowerRouteImport.update({
-  id: '/solucoes_/control-tower',
-  path: '/solucoes/control-tower',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SobreVisaoRoute = SobreVisaoRouteImport.update({
-  id: '/sobre_/visao',
-  path: '/sobre/visao',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SobrePilaresRoute = SobrePilaresRouteImport.update({
-  id: '/sobre_/pilares',
-  path: '/sobre/pilares',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ShipperSettingsRoute = ShipperSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => ShipperRoute,
-} as any)
-const ShipperPaymentsRoute = ShipperPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
-  getParentRoute: () => ShipperRoute,
-} as any)
-const ShipperEsgRoute = ShipperEsgRouteImport.update({
+const AdminEsgRoute = AdminEsgRouteImport.update({
   id: '/esg',
   path: '/esg',
-  getParentRoute: () => ShipperRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
-const RecursosIntegracoesRoute = RecursosIntegracoesRouteImport.update({
-  id: '/recursos_/integracoes',
-  path: '/recursos/integracoes',
+const AdminFreightsRoute = AdminFreightsRouteImport.update({
+  id: '/freights',
+  path: '/freights',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSecurityRoute = AdminSecurityRouteImport.update({
+  id: '/security',
+  path: '/security',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsRoute = AdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RecursosGuiasRoute = RecursosGuiasRouteImport.update({
-  id: '/recursos_/guias',
-  path: '/recursos/guias',
+const CarrierIndexRoute = CarrierIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierActiveRoute = CarrierActiveRouteImport.update({
+  id: '/active',
+  path: '/active',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierBidsRoute = CarrierBidsRouteImport.update({
+  id: '/bids',
+  path: '/bids',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierDriversRoute = CarrierDriversRouteImport.update({
+  id: '/drivers',
+  path: '/drivers',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierFleetRoute = CarrierFleetRouteImport.update({
+  id: '/fleet',
+  path: '/fleet',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierMarketplaceRoute = CarrierMarketplaceRouteImport.update({
+  id: '/marketplace',
+  path: '/marketplace',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierPaymentsRoute = CarrierPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierPayoutsRoute = CarrierPayoutsRouteImport.update({
+  id: '/payouts',
+  path: '/payouts',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierScoreRoute = CarrierScoreRouteImport.update({
+  id: '/score',
+  path: '/score',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierSettingsRoute = CarrierSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const CarrierVehiclesRoute = CarrierVehiclesRouteImport.update({
+  id: '/vehicles',
+  path: '/vehicles',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const ContatoComercialRoute = ContatoComercialRouteImport.update({
+  id: '/contato_/comercial',
+  path: '/contato/comercial',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndustriasVarejoRoute = IndustriasVarejoRouteImport.update({
-  id: '/industrias_/varejo',
-  path: '/industrias/varejo',
+const DriverIndexRoute = DriverIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverCheckpointRoute = DriverCheckpointRouteImport.update({
+  id: '/checkpoint',
+  path: '/checkpoint',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverDeliveryCompleteRoute = DriverDeliveryCompleteRouteImport.update({
+  id: '/delivery-complete',
+  path: '/delivery-complete',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverDocsRoute = DriverDocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverExceptionRoute = DriverExceptionRouteImport.update({
+  id: '/exception',
+  path: '/exception',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverHistoryRoute = DriverHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverPanicRoute = DriverPanicRouteImport.update({
+  id: '/panic',
+  path: '/panic',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverPodRoute = DriverPodRouteImport.update({
+  id: '/pod',
+  path: '/pod',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverProfileRoute = DriverProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverReturnReceiptRoute = DriverReturnReceiptRouteImport.update({
+  id: '/return-receipt',
+  path: '/return-receipt',
+  getParentRoute: () => DriverRoute,
+} as any)
+const DriverValidacaoRoute = DriverValidacaoRouteImport.update({
+  id: '/validacao',
+  path: '/validacao',
+  getParentRoute: () => DriverRoute,
+} as any)
+const EsgCalculadoraRoute = EsgCalculadoraRouteImport.update({
+  id: '/esg_/calculadora',
+  path: '/esg/calculadora',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndustriasSiderurgicasRoute = IndustriasSiderurgicasRouteImport.update({
-  id: '/industrias_/siderurgicas',
-  path: '/industrias/siderurgicas',
+const EsgEficienciaRoute = EsgEficienciaRouteImport.update({
+  id: '/esg_/eficiencia',
+  path: '/esg/eficiencia',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndustriasIndustriaRoute = IndustriasIndustriaRouteImport.update({
-  id: '/industrias_/industria',
-  path: '/industrias/industria',
+const EsgIndicadoresRoute = EsgIndicadoresRouteImport.update({
+  id: '/esg_/indicadores',
+  path: '/esg/indicadores',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EsgSteelgoGreenRoute = EsgSteelgoGreenRouteImport.update({
+  id: '/esg_/steelgo-green',
+  path: '/esg/steelgo-green',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndustriasDistribuidoresRoute =
@@ -385,199 +430,171 @@ const IndustriasDistribuidoresRoute =
     path: '/industrias/distribuidores',
     getParentRoute: () => rootRouteImport,
   } as any)
-const EsgSteelgoGreenRoute = EsgSteelgoGreenRouteImport.update({
-  id: '/esg_/steelgo-green',
-  path: '/esg/steelgo-green',
+const IndustriasIndustriaRoute = IndustriasIndustriaRouteImport.update({
+  id: '/industrias_/industria',
+  path: '/industrias/industria',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EsgIndicadoresRoute = EsgIndicadoresRouteImport.update({
-  id: '/esg_/indicadores',
-  path: '/esg/indicadores',
+const IndustriasSiderurgicasRoute = IndustriasSiderurgicasRouteImport.update({
+  id: '/industrias_/siderurgicas',
+  path: '/industrias/siderurgicas',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EsgEficienciaRoute = EsgEficienciaRouteImport.update({
-  id: '/esg_/eficiencia',
-  path: '/esg/eficiencia',
+const IndustriasVarejoRoute = IndustriasVarejoRouteImport.update({
+  id: '/industrias_/varejo',
+  path: '/industrias/varejo',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EsgCalculadoraRoute = EsgCalculadoraRouteImport.update({
-  id: '/esg_/calculadora',
-  path: '/esg/calculadora',
+const RecursosGuiasRoute = RecursosGuiasRouteImport.update({
+  id: '/recursos_/guias',
+  path: '/recursos/guias',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DriverReturnReceiptRoute = DriverReturnReceiptRouteImport.update({
-  id: '/return-receipt',
-  path: '/return-receipt',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverProfileRoute = DriverProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverPodRoute = DriverPodRouteImport.update({
-  id: '/pod',
-  path: '/pod',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverPanicRoute = DriverPanicRouteImport.update({
-  id: '/panic',
-  path: '/panic',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverHistoryRoute = DriverHistoryRouteImport.update({
-  id: '/history',
-  path: '/history',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverExceptionRoute = DriverExceptionRouteImport.update({
-  id: '/exception',
-  path: '/exception',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverDocsRoute = DriverDocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverDeliveryCompleteRoute = DriverDeliveryCompleteRouteImport.update({
-  id: '/delivery-complete',
-  path: '/delivery-complete',
-  getParentRoute: () => DriverRoute,
-} as any)
-const DriverCheckpointRoute = DriverCheckpointRouteImport.update({
-  id: '/checkpoint',
-  path: '/checkpoint',
-  getParentRoute: () => DriverRoute,
-} as any)
-const ContatoComercialRoute = ContatoComercialRouteImport.update({
-  id: '/contato_/comercial',
-  path: '/contato/comercial',
+const RecursosIntegracoesRoute = RecursosIntegracoesRouteImport.update({
+  id: '/recursos_/integracoes',
+  path: '/recursos/integracoes',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CarrierVehiclesRoute = CarrierVehiclesRouteImport.update({
-  id: '/vehicles',
-  path: '/vehicles',
-  getParentRoute: () => CarrierRoute,
+const ShipperIndexRoute = ShipperIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ShipperRoute,
 } as any)
-const CarrierSettingsRoute = CarrierSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierScoreRoute = CarrierScoreRouteImport.update({
-  id: '/score',
-  path: '/score',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierPayoutsRoute = CarrierPayoutsRouteImport.update({
-  id: '/payouts',
-  path: '/payouts',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierPaymentsRoute = CarrierPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierMarketplaceRoute = CarrierMarketplaceRouteImport.update({
-  id: '/marketplace',
-  path: '/marketplace',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierFleetRoute = CarrierFleetRouteImport.update({
-  id: '/fleet',
-  path: '/fleet',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierDriversRoute = CarrierDriversRouteImport.update({
-  id: '/drivers',
-  path: '/drivers',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierBidsRoute = CarrierBidsRouteImport.update({
-  id: '/bids',
-  path: '/bids',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierActiveRoute = CarrierActiveRouteImport.update({
-  id: '/active',
-  path: '/active',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const AuthCallbackRoute = AuthCallbackRouteImport.update({
-  id: '/auth/callback',
-  path: '/auth/callback',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSettingsRoute = AdminSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminSecurityRoute = AdminSecurityRouteImport.update({
-  id: '/security',
-  path: '/security',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPaymentsRoute = AdminPaymentsRouteImport.update({
-  id: '/payments',
-  path: '/payments',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminFreightsRoute = AdminFreightsRouteImport.update({
-  id: '/freights',
-  path: '/freights',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminEsgRoute = AdminEsgRouteImport.update({
+const ShipperEsgRoute = ShipperEsgRouteImport.update({
   id: '/esg',
   path: '/esg',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminContractsRoute = AdminContractsRouteImport.update({
-  id: '/contracts',
-  path: '/contracts',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminCarriersRoute = AdminCarriersRouteImport.update({
-  id: '/carriers',
-  path: '/carriers',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminAuditRoute = AdminAuditRouteImport.update({
-  id: '/audit',
-  path: '/audit',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ShipperTripsIndexRoute = ShipperTripsIndexRouteImport.update({
-  id: '/trips/',
-  path: '/trips/',
   getParentRoute: () => ShipperRoute,
 } as any)
-const ShipperFreightsIndexRoute = ShipperFreightsIndexRouteImport.update({
-  id: '/freights/',
-  path: '/freights/',
+const ShipperPaymentsRoute = ShipperPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
   getParentRoute: () => ShipperRoute,
 } as any)
-const ShipperDisputesIndexRoute = ShipperDisputesIndexRouteImport.update({
+const ShipperSettingsRoute = ShipperSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const SobrePilaresRoute = SobrePilaresRouteImport.update({
+  id: '/sobre_/pilares',
+  path: '/sobre/pilares',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SobreVisaoRoute = SobreVisaoRouteImport.update({
+  id: '/sobre_/visao',
+  path: '/sobre/visao',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesControlTowerRoute = SolucoesControlTowerRouteImport.update({
+  id: '/solucoes_/control-tower',
+  path: '/solucoes/control-tower',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesManagedLogisticsRoute =
+  SolucoesManagedLogisticsRouteImport.update({
+    id: '/solucoes_/managed-logistics',
+    path: '/solucoes/managed-logistics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const SolucoesSteelgoNetworkRoute = SolucoesSteelgoNetworkRouteImport.update({
+  id: '/solucoes_/steelgo-network',
+  path: '/solucoes/steelgo-network',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesSteelgoPayRoute = SolucoesSteelgoPayRouteImport.update({
+  id: '/solucoes_/steelgo-pay',
+  path: '/solucoes/steelgo-pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SolucoesSteelgoPlatformRoute = SolucoesSteelgoPlatformRouteImport.update({
+  id: '/solucoes_/steelgo-platform',
+  path: '/solucoes/steelgo-platform',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuporteAjudaRoute = SuporteAjudaRouteImport.update({
+  id: '/suporte_/ajuda',
+  path: '/suporte/ajuda',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuporteCanaisRoute = SuporteCanaisRouteImport.update({
+  id: '/suporte_/canais',
+  path: '/suporte/canais',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TecnologiaAiOrchestrationEngineRoute =
+  TecnologiaAiOrchestrationEngineRouteImport.update({
+    id: '/tecnologia_/ai-orchestration-engine',
+    path: '/tecnologia/ai-orchestration-engine',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaComplianceSuiteRoute =
+  TecnologiaComplianceSuiteRouteImport.update({
+    id: '/tecnologia_/compliance-suite',
+    path: '/tecnologia/compliance-suite',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaDriverAppRoute = TecnologiaDriverAppRouteImport.update({
+  id: '/tecnologia_/driver-app',
+  path: '/tecnologia/driver-app',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TecnologiaOpenApiEcosystemRoute =
+  TecnologiaOpenApiEcosystemRouteImport.update({
+    id: '/tecnologia_/open-api-ecosystem',
+    path: '/tecnologia/open-api-ecosystem',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TecnologiaSteelCargoPassportRoute =
+  TecnologiaSteelCargoPassportRouteImport.update({
+    id: '/tecnologia_/steel-cargo-passport',
+    path: '/tecnologia/steel-cargo-passport',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TransportadorasHomologacaoRoute =
+  TransportadorasHomologacaoRouteImport.update({
+    id: '/transportadoras_/homologacao',
+    path: '/transportadoras/homologacao',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const TransportadorasViagensRoute = TransportadorasViagensRouteImport.update({
+  id: '/transportadoras_/viagens',
+  path: '/transportadoras/viagens',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminDisputesIndexRoute = AdminDisputesIndexRouteImport.update({
   id: '/disputes/',
   path: '/disputes/',
-  getParentRoute: () => ShipperRoute,
+  getParentRoute: () => AdminRoute,
 } as any)
-const ShipperContractsIndexRoute = ShipperContractsIndexRouteImport.update({
+const AdminDisputesIdRoute = AdminDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOperationsIndexRoute = AdminOperationsIndexRouteImport.update({
+  id: '/operations/',
+  path: '/operations/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOperationsIdRoute = AdminOperationsIdRouteImport.update({
+  id: '/operations/$id',
+  path: '/operations/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminOperationsGovernanceRoute =
+  AdminOperationsGovernanceRouteImport.update({
+    id: '/operations/governance',
+    path: '/operations/governance',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const CarrierContractsIndexRoute = CarrierContractsIndexRouteImport.update({
   id: '/contracts/',
   path: '/contracts/',
-  getParentRoute: () => ShipperRoute,
+  getParentRoute: () => CarrierRoute,
 } as any)
-const CarrierTripsIndexRoute = CarrierTripsIndexRouteImport.update({
-  id: '/trips/',
-  path: '/trips/',
+const CarrierContractsIdRoute = CarrierContractsIdRouteImport.update({
+  id: '/contracts/$id',
+  path: '/contracts/$id',
   getParentRoute: () => CarrierRoute,
 } as any)
 const CarrierDisputesIndexRoute = CarrierDisputesIndexRouteImport.update({
@@ -585,29 +602,54 @@ const CarrierDisputesIndexRoute = CarrierDisputesIndexRouteImport.update({
   path: '/disputes/',
   getParentRoute: () => CarrierRoute,
 } as any)
-const CarrierContractsIndexRoute = CarrierContractsIndexRouteImport.update({
-  id: '/contracts/',
-  path: '/contracts/',
+const CarrierDisputesIdRoute = CarrierDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
   getParentRoute: () => CarrierRoute,
 } as any)
-const AdminOperationsIndexRoute = AdminOperationsIndexRouteImport.update({
-  id: '/operations/',
-  path: '/operations/',
-  getParentRoute: () => AdminRoute,
+const CarrierTripsIndexRoute = CarrierTripsIndexRouteImport.update({
+  id: '/trips/',
+  path: '/trips/',
+  getParentRoute: () => CarrierRoute,
 } as any)
-const AdminDisputesIndexRoute = AdminDisputesIndexRouteImport.update({
-  id: '/disputes/',
-  path: '/disputes/',
-  getParentRoute: () => AdminRoute,
-} as any)
-const ShipperTripsIdRoute = ShipperTripsIdRouteImport.update({
+const CarrierTripsIdRoute = CarrierTripsIdRouteImport.update({
   id: '/trips/$id',
   path: '/trips/$id',
+  getParentRoute: () => CarrierRoute,
+} as any)
+const ShipperContractsIndexRoute = ShipperContractsIndexRouteImport.update({
+  id: '/contracts/',
+  path: '/contracts/',
   getParentRoute: () => ShipperRoute,
 } as any)
-const ShipperReviewContractIdRoute = ShipperReviewContractIdRouteImport.update({
-  id: '/review/$contractId',
-  path: '/review/$contractId',
+const ShipperContractsIdRoute = ShipperContractsIdRouteImport.update({
+  id: '/contracts/$id',
+  path: '/contracts/$id',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperDisputesIndexRoute = ShipperDisputesIndexRouteImport.update({
+  id: '/disputes/',
+  path: '/disputes/',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperDisputesIdRoute = ShipperDisputesIdRouteImport.update({
+  id: '/disputes/$id',
+  path: '/disputes/$id',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperFreightsIndexRoute = ShipperFreightsIndexRouteImport.update({
+  id: '/freights/',
+  path: '/freights/',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperFreightsIdRoute = ShipperFreightsIdRouteImport.update({
+  id: '/freights/$id',
+  path: '/freights/$id',
+  getParentRoute: () => ShipperRoute,
+} as any)
+const ShipperFreightsNewRoute = ShipperFreightsNewRouteImport.update({
+  id: '/freights/new',
+  path: '/freights/new',
   getParentRoute: () => ShipperRoute,
 } as any)
 const ShipperPaymentContractIdRoute =
@@ -616,56 +658,20 @@ const ShipperPaymentContractIdRoute =
     path: '/payment/$contractId',
     getParentRoute: () => ShipperRoute,
   } as any)
-const ShipperFreightsNewRoute = ShipperFreightsNewRouteImport.update({
-  id: '/freights/new',
-  path: '/freights/new',
+const ShipperReviewContractIdRoute = ShipperReviewContractIdRouteImport.update({
+  id: '/review/$contractId',
+  path: '/review/$contractId',
   getParentRoute: () => ShipperRoute,
 } as any)
-const ShipperFreightsIdRoute = ShipperFreightsIdRouteImport.update({
-  id: '/freights/$id',
-  path: '/freights/$id',
+const ShipperTripsIndexRoute = ShipperTripsIndexRouteImport.update({
+  id: '/trips/',
+  path: '/trips/',
   getParentRoute: () => ShipperRoute,
 } as any)
-const ShipperDisputesIdRoute = ShipperDisputesIdRouteImport.update({
-  id: '/disputes/$id',
-  path: '/disputes/$id',
-  getParentRoute: () => ShipperRoute,
-} as any)
-const ShipperContractsIdRoute = ShipperContractsIdRouteImport.update({
-  id: '/contracts/$id',
-  path: '/contracts/$id',
-  getParentRoute: () => ShipperRoute,
-} as any)
-const CarrierTripsIdRoute = CarrierTripsIdRouteImport.update({
+const ShipperTripsIdRoute = ShipperTripsIdRouteImport.update({
   id: '/trips/$id',
   path: '/trips/$id',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierDisputesIdRoute = CarrierDisputesIdRouteImport.update({
-  id: '/disputes/$id',
-  path: '/disputes/$id',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const CarrierContractsIdRoute = CarrierContractsIdRouteImport.update({
-  id: '/contracts/$id',
-  path: '/contracts/$id',
-  getParentRoute: () => CarrierRoute,
-} as any)
-const AdminOperationsGovernanceRoute =
-  AdminOperationsGovernanceRouteImport.update({
-    id: '/operations/governance',
-    path: '/operations/governance',
-    getParentRoute: () => AdminRoute,
-  } as any)
-const AdminOperationsIdRoute = AdminOperationsIdRouteImport.update({
-  id: '/operations/$id',
-  path: '/operations/$id',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminDisputesIdRoute = AdminDisputesIdRouteImport.update({
-  id: '/disputes/$id',
-  path: '/disputes/$id',
-  getParentRoute: () => AdminRoute,
+  getParentRoute: () => ShipperRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -722,6 +728,7 @@ export interface FileRoutesByFullPath {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/driver/validacao': typeof DriverValidacaoRoute
   '/esg/calculadora': typeof EsgCalculadoraRoute
   '/esg/eficiencia': typeof EsgEficienciaRoute
   '/esg/indicadores': typeof EsgIndicadoresRoute
@@ -828,6 +835,7 @@ export interface FileRoutesByTo {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/driver/validacao': typeof DriverValidacaoRoute
   '/esg/calculadora': typeof EsgCalculadoraRoute
   '/esg/eficiencia': typeof EsgEficienciaRoute
   '/esg/indicadores': typeof EsgIndicadoresRoute
@@ -939,6 +947,7 @@ export interface FileRoutesById {
   '/driver/pod': typeof DriverPodRoute
   '/driver/profile': typeof DriverProfileRoute
   '/driver/return-receipt': typeof DriverReturnReceiptRoute
+  '/driver/validacao': typeof DriverValidacaoRoute
   '/esg_/calculadora': typeof EsgCalculadoraRoute
   '/esg_/eficiencia': typeof EsgEficienciaRoute
   '/esg_/indicadores': typeof EsgIndicadoresRoute
@@ -1051,6 +1060,7 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/driver/validacao'
     | '/esg/calculadora'
     | '/esg/eficiencia'
     | '/esg/indicadores'
@@ -1157,6 +1167,7 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/driver/validacao'
     | '/esg/calculadora'
     | '/esg/eficiencia'
     | '/esg/indicadores'
@@ -1267,6 +1278,7 @@ export interface FileRouteTypes {
     | '/driver/pod'
     | '/driver/profile'
     | '/driver/return-receipt'
+    | '/driver/validacao'
     | '/esg_/calculadora'
     | '/esg_/eficiencia'
     | '/esg_/indicadores'
@@ -1380,151 +1392,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/transportadoras': {
-      id: '/transportadoras'
-      path: '/transportadoras'
-      fullPath: '/transportadoras'
-      preLoaderRoute: typeof TransportadorasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia': {
-      id: '/tecnologia'
-      path: '/tecnologia'
-      fullPath: '/tecnologia'
-      preLoaderRoute: typeof TecnologiaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/suporte': {
-      id: '/suporte'
-      path: '/suporte'
-      fullPath: '/suporte'
-      preLoaderRoute: typeof SuporteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes': {
-      id: '/solucoes'
-      path: '/solucoes'
-      fullPath: '/solucoes'
-      preLoaderRoute: typeof SolucoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sobre': {
-      id: '/sobre'
-      path: '/sobre'
-      fullPath: '/sobre'
-      preLoaderRoute: typeof SobreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shipper': {
-      id: '/shipper'
-      path: '/shipper'
-      fullPath: '/shipper'
-      preLoaderRoute: typeof ShipperRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/register': {
-      id: '/register'
-      path: '/register'
-      fullPath: '/register'
-      preLoaderRoute: typeof RegisterRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recursos': {
-      id: '/recursos'
-      path: '/recursos'
-      fullPath: '/recursos'
-      preLoaderRoute: typeof RecursosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/onboarding': {
-      id: '/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof OnboardingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industrias': {
-      id: '/industrias'
-      path: '/industrias'
-      fullPath: '/industrias'
-      preLoaderRoute: typeof IndustriasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/forgot-password': {
-      id: '/forgot-password'
-      path: '/forgot-password'
-      fullPath: '/forgot-password'
-      preLoaderRoute: typeof ForgotPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esg': {
-      id: '/esg'
-      path: '/esg'
-      fullPath: '/esg'
-      preLoaderRoute: typeof EsgRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/driver': {
-      id: '/driver'
-      path: '/driver'
-      fullPath: '/driver'
-      preLoaderRoute: typeof DriverRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cookies': {
-      id: '/cookies'
-      path: '/cookies'
-      fullPath: '/cookies'
-      preLoaderRoute: typeof CookiesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/contato': {
-      id: '/contato'
-      path: '/contato'
-      fullPath: '/contato'
-      preLoaderRoute: typeof ContatoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/carrier': {
-      id: '/carrier'
-      path: '/carrier'
-      fullPath: '/carrier'
-      preLoaderRoute: typeof CarrierRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -1534,445 +1406,158 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/carrier': {
+      id: '/carrier'
+      path: '/carrier'
+      fullPath: '/carrier'
+      preLoaderRoute: typeof CarrierRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/shipper/': {
-      id: '/shipper/'
-      path: '/'
-      fullPath: '/shipper/'
-      preLoaderRoute: typeof ShipperIndexRouteImport
-      parentRoute: typeof ShipperRoute
+    '/contato': {
+      id: '/contato'
+      path: '/contato'
+      fullPath: '/contato'
+      preLoaderRoute: typeof ContatoRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/driver/': {
-      id: '/driver/'
-      path: '/'
-      fullPath: '/driver/'
-      preLoaderRoute: typeof DriverIndexRouteImport
-      parentRoute: typeof DriverRoute
+    '/cookies': {
+      id: '/cookies'
+      path: '/cookies'
+      fullPath: '/cookies'
+      preLoaderRoute: typeof CookiesRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/carrier/': {
-      id: '/carrier/'
-      path: '/'
-      fullPath: '/carrier/'
-      preLoaderRoute: typeof CarrierIndexRouteImport
-      parentRoute: typeof CarrierRoute
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver': {
+      id: '/driver'
+      path: '/driver'
+      fullPath: '/driver'
+      preLoaderRoute: typeof DriverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg': {
+      id: '/esg'
+      path: '/esg'
+      fullPath: '/esg'
+      preLoaderRoute: typeof EsgRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias': {
+      id: '/industrias'
+      path: '/industrias'
+      fullPath: '/industrias'
+      preLoaderRoute: typeof IndustriasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recursos': {
+      id: '/recursos'
+      path: '/recursos'
+      fullPath: '/recursos'
+      preLoaderRoute: typeof RecursosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipper': {
+      id: '/shipper'
+      path: '/shipper'
+      fullPath: '/shipper'
+      preLoaderRoute: typeof ShipperRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre': {
+      id: '/sobre'
+      path: '/sobre'
+      fullPath: '/sobre'
+      preLoaderRoute: typeof SobreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes': {
+      id: '/solucoes'
+      path: '/solucoes'
+      fullPath: '/solucoes'
+      preLoaderRoute: typeof SolucoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte': {
+      id: '/suporte'
+      path: '/suporte'
+      fullPath: '/suporte'
+      preLoaderRoute: typeof SuporteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia': {
+      id: '/tecnologia'
+      path: '/tecnologia'
+      fullPath: '/tecnologia'
+      preLoaderRoute: typeof TecnologiaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transportadoras': {
+      id: '/transportadoras'
+      path: '/transportadoras'
+      fullPath: '/transportadoras'
+      preLoaderRoute: typeof TransportadorasRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
       path: '/'
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/transportadoras_/viagens': {
-      id: '/transportadoras_/viagens'
-      path: '/transportadoras/viagens'
-      fullPath: '/transportadoras/viagens'
-      preLoaderRoute: typeof TransportadorasViagensRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/transportadoras_/homologacao': {
-      id: '/transportadoras_/homologacao'
-      path: '/transportadoras/homologacao'
-      fullPath: '/transportadoras/homologacao'
-      preLoaderRoute: typeof TransportadorasHomologacaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia_/steel-cargo-passport': {
-      id: '/tecnologia_/steel-cargo-passport'
-      path: '/tecnologia/steel-cargo-passport'
-      fullPath: '/tecnologia/steel-cargo-passport'
-      preLoaderRoute: typeof TecnologiaSteelCargoPassportRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia_/open-api-ecosystem': {
-      id: '/tecnologia_/open-api-ecosystem'
-      path: '/tecnologia/open-api-ecosystem'
-      fullPath: '/tecnologia/open-api-ecosystem'
-      preLoaderRoute: typeof TecnologiaOpenApiEcosystemRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia_/driver-app': {
-      id: '/tecnologia_/driver-app'
-      path: '/tecnologia/driver-app'
-      fullPath: '/tecnologia/driver-app'
-      preLoaderRoute: typeof TecnologiaDriverAppRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia_/compliance-suite': {
-      id: '/tecnologia_/compliance-suite'
-      path: '/tecnologia/compliance-suite'
-      fullPath: '/tecnologia/compliance-suite'
-      preLoaderRoute: typeof TecnologiaComplianceSuiteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/tecnologia_/ai-orchestration-engine': {
-      id: '/tecnologia_/ai-orchestration-engine'
-      path: '/tecnologia/ai-orchestration-engine'
-      fullPath: '/tecnologia/ai-orchestration-engine'
-      preLoaderRoute: typeof TecnologiaAiOrchestrationEngineRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/suporte_/canais': {
-      id: '/suporte_/canais'
-      path: '/suporte/canais'
-      fullPath: '/suporte/canais'
-      preLoaderRoute: typeof SuporteCanaisRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/suporte_/ajuda': {
-      id: '/suporte_/ajuda'
-      path: '/suporte/ajuda'
-      fullPath: '/suporte/ajuda'
-      preLoaderRoute: typeof SuporteAjudaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes_/steelgo-platform': {
-      id: '/solucoes_/steelgo-platform'
-      path: '/solucoes/steelgo-platform'
-      fullPath: '/solucoes/steelgo-platform'
-      preLoaderRoute: typeof SolucoesSteelgoPlatformRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes_/steelgo-pay': {
-      id: '/solucoes_/steelgo-pay'
-      path: '/solucoes/steelgo-pay'
-      fullPath: '/solucoes/steelgo-pay'
-      preLoaderRoute: typeof SolucoesSteelgoPayRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes_/steelgo-network': {
-      id: '/solucoes_/steelgo-network'
-      path: '/solucoes/steelgo-network'
-      fullPath: '/solucoes/steelgo-network'
-      preLoaderRoute: typeof SolucoesSteelgoNetworkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes_/managed-logistics': {
-      id: '/solucoes_/managed-logistics'
-      path: '/solucoes/managed-logistics'
-      fullPath: '/solucoes/managed-logistics'
-      preLoaderRoute: typeof SolucoesManagedLogisticsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/solucoes_/control-tower': {
-      id: '/solucoes_/control-tower'
-      path: '/solucoes/control-tower'
-      fullPath: '/solucoes/control-tower'
-      preLoaderRoute: typeof SolucoesControlTowerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sobre_/visao': {
-      id: '/sobre_/visao'
-      path: '/sobre/visao'
-      fullPath: '/sobre/visao'
-      preLoaderRoute: typeof SobreVisaoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sobre_/pilares': {
-      id: '/sobre_/pilares'
-      path: '/sobre/pilares'
-      fullPath: '/sobre/pilares'
-      preLoaderRoute: typeof SobrePilaresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/shipper/settings': {
-      id: '/shipper/settings'
-      path: '/settings'
-      fullPath: '/shipper/settings'
-      preLoaderRoute: typeof ShipperSettingsRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/payments': {
-      id: '/shipper/payments'
-      path: '/payments'
-      fullPath: '/shipper/payments'
-      preLoaderRoute: typeof ShipperPaymentsRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/esg': {
-      id: '/shipper/esg'
-      path: '/esg'
-      fullPath: '/shipper/esg'
-      preLoaderRoute: typeof ShipperEsgRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/recursos_/integracoes': {
-      id: '/recursos_/integracoes'
-      path: '/recursos/integracoes'
-      fullPath: '/recursos/integracoes'
-      preLoaderRoute: typeof RecursosIntegracoesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/recursos_/guias': {
-      id: '/recursos_/guias'
-      path: '/recursos/guias'
-      fullPath: '/recursos/guias'
-      preLoaderRoute: typeof RecursosGuiasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industrias_/varejo': {
-      id: '/industrias_/varejo'
-      path: '/industrias/varejo'
-      fullPath: '/industrias/varejo'
-      preLoaderRoute: typeof IndustriasVarejoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industrias_/siderurgicas': {
-      id: '/industrias_/siderurgicas'
-      path: '/industrias/siderurgicas'
-      fullPath: '/industrias/siderurgicas'
-      preLoaderRoute: typeof IndustriasSiderurgicasRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industrias_/industria': {
-      id: '/industrias_/industria'
-      path: '/industrias/industria'
-      fullPath: '/industrias/industria'
-      preLoaderRoute: typeof IndustriasIndustriaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/industrias_/distribuidores': {
-      id: '/industrias_/distribuidores'
-      path: '/industrias/distribuidores'
-      fullPath: '/industrias/distribuidores'
-      preLoaderRoute: typeof IndustriasDistribuidoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esg_/steelgo-green': {
-      id: '/esg_/steelgo-green'
-      path: '/esg/steelgo-green'
-      fullPath: '/esg/steelgo-green'
-      preLoaderRoute: typeof EsgSteelgoGreenRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esg_/indicadores': {
-      id: '/esg_/indicadores'
-      path: '/esg/indicadores'
-      fullPath: '/esg/indicadores'
-      preLoaderRoute: typeof EsgIndicadoresRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esg_/eficiencia': {
-      id: '/esg_/eficiencia'
-      path: '/esg/eficiencia'
-      fullPath: '/esg/eficiencia'
-      preLoaderRoute: typeof EsgEficienciaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/esg_/calculadora': {
-      id: '/esg_/calculadora'
-      path: '/esg/calculadora'
-      fullPath: '/esg/calculadora'
-      preLoaderRoute: typeof EsgCalculadoraRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/driver/return-receipt': {
-      id: '/driver/return-receipt'
-      path: '/return-receipt'
-      fullPath: '/driver/return-receipt'
-      preLoaderRoute: typeof DriverReturnReceiptRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/profile': {
-      id: '/driver/profile'
-      path: '/profile'
-      fullPath: '/driver/profile'
-      preLoaderRoute: typeof DriverProfileRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/pod': {
-      id: '/driver/pod'
-      path: '/pod'
-      fullPath: '/driver/pod'
-      preLoaderRoute: typeof DriverPodRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/panic': {
-      id: '/driver/panic'
-      path: '/panic'
-      fullPath: '/driver/panic'
-      preLoaderRoute: typeof DriverPanicRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/history': {
-      id: '/driver/history'
-      path: '/history'
-      fullPath: '/driver/history'
-      preLoaderRoute: typeof DriverHistoryRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/exception': {
-      id: '/driver/exception'
-      path: '/exception'
-      fullPath: '/driver/exception'
-      preLoaderRoute: typeof DriverExceptionRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/docs': {
-      id: '/driver/docs'
-      path: '/docs'
-      fullPath: '/driver/docs'
-      preLoaderRoute: typeof DriverDocsRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/delivery-complete': {
-      id: '/driver/delivery-complete'
-      path: '/delivery-complete'
-      fullPath: '/driver/delivery-complete'
-      preLoaderRoute: typeof DriverDeliveryCompleteRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/driver/checkpoint': {
-      id: '/driver/checkpoint'
-      path: '/checkpoint'
-      fullPath: '/driver/checkpoint'
-      preLoaderRoute: typeof DriverCheckpointRouteImport
-      parentRoute: typeof DriverRoute
-    }
-    '/contato_/comercial': {
-      id: '/contato_/comercial'
-      path: '/contato/comercial'
-      fullPath: '/contato/comercial'
-      preLoaderRoute: typeof ContatoComercialRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/carrier/vehicles': {
-      id: '/carrier/vehicles'
-      path: '/vehicles'
-      fullPath: '/carrier/vehicles'
-      preLoaderRoute: typeof CarrierVehiclesRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/settings': {
-      id: '/carrier/settings'
-      path: '/settings'
-      fullPath: '/carrier/settings'
-      preLoaderRoute: typeof CarrierSettingsRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/score': {
-      id: '/carrier/score'
-      path: '/score'
-      fullPath: '/carrier/score'
-      preLoaderRoute: typeof CarrierScoreRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/payouts': {
-      id: '/carrier/payouts'
-      path: '/payouts'
-      fullPath: '/carrier/payouts'
-      preLoaderRoute: typeof CarrierPayoutsRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/payments': {
-      id: '/carrier/payments'
-      path: '/payments'
-      fullPath: '/carrier/payments'
-      preLoaderRoute: typeof CarrierPaymentsRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/marketplace': {
-      id: '/carrier/marketplace'
-      path: '/marketplace'
-      fullPath: '/carrier/marketplace'
-      preLoaderRoute: typeof CarrierMarketplaceRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/fleet': {
-      id: '/carrier/fleet'
-      path: '/fleet'
-      fullPath: '/carrier/fleet'
-      preLoaderRoute: typeof CarrierFleetRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/drivers': {
-      id: '/carrier/drivers'
-      path: '/drivers'
-      fullPath: '/carrier/drivers'
-      preLoaderRoute: typeof CarrierDriversRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/bids': {
-      id: '/carrier/bids'
-      path: '/bids'
-      fullPath: '/carrier/bids'
-      preLoaderRoute: typeof CarrierBidsRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/active': {
-      id: '/carrier/active'
-      path: '/active'
-      fullPath: '/carrier/active'
-      preLoaderRoute: typeof CarrierActiveRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/settings': {
-      id: '/admin/settings'
-      path: '/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AdminSettingsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/security': {
-      id: '/admin/security'
-      path: '/security'
-      fullPath: '/admin/security'
-      preLoaderRoute: typeof AdminSecurityRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/payments': {
-      id: '/admin/payments'
-      path: '/payments'
-      fullPath: '/admin/payments'
-      preLoaderRoute: typeof AdminPaymentsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/freights': {
-      id: '/admin/freights'
-      path: '/freights'
-      fullPath: '/admin/freights'
-      preLoaderRoute: typeof AdminFreightsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/esg': {
-      id: '/admin/esg'
-      path: '/esg'
-      fullPath: '/admin/esg'
-      preLoaderRoute: typeof AdminEsgRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/contracts': {
-      id: '/admin/contracts'
-      path: '/contracts'
-      fullPath: '/admin/contracts'
-      preLoaderRoute: typeof AdminContractsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/carriers': {
-      id: '/admin/carriers'
-      path: '/carriers'
-      fullPath: '/admin/carriers'
-      preLoaderRoute: typeof AdminCarriersRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit': {
@@ -1982,61 +1567,439 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAuditRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/shipper/trips/': {
-      id: '/shipper/trips/'
-      path: '/trips'
-      fullPath: '/shipper/trips/'
-      preLoaderRoute: typeof ShipperTripsIndexRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/freights/': {
-      id: '/shipper/freights/'
-      path: '/freights'
-      fullPath: '/shipper/freights/'
-      preLoaderRoute: typeof ShipperFreightsIndexRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/disputes/': {
-      id: '/shipper/disputes/'
-      path: '/disputes'
-      fullPath: '/shipper/disputes/'
-      preLoaderRoute: typeof ShipperDisputesIndexRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/contracts/': {
-      id: '/shipper/contracts/'
-      path: '/contracts'
-      fullPath: '/shipper/contracts/'
-      preLoaderRoute: typeof ShipperContractsIndexRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/carrier/trips/': {
-      id: '/carrier/trips/'
-      path: '/trips'
-      fullPath: '/carrier/trips/'
-      preLoaderRoute: typeof CarrierTripsIndexRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/disputes/': {
-      id: '/carrier/disputes/'
-      path: '/disputes'
-      fullPath: '/carrier/disputes/'
-      preLoaderRoute: typeof CarrierDisputesIndexRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/contracts/': {
-      id: '/carrier/contracts/'
-      path: '/contracts'
-      fullPath: '/carrier/contracts/'
-      preLoaderRoute: typeof CarrierContractsIndexRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/admin/operations/': {
-      id: '/admin/operations/'
-      path: '/operations'
-      fullPath: '/admin/operations/'
-      preLoaderRoute: typeof AdminOperationsIndexRouteImport
+    '/admin/carriers': {
+      id: '/admin/carriers'
+      path: '/carriers'
+      fullPath: '/admin/carriers'
+      preLoaderRoute: typeof AdminCarriersRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/admin/contracts': {
+      id: '/admin/contracts'
+      path: '/contracts'
+      fullPath: '/admin/contracts'
+      preLoaderRoute: typeof AdminContractsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/esg': {
+      id: '/admin/esg'
+      path: '/esg'
+      fullPath: '/admin/esg'
+      preLoaderRoute: typeof AdminEsgRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/freights': {
+      id: '/admin/freights'
+      path: '/freights'
+      fullPath: '/admin/freights'
+      preLoaderRoute: typeof AdminFreightsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/payments': {
+      id: '/admin/payments'
+      path: '/payments'
+      fullPath: '/admin/payments'
+      preLoaderRoute: typeof AdminPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/security': {
+      id: '/admin/security'
+      path: '/security'
+      fullPath: '/admin/security'
+      preLoaderRoute: typeof AdminSecurityRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/settings': {
+      id: '/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/carrier/': {
+      id: '/carrier/'
+      path: '/'
+      fullPath: '/carrier/'
+      preLoaderRoute: typeof CarrierIndexRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/active': {
+      id: '/carrier/active'
+      path: '/active'
+      fullPath: '/carrier/active'
+      preLoaderRoute: typeof CarrierActiveRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/bids': {
+      id: '/carrier/bids'
+      path: '/bids'
+      fullPath: '/carrier/bids'
+      preLoaderRoute: typeof CarrierBidsRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/drivers': {
+      id: '/carrier/drivers'
+      path: '/drivers'
+      fullPath: '/carrier/drivers'
+      preLoaderRoute: typeof CarrierDriversRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/fleet': {
+      id: '/carrier/fleet'
+      path: '/fleet'
+      fullPath: '/carrier/fleet'
+      preLoaderRoute: typeof CarrierFleetRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/marketplace': {
+      id: '/carrier/marketplace'
+      path: '/marketplace'
+      fullPath: '/carrier/marketplace'
+      preLoaderRoute: typeof CarrierMarketplaceRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/payments': {
+      id: '/carrier/payments'
+      path: '/payments'
+      fullPath: '/carrier/payments'
+      preLoaderRoute: typeof CarrierPaymentsRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/payouts': {
+      id: '/carrier/payouts'
+      path: '/payouts'
+      fullPath: '/carrier/payouts'
+      preLoaderRoute: typeof CarrierPayoutsRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/score': {
+      id: '/carrier/score'
+      path: '/score'
+      fullPath: '/carrier/score'
+      preLoaderRoute: typeof CarrierScoreRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/settings': {
+      id: '/carrier/settings'
+      path: '/settings'
+      fullPath: '/carrier/settings'
+      preLoaderRoute: typeof CarrierSettingsRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/vehicles': {
+      id: '/carrier/vehicles'
+      path: '/vehicles'
+      fullPath: '/carrier/vehicles'
+      preLoaderRoute: typeof CarrierVehiclesRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/contato_/comercial': {
+      id: '/contato_/comercial'
+      path: '/contato/comercial'
+      fullPath: '/contato/comercial'
+      preLoaderRoute: typeof ContatoComercialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/driver/': {
+      id: '/driver/'
+      path: '/'
+      fullPath: '/driver/'
+      preLoaderRoute: typeof DriverIndexRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/checkpoint': {
+      id: '/driver/checkpoint'
+      path: '/checkpoint'
+      fullPath: '/driver/checkpoint'
+      preLoaderRoute: typeof DriverCheckpointRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/delivery-complete': {
+      id: '/driver/delivery-complete'
+      path: '/delivery-complete'
+      fullPath: '/driver/delivery-complete'
+      preLoaderRoute: typeof DriverDeliveryCompleteRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/docs': {
+      id: '/driver/docs'
+      path: '/docs'
+      fullPath: '/driver/docs'
+      preLoaderRoute: typeof DriverDocsRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/exception': {
+      id: '/driver/exception'
+      path: '/exception'
+      fullPath: '/driver/exception'
+      preLoaderRoute: typeof DriverExceptionRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/history': {
+      id: '/driver/history'
+      path: '/history'
+      fullPath: '/driver/history'
+      preLoaderRoute: typeof DriverHistoryRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/panic': {
+      id: '/driver/panic'
+      path: '/panic'
+      fullPath: '/driver/panic'
+      preLoaderRoute: typeof DriverPanicRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/pod': {
+      id: '/driver/pod'
+      path: '/pod'
+      fullPath: '/driver/pod'
+      preLoaderRoute: typeof DriverPodRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/profile': {
+      id: '/driver/profile'
+      path: '/profile'
+      fullPath: '/driver/profile'
+      preLoaderRoute: typeof DriverProfileRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/return-receipt': {
+      id: '/driver/return-receipt'
+      path: '/return-receipt'
+      fullPath: '/driver/return-receipt'
+      preLoaderRoute: typeof DriverReturnReceiptRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/driver/validacao': {
+      id: '/driver/validacao'
+      path: '/validacao'
+      fullPath: '/driver/validacao'
+      preLoaderRoute: typeof DriverValidacaoRouteImport
+      parentRoute: typeof DriverRoute
+    }
+    '/esg_/calculadora': {
+      id: '/esg_/calculadora'
+      path: '/esg/calculadora'
+      fullPath: '/esg/calculadora'
+      preLoaderRoute: typeof EsgCalculadoraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/eficiencia': {
+      id: '/esg_/eficiencia'
+      path: '/esg/eficiencia'
+      fullPath: '/esg/eficiencia'
+      preLoaderRoute: typeof EsgEficienciaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/indicadores': {
+      id: '/esg_/indicadores'
+      path: '/esg/indicadores'
+      fullPath: '/esg/indicadores'
+      preLoaderRoute: typeof EsgIndicadoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/esg_/steelgo-green': {
+      id: '/esg_/steelgo-green'
+      path: '/esg/steelgo-green'
+      fullPath: '/esg/steelgo-green'
+      preLoaderRoute: typeof EsgSteelgoGreenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/distribuidores': {
+      id: '/industrias_/distribuidores'
+      path: '/industrias/distribuidores'
+      fullPath: '/industrias/distribuidores'
+      preLoaderRoute: typeof IndustriasDistribuidoresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/industria': {
+      id: '/industrias_/industria'
+      path: '/industrias/industria'
+      fullPath: '/industrias/industria'
+      preLoaderRoute: typeof IndustriasIndustriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/siderurgicas': {
+      id: '/industrias_/siderurgicas'
+      path: '/industrias/siderurgicas'
+      fullPath: '/industrias/siderurgicas'
+      preLoaderRoute: typeof IndustriasSiderurgicasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/industrias_/varejo': {
+      id: '/industrias_/varejo'
+      path: '/industrias/varejo'
+      fullPath: '/industrias/varejo'
+      preLoaderRoute: typeof IndustriasVarejoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recursos_/guias': {
+      id: '/recursos_/guias'
+      path: '/recursos/guias'
+      fullPath: '/recursos/guias'
+      preLoaderRoute: typeof RecursosGuiasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recursos_/integracoes': {
+      id: '/recursos_/integracoes'
+      path: '/recursos/integracoes'
+      fullPath: '/recursos/integracoes'
+      preLoaderRoute: typeof RecursosIntegracoesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/shipper/': {
+      id: '/shipper/'
+      path: '/'
+      fullPath: '/shipper/'
+      preLoaderRoute: typeof ShipperIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/esg': {
+      id: '/shipper/esg'
+      path: '/esg'
+      fullPath: '/shipper/esg'
+      preLoaderRoute: typeof ShipperEsgRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/payments': {
+      id: '/shipper/payments'
+      path: '/payments'
+      fullPath: '/shipper/payments'
+      preLoaderRoute: typeof ShipperPaymentsRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/settings': {
+      id: '/shipper/settings'
+      path: '/settings'
+      fullPath: '/shipper/settings'
+      preLoaderRoute: typeof ShipperSettingsRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/sobre_/pilares': {
+      id: '/sobre_/pilares'
+      path: '/sobre/pilares'
+      fullPath: '/sobre/pilares'
+      preLoaderRoute: typeof SobrePilaresRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sobre_/visao': {
+      id: '/sobre_/visao'
+      path: '/sobre/visao'
+      fullPath: '/sobre/visao'
+      preLoaderRoute: typeof SobreVisaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/control-tower': {
+      id: '/solucoes_/control-tower'
+      path: '/solucoes/control-tower'
+      fullPath: '/solucoes/control-tower'
+      preLoaderRoute: typeof SolucoesControlTowerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/managed-logistics': {
+      id: '/solucoes_/managed-logistics'
+      path: '/solucoes/managed-logistics'
+      fullPath: '/solucoes/managed-logistics'
+      preLoaderRoute: typeof SolucoesManagedLogisticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-network': {
+      id: '/solucoes_/steelgo-network'
+      path: '/solucoes/steelgo-network'
+      fullPath: '/solucoes/steelgo-network'
+      preLoaderRoute: typeof SolucoesSteelgoNetworkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-pay': {
+      id: '/solucoes_/steelgo-pay'
+      path: '/solucoes/steelgo-pay'
+      fullPath: '/solucoes/steelgo-pay'
+      preLoaderRoute: typeof SolucoesSteelgoPayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/solucoes_/steelgo-platform': {
+      id: '/solucoes_/steelgo-platform'
+      path: '/solucoes/steelgo-platform'
+      fullPath: '/solucoes/steelgo-platform'
+      preLoaderRoute: typeof SolucoesSteelgoPlatformRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte_/ajuda': {
+      id: '/suporte_/ajuda'
+      path: '/suporte/ajuda'
+      fullPath: '/suporte/ajuda'
+      preLoaderRoute: typeof SuporteAjudaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/suporte_/canais': {
+      id: '/suporte_/canais'
+      path: '/suporte/canais'
+      fullPath: '/suporte/canais'
+      preLoaderRoute: typeof SuporteCanaisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/ai-orchestration-engine': {
+      id: '/tecnologia_/ai-orchestration-engine'
+      path: '/tecnologia/ai-orchestration-engine'
+      fullPath: '/tecnologia/ai-orchestration-engine'
+      preLoaderRoute: typeof TecnologiaAiOrchestrationEngineRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/compliance-suite': {
+      id: '/tecnologia_/compliance-suite'
+      path: '/tecnologia/compliance-suite'
+      fullPath: '/tecnologia/compliance-suite'
+      preLoaderRoute: typeof TecnologiaComplianceSuiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/driver-app': {
+      id: '/tecnologia_/driver-app'
+      path: '/tecnologia/driver-app'
+      fullPath: '/tecnologia/driver-app'
+      preLoaderRoute: typeof TecnologiaDriverAppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/open-api-ecosystem': {
+      id: '/tecnologia_/open-api-ecosystem'
+      path: '/tecnologia/open-api-ecosystem'
+      fullPath: '/tecnologia/open-api-ecosystem'
+      preLoaderRoute: typeof TecnologiaOpenApiEcosystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tecnologia_/steel-cargo-passport': {
+      id: '/tecnologia_/steel-cargo-passport'
+      path: '/tecnologia/steel-cargo-passport'
+      fullPath: '/tecnologia/steel-cargo-passport'
+      preLoaderRoute: typeof TecnologiaSteelCargoPassportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transportadoras_/homologacao': {
+      id: '/transportadoras_/homologacao'
+      path: '/transportadoras/homologacao'
+      fullPath: '/transportadoras/homologacao'
+      preLoaderRoute: typeof TransportadorasHomologacaoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transportadoras_/viagens': {
+      id: '/transportadoras_/viagens'
+      path: '/transportadoras/viagens'
+      fullPath: '/transportadoras/viagens'
+      preLoaderRoute: typeof TransportadorasViagensRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/disputes/': {
       id: '/admin/disputes/'
@@ -2045,81 +2008,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminDisputesIndexRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/shipper/trips/$id': {
-      id: '/shipper/trips/$id'
-      path: '/trips/$id'
-      fullPath: '/shipper/trips/$id'
-      preLoaderRoute: typeof ShipperTripsIdRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/review/$contractId': {
-      id: '/shipper/review/$contractId'
-      path: '/review/$contractId'
-      fullPath: '/shipper/review/$contractId'
-      preLoaderRoute: typeof ShipperReviewContractIdRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/payment/$contractId': {
-      id: '/shipper/payment/$contractId'
-      path: '/payment/$contractId'
-      fullPath: '/shipper/payment/$contractId'
-      preLoaderRoute: typeof ShipperPaymentContractIdRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/freights/new': {
-      id: '/shipper/freights/new'
-      path: '/freights/new'
-      fullPath: '/shipper/freights/new'
-      preLoaderRoute: typeof ShipperFreightsNewRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/freights/$id': {
-      id: '/shipper/freights/$id'
-      path: '/freights/$id'
-      fullPath: '/shipper/freights/$id'
-      preLoaderRoute: typeof ShipperFreightsIdRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/shipper/disputes/$id': {
-      id: '/shipper/disputes/$id'
+    '/admin/disputes/$id': {
+      id: '/admin/disputes/$id'
       path: '/disputes/$id'
-      fullPath: '/shipper/disputes/$id'
-      preLoaderRoute: typeof ShipperDisputesIdRouteImport
-      parentRoute: typeof ShipperRoute
+      fullPath: '/admin/disputes/$id'
+      preLoaderRoute: typeof AdminDisputesIdRouteImport
+      parentRoute: typeof AdminRoute
     }
-    '/shipper/contracts/$id': {
-      id: '/shipper/contracts/$id'
-      path: '/contracts/$id'
-      fullPath: '/shipper/contracts/$id'
-      preLoaderRoute: typeof ShipperContractsIdRouteImport
-      parentRoute: typeof ShipperRoute
-    }
-    '/carrier/trips/$id': {
-      id: '/carrier/trips/$id'
-      path: '/trips/$id'
-      fullPath: '/carrier/trips/$id'
-      preLoaderRoute: typeof CarrierTripsIdRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/disputes/$id': {
-      id: '/carrier/disputes/$id'
-      path: '/disputes/$id'
-      fullPath: '/carrier/disputes/$id'
-      preLoaderRoute: typeof CarrierDisputesIdRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/carrier/contracts/$id': {
-      id: '/carrier/contracts/$id'
-      path: '/contracts/$id'
-      fullPath: '/carrier/contracts/$id'
-      preLoaderRoute: typeof CarrierContractsIdRouteImport
-      parentRoute: typeof CarrierRoute
-    }
-    '/admin/operations/governance': {
-      id: '/admin/operations/governance'
-      path: '/operations/governance'
-      fullPath: '/admin/operations/governance'
-      preLoaderRoute: typeof AdminOperationsGovernanceRouteImport
+    '/admin/operations/': {
+      id: '/admin/operations/'
+      path: '/operations'
+      fullPath: '/admin/operations/'
+      preLoaderRoute: typeof AdminOperationsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/operations/$id': {
@@ -2129,12 +2029,131 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOperationsIdRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/disputes/$id': {
-      id: '/admin/disputes/$id'
-      path: '/disputes/$id'
-      fullPath: '/admin/disputes/$id'
-      preLoaderRoute: typeof AdminDisputesIdRouteImport
+    '/admin/operations/governance': {
+      id: '/admin/operations/governance'
+      path: '/operations/governance'
+      fullPath: '/admin/operations/governance'
+      preLoaderRoute: typeof AdminOperationsGovernanceRouteImport
       parentRoute: typeof AdminRoute
+    }
+    '/carrier/contracts/': {
+      id: '/carrier/contracts/'
+      path: '/contracts'
+      fullPath: '/carrier/contracts/'
+      preLoaderRoute: typeof CarrierContractsIndexRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/contracts/$id': {
+      id: '/carrier/contracts/$id'
+      path: '/contracts/$id'
+      fullPath: '/carrier/contracts/$id'
+      preLoaderRoute: typeof CarrierContractsIdRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/disputes/': {
+      id: '/carrier/disputes/'
+      path: '/disputes'
+      fullPath: '/carrier/disputes/'
+      preLoaderRoute: typeof CarrierDisputesIndexRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/disputes/$id': {
+      id: '/carrier/disputes/$id'
+      path: '/disputes/$id'
+      fullPath: '/carrier/disputes/$id'
+      preLoaderRoute: typeof CarrierDisputesIdRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/trips/': {
+      id: '/carrier/trips/'
+      path: '/trips'
+      fullPath: '/carrier/trips/'
+      preLoaderRoute: typeof CarrierTripsIndexRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/carrier/trips/$id': {
+      id: '/carrier/trips/$id'
+      path: '/trips/$id'
+      fullPath: '/carrier/trips/$id'
+      preLoaderRoute: typeof CarrierTripsIdRouteImport
+      parentRoute: typeof CarrierRoute
+    }
+    '/shipper/contracts/': {
+      id: '/shipper/contracts/'
+      path: '/contracts'
+      fullPath: '/shipper/contracts/'
+      preLoaderRoute: typeof ShipperContractsIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/contracts/$id': {
+      id: '/shipper/contracts/$id'
+      path: '/contracts/$id'
+      fullPath: '/shipper/contracts/$id'
+      preLoaderRoute: typeof ShipperContractsIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/disputes/': {
+      id: '/shipper/disputes/'
+      path: '/disputes'
+      fullPath: '/shipper/disputes/'
+      preLoaderRoute: typeof ShipperDisputesIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/disputes/$id': {
+      id: '/shipper/disputes/$id'
+      path: '/disputes/$id'
+      fullPath: '/shipper/disputes/$id'
+      preLoaderRoute: typeof ShipperDisputesIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/freights/': {
+      id: '/shipper/freights/'
+      path: '/freights'
+      fullPath: '/shipper/freights/'
+      preLoaderRoute: typeof ShipperFreightsIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/freights/$id': {
+      id: '/shipper/freights/$id'
+      path: '/freights/$id'
+      fullPath: '/shipper/freights/$id'
+      preLoaderRoute: typeof ShipperFreightsIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/freights/new': {
+      id: '/shipper/freights/new'
+      path: '/freights/new'
+      fullPath: '/shipper/freights/new'
+      preLoaderRoute: typeof ShipperFreightsNewRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/payment/$contractId': {
+      id: '/shipper/payment/$contractId'
+      path: '/payment/$contractId'
+      fullPath: '/shipper/payment/$contractId'
+      preLoaderRoute: typeof ShipperPaymentContractIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/review/$contractId': {
+      id: '/shipper/review/$contractId'
+      path: '/review/$contractId'
+      fullPath: '/shipper/review/$contractId'
+      preLoaderRoute: typeof ShipperReviewContractIdRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/trips/': {
+      id: '/shipper/trips/'
+      path: '/trips'
+      fullPath: '/shipper/trips/'
+      preLoaderRoute: typeof ShipperTripsIndexRouteImport
+      parentRoute: typeof ShipperRoute
+    }
+    '/shipper/trips/$id': {
+      id: '/shipper/trips/$id'
+      path: '/trips/$id'
+      fullPath: '/shipper/trips/$id'
+      preLoaderRoute: typeof ShipperTripsIdRouteImport
+      parentRoute: typeof ShipperRoute
     }
   }
 }
@@ -2230,6 +2249,7 @@ interface DriverRouteChildren {
   DriverPodRoute: typeof DriverPodRoute
   DriverProfileRoute: typeof DriverProfileRoute
   DriverReturnReceiptRoute: typeof DriverReturnReceiptRoute
+  DriverValidacaoRoute: typeof DriverValidacaoRoute
   DriverIndexRoute: typeof DriverIndexRoute
 }
 
@@ -2243,6 +2263,7 @@ const DriverRouteChildren: DriverRouteChildren = {
   DriverPodRoute: DriverPodRoute,
   DriverProfileRoute: DriverProfileRoute,
   DriverReturnReceiptRoute: DriverReturnReceiptRoute,
+  DriverValidacaoRoute: DriverValidacaoRoute,
   DriverIndexRoute: DriverIndexRoute,
 }
 
